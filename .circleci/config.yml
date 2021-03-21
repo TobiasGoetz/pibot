@@ -5,9 +5,7 @@ workflows:
       - build:
         filters:
           branches:
-            ignore:
-              - dev
-
+            only: master
 
 jobs:
   build:
