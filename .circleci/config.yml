@@ -1,9 +1,14 @@
 version: 2.1
+workflows:
+  main:
+    jobs:
+      - build:
+        filters:
+          branches:
+            only: master
+
+
 jobs:
-  filters:
-    branches:
-      only:
-        - master
   build:
     docker:
       - image: circleci/python:3.9.2
