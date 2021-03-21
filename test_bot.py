@@ -5,7 +5,7 @@ Unit tests for the 314Bot library
 import bot
 
 
-class Test314Bot:
+class TestBot:
 
     def test_addition(self):
         assert 4 == bot.add(2, 2)

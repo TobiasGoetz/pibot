@@ -1,18 +1,6 @@
-# bot.py
-import os
-
-import discord
-from dotenv import load_dotenv
-
-load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
-
-client = discord.Client()
-
-
-@client.event
-async def on_ready():
-    print(f'{client.user} has connected to Discord!')
+"""
+library containing basic math operations.
+"""
 
 
 def add(first_term, second_term):
@@ -21,6 +9,3 @@ def add(first_term, second_term):
 
 def subtract(first_term, second_term):
     return first_term - second_term
-
-
-client.run(TOKEN)
