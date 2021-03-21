@@ -1,5 +1,5 @@
 """
-Unit tests for the 314Bot library
+Unit tests for the Bot library
 """
 
 import bot
