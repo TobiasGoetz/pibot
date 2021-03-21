@@ -1,10 +1,10 @@
 version: 2.1
 jobs:
+  filters:
+    branches:
+      only:
+        - master
   build:
-    filters:
-      branches:
-        only:
-          - master
     docker:
       - image: circleci/python:3.9.2
 
