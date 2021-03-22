@@ -35,7 +35,7 @@ jobs:
       - run:
           name: Deploy over SSH
           command: |
-            ssh $SSH_USER@$SSH_HOST cd; mkdir test
+            ssh $SSH_USER@$SSH_HOST
 
 workflows:
   version: 2
