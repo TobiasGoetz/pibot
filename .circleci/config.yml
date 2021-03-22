@@ -32,10 +32,13 @@ jobs:
     machine:
       enabled: true
     steps:
+      # Step 1: Remove old files
       - run:
           name: Clean up environment
           command: |
-            ssh $SSH_USER@$SSH_HOST "rm -r ../314Bot/*"
+            ssh $SSH_USER@$SSH_HOST "rm -r ./314Bot/*"
+
+
 
 workflows:
   version: 2
