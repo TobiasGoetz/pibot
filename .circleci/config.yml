@@ -43,7 +43,6 @@ jobs:
           command: |
             ssh $SSH_USER@$SSH_HOST "echo "DISCORD_TOKEN=$DISCORD_TOKEN_MASTER" > .env"
 
-
 workflows:
   version: 2
   main:
@@ -55,3 +54,6 @@ workflows:
       - deploy:
           requires:
             - build
+          filters:
+            branches:
+              only: master
