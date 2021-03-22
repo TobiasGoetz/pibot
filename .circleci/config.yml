@@ -31,11 +31,12 @@ jobs:
   deploy:
     machine:
       enabled: true
+    working_directory: ~/repo
     steps:
       - run:
           name: Deploy over SSH
           command: |
-            ssh $SSH_USER@$SSH_HOST "cd ; mkdir test"
+            ssh $SSH_USER@$SSH_HOST "mkdir test"
 
 workflows:
   version: 2
