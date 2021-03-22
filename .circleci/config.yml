@@ -36,7 +36,7 @@ jobs:
       - run:
           name: Clean up environment
           command: |
-            ssh $SSH_USER@$SSH_HOST "rm -r ./314Bot/*"
+            ssh $SSH_USER@$SSH_HOST "rm -r ../314Bot/*"
       # Step 2: Setup environment
       - run:
           name: Set up environment
