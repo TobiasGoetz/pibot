@@ -29,9 +29,6 @@ jobs:
       - store_artifacts:
           path: test-results
   deploy:
-    machine:
-      enabled: true
-    working_directory: ~/repo
     steps:
       - run:
           name: Deploy over SSH
