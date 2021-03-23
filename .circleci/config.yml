@@ -36,7 +36,7 @@ jobs:
       - run:
           name: Clean up environment
           command: |
-            ssh $SSH_USER@$SSH_HOST "rm -r -f ../314Bot/*"
+            ssh $SSH_USER@$SSH_HOST "rm -r -f ../314bot/*"
       # Step 2: Get repository
       - run:
           name: Get repository
@@ -46,12 +46,12 @@ jobs:
       - run:
           name: Set up environment
           command: |
-            ssh $SSH_USER@$SSH_HOST "echo "DISCORD_TOKEN=$DISCORD_TOKEN_MASTER" > 314Bot/.env"
+            ssh $SSH_USER@$SSH_HOST "echo "DISCORD_TOKEN=$DISCORD_TOKEN_MASTER" > 314bot/.env"
       # Step 4: install dependencies
       - run:
           name: Install dependencies
           command: |
-            ssh $SSH_USER@$SSH_HOST "pip3 install -r 314Bot/requirements.txt"
+            ssh $SSH_USER@$SSH_HOST "pip3 install -r 314bot/requirements.txt"
 
 workflows:
   version: 2
