@@ -52,6 +52,11 @@ jobs:
           name: Install dependencies
           command: |
             ssh $SSH_USER@$SSH_HOST "pip3 install -r pibot/requirements.txt"
+      # Step 5: Make bot.py executable with chmod
+      - run:
+          name: Make bot.py executable
+          command: |
+            ssh $SSH_USER@$SSH_HOST "chmod +x ./pibot/bot.py"
 
 workflows:
   version: 2
