@@ -22,7 +22,7 @@ jobs:
           command: |
             . venv/bin/activate
             mkdir test-results
-            flake8 --exclude=venv* --statistics
+            flake8 --exclude=venv* --statistics --max-line-length=119
             pytest -v --junitxml=test-results/junit.xml --cov=bot
       - store_test_results:
           path: test-results
