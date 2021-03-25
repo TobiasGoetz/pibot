@@ -22,18 +22,50 @@ jobs:
           command: |
             . venv/bin/activate
             mkdir test-results
-            flake8 --exclude=venv* --statistics
+            flake8 --exclude=venv* --statistics --max-line-length=119
             pytest -v --junitxml=test-results/junit.xml --cov=bot
       - store_test_results:
           path: test-results
       - store_artifacts:
           path: test-results
+  deploy:
+    machine:
+      enabled: true
+    steps:
+      # Step 1: Remove old files
+      - run:
+          name: Clean up environment
+          command: |
+            ssh $SSH_USER@$SSH_HOST "rm -r -f ../pibot/*"
+      # Step 2: Get repository
+      - run:
+          name: Get repository
+          command: |
+            ssh $SSH_USER@$SSH_HOST "git clone --depth 1 git@github.com:TobiasGoetz/pibot.git"
+      # Step 3: Setup environment
+      - run:
+          name: Set up environment
+          command: |
+            ssh $SSH_USER@$SSH_HOST "echo "DISCORD_TOKEN=$DISCORD_TOKEN_MASTER" > pibot/.env"
+      # Step 4: install dependencies
+      - run:
+          name: Install dependencies
+          command: |
+            ssh $SSH_USER@$SSH_HOST "pip3 install -r pibot/requirements.txt"
+      # Step 5: Make bot.py executable with chmod
+      - run:
+          name: Make bot.py executable
+          command: |
+            ssh $SSH_USER@$SSH_HOST "chmod +x ./pibot/bot.py"
 
 workflows:
   version: 2
   main:
     jobs:
-      - build:
+      - build
+      - deploy:
+          requires:
+            - build
           filters:
             branches:
               only: master
