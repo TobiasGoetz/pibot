@@ -22,12 +22,12 @@ class Music(commands.Cog):
                                               region='europe')
 
     @commands.command(name='connect')
-    async def connect_(self, ctx, *, channel: discord.VoiceChannel=None):
+    async def connect_(self, ctx, *, channel: discord.VoiceChannel = None):
         if not channel:
             try:
                 channel = ctx.author.voice.channel
             except AttributeError:
-                raise discord.DiscordException('No channel to join. Please either specify a valid channel or join one.')
+                raise discord.DiscordException('No channel to join. Please specify a valid channel or join one.')
         player = self.bot.wavelink.get_player(ctx.guild.id)
         await ctx.send(f'Connecting to **{channel.name}**')
         await player.connect(channel.id)
