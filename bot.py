@@ -32,7 +32,7 @@ async def ping(ctx):
     await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
 
 
-cogs = [p.stem for p in Path(".").glob("./cogs/*.py")]
+cogs = [p.stem for p in Path("./cogs").glob("*.py")]
 for cog in cogs:
     bot.load_extension(f"cogs.{cog}")
     print(f"Loaded '{cog}' cog.")
