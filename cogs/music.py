@@ -115,9 +115,13 @@ class Music(commands.Cog):
         vc = ctx.voice_client
         if vc:
             if not vc.queue.is_empty:
+                description = f'Currently playing: {vc.source.title} [{round(vc.position)}/{round(vc.source.length)}sec]\n\n'
+                for i, track in enumerate(vc.queue):
+                    description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
+
                 await ctx.send(embed=discord.Embed(
                     title='Queue',
-                    description='\n'.join([track.title for track in vc.queue])
+                    description='`' + description + '`',
                 ))
             else:
                 await ctx.send('The queue is empty.')
