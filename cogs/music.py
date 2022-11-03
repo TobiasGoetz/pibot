@@ -27,7 +27,7 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, player: CustomPlayer, track: wavelink.Track, reason):
-        if not player.queue.is_empty:
+        if not player.queue.is_empty and reason == 'FINISHED':
             next_track = player.queue.get()
             await player.play(next_track)
 
@@ -45,7 +45,7 @@ class Music(commands.Cog):
             await ctx.send('I am already connected to a voice channel.')
 
     @commands.command()
-    async def disconnect(self, ctx):
+    async def stop(self, ctx):
         vc = ctx.voice_client
         if vc:
             await vc.disconnect()
@@ -59,23 +59,27 @@ class Music(commands.Cog):
             custom_player = CustomPlayer()
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
 
-        if vc.is_playing():
+        await vc.play(search)
 
-            vc.queue.put(item=search)
+        await ctx.send(embed=discord.Embed(
+            title=vc.source.title,
+            url=vc.source.uri,
+            description=f"Playing {vc.source.title} in {vc.channel}"
+        ))
 
-            await ctx.send(embed=discord.Embed(
-                title=search.title,
-                url=search.uri,
-                description=f"Queued {search.title} in {vc.channel}"
-            ))
-        else:
-            await vc.play(search)
+    @commands.command()
+    async def add(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+        vc = ctx.voice_client
+        if not vc:
+            return await self.play(ctx, search=search)
 
-            await ctx.send(embed=discord.Embed(
-                title=vc.source.title,
-                url=vc.source.uri,
-                description=f"Playing {vc.source.title} in {vc.channel}"
-            ))
+        vc.queue.put(item=search)
+
+        await ctx.send(embed=discord.Embed(
+            title=search.title,
+            url=search.uri,
+            description=f"Queued {search.title} in {vc.channel}"
+        ))
 
     @commands.command()
     async def skip(self, ctx):
