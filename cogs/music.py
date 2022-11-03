@@ -3,6 +3,7 @@ import wavelink
 from discord.ext import commands
 
 from CustomPlayer import CustomPlayer
+from StringProgressBar import progressBar
 
 
 class Music(commands.Cog):
@@ -122,6 +123,22 @@ class Music(commands.Cog):
                 await ctx.send('The queue is empty.')
         else:
             await ctx.send("The bot is not connected to a voice channel")
+
+    @commands.command()
+    async def now(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            if vc.is_playing():
+                await ctx.send(embed=discord.Embed(
+                    title='Now Playing',
+                    description=f'{vc.source.title}\n{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]} [{round(vc.position / vc.source.length * 100)}%]\n'
+                ))
+            else:
+                await ctx.send('Nothing is playing.')
+        else:
+            await ctx.send("The bot is not connected to a voice channel")
+
+
 
     @play.error
     async def play_error(self, ctx, error):
