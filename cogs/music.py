@@ -25,6 +25,12 @@ class Music(commands.Cog):
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         print(f'Node: <{node.identifier}> is ready!')
 
+    @commands.Cog.listener()
+    async def on_wavelink_track_end(self, player: CustomPlayer, track: wavelink.Track, reason):
+        if not player.queue.is_empty:
+            next_track = player.queue.get()
+            await player.play(next_track)
+
     @commands.command(name='connect')
     async def connect_(self, ctx):
         vc = ctx.voice_client
@@ -105,6 +111,20 @@ class Music(commands.Cog):
                 await vc.resume()
             else:
                 await ctx.send("Nothing is paused.")
+        else:
+            await ctx.send("The bot is not connected to a voice channel")
+
+    @commands.command()
+    async def queue(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            if not vc.queue.is_empty:
+                await ctx.send(embed=discord.Embed(
+                    title='Queue',
+                    description='\n'.join([track.title for track in vc.queue])
+                ))
+            else:
+                await ctx.send('The queue is empty.')
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
