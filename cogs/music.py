@@ -98,19 +98,10 @@ class Music(commands.Cog):
         if vc:
             if vc.is_playing() and not vc.is_paused():
                 await vc.pause()
-            else:
-                await ctx.send("Nothing is playing.")
-        else:
-            await ctx.send("The bot is not connected to a voice channel")
-
-    @commands.command()
-    async def resume(self, ctx):
-        vc = ctx.voice_client
-        if vc:
-            if vc.is_paused():
+            elif vc.is_paused():
                 await vc.resume()
             else:
-                await ctx.send("Nothing is paused.")
+                await ctx.send("Nothing is playing.")
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
