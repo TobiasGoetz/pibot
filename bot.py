@@ -1,20 +1,21 @@
 # bot.py
+import asyncio
 import os
 from pathlib import Path
 
 import discord
+import wavelink
 from discord.ext import commands
-from dotenv import load_dotenv
 
-load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix='.', case_insensitive=True)
+bot = commands.Bot(command_prefix='.', case_insensitive=True, intents=discord.Intents.all())
 
 
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
+    await load_cogs()
 
 
 @bot.event
@@ -32,9 +33,17 @@ async def ping(ctx):
     await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
 
 
-cogs = [p.stem for p in Path("./cogs").glob("*.py")]
-for cog in cogs:
-    bot.load_extension(f"cogs.{cog}")
-    print(f"Loaded '{cog}' cog.")
+async def load_cogs():
+    cogs = [p.stem for p in Path("./cogs").glob("*.py")]
+    for cog in cogs:
+        await bot.load_extension(f"cogs.{cog}")
+        print(f"Loaded '{cog}' cog.")
 
-bot.run(TOKEN)
+
+async def main():
+    async with bot:
+        await bot.start(TOKEN)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())

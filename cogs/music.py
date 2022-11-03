@@ -2,50 +2,119 @@ import discord
 import wavelink
 from discord.ext import commands
 
+from CustomPlayer import CustomPlayer
+
 
 class Music(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
+        bot.loop.create_task(self.connect_nodes())
 
-        if not hasattr(bot, 'wavelink'):
-            self.bot.wavelink = wavelink.Client(bot=self.bot)
-
-        self.bot.loop.create_task(self.start_nodes())
-
-    async def start_nodes(self):
+    async def connect_nodes(self):
         await self.bot.wait_until_ready()
-        await self.bot.wavelink.initiate_node(host='127.0.0.1',
-                                              port=2333,
-                                              rest_uri='http://127.0.0.1:2333',
-                                              password='youshallnotpass',
-                                              identifier='MAIN',
-                                              region='europe')
+        await wavelink.NodePool.create_node(
+            bot=self.bot,
+            host='127.0.0.1',
+            port=2333,
+            password='youshallnotpass',
+            identifier='MAIN',
+            region='europe',
+        )
+
+    @commands.Cog.listener()
+    async def on_wavelink_node_ready(self, node: wavelink.Node):
+        print(f'Node: <{node.identifier}> is ready!')
 
     @commands.command(name='connect')
-    async def connect_(self, ctx, *, channel: discord.VoiceChannel = None):
-        if not channel:
-            try:
-                channel = ctx.author.voice.channel
-            except AttributeError:
-                raise discord.DiscordException('No channel to join. Please specify a valid channel or join one.')
-        player = self.bot.wavelink.get_player(ctx.guild.id)
-        await ctx.send(f'Connecting to **{channel.name}**')
-        await player.connect(channel.id)
+    async def connect_(self, ctx):
+        vc = ctx.voice_client
+        try:
+            channel = ctx.author.voice.channel
+        except AttributeError:
+            return await ctx.send('You are not connected to a voice channel.')
+
+        if not vc:
+            await ctx.author.voice.channel.connect(cls=CustomPlayer)
+        else:
+            await ctx.send('I am already connected to a voice channel.')
 
     @commands.command()
-    async def play(self, ctx, *, query: str):
-        tracks = await self.bot.wavelink.get_tracks(f'ytsearch:{query}')
+    async def disconnect(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            await vc.disconnect()
+        else:
+            await ctx.send('I am not connected to a voice channel.')
 
-        if not tracks:
-            return await ctx.send('Could not find any songs with that query.')
+    @commands.command()
+    async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+        vc = ctx.voice_client
+        if not vc:
+            custom_player = CustomPlayer()
+            vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
 
-        player = self.bot.wavelink.get_player(ctx.guild.id)
-        if not player.is_connected:
-            await ctx.invoke(self.connect_)
+        if vc.is_playing():
 
-        await ctx.send(f'Added {str(tracks[0])} to the queue.')
-        await player.play(tracks[0])
+            vc.queue.put(item=search)
+
+            await ctx.send(embed=discord.Embed(
+                title=search.title,
+                url=search.uri,
+                description=f"Queued {search.title} in {vc.channel}"
+            ))
+        else:
+            await vc.play(search)
+
+            await ctx.send(embed=discord.Embed(
+                title=vc.source.title,
+                url=vc.source.uri,
+                description=f"Playing {vc.source.title} in {vc.channel}"
+            ))
+
+    @commands.command()
+    async def skip(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            if not vc.is_playing():
+                return await ctx.send("Nothing is playing.")
+            if vc.queue.is_empty:
+                return await vc.stop()
+
+            await vc.seek(vc.track.length * 1000)
+            if vc.is_paused():
+                await vc.resume()
+        else:
+            await ctx.send("The bot is not connected to a voice channel.")
+
+    @commands.command()
+    async def pause(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            if vc.is_playing() and not vc.is_paused():
+                await vc.pause()
+            else:
+                await ctx.send("Nothing is playing.")
+        else:
+            await ctx.send("The bot is not connected to a voice channel")
+
+    @commands.command()
+    async def resume(self, ctx):
+        vc = ctx.voice_client
+        if vc:
+            if vc.is_paused():
+                await vc.resume()
+            else:
+                await ctx.send("Nothing is paused.")
+        else:
+            await ctx.send("The bot is not connected to a voice channel")
+
+    @play.error
+    async def play_error(self, ctx, error):
+        if isinstance(error, commands.BadArgument):
+            await ctx.send("Could not find a track.")
+        else:
+            await ctx.send("Please join a voice channel.")
 
 
-def setup(bot):
-    bot.add_cog(Music(bot))
+async def setup(bot):
+    await bot.add_cog(Music(bot))
