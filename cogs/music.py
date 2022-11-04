@@ -19,7 +19,7 @@ class Music(commands.Cog):
             bot=self.bot,
             host=os.getenv("LAVALINK_HOST"),
             port=int(os.getenv("LAVALINK_PORT")),
-            password=os.getenv("LAVALINK_PASSWORD"),
+            password=os.getenv("LAVALINK_PASS"),
             identifier='MAIN',
             region='europe',
         )
