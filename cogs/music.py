@@ -8,7 +8,7 @@ from discord.ext import commands
 from CustomPlayer import CustomPlayer
 from StringProgressBar import progressBar
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger('discord.music')
 
 
 class Music(commands.Cog):

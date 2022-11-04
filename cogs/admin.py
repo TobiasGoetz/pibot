@@ -1,4 +1,8 @@
+import logging
+
 from discord.ext import commands
+
+logger = logging.getLogger('discord.admin')
 
 
 class Admin(commands.Cog):
@@ -10,6 +14,7 @@ class Admin(commands.Cog):
     async def clear(self, ctx, amount=1):
         await ctx.message.delete()
         await ctx.channel.purge(limit=amount)
+        logging.info(f'User {ctx.author} cleared {amount} messages in {ctx.channel}')
 
 
 async def setup(bot):
