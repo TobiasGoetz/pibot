@@ -1,5 +1,6 @@
 # bot.py
 import asyncio
+import logging
 import os
 from pathlib import Path
 
@@ -11,10 +12,12 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 
 bot = commands.Bot(command_prefix='.', case_insensitive=True, intents=discord.Intents.all())
 
+logger = logging.getLogger('discord')
+
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
+    logger.info('Logged in as %s', bot.user)
     await load_cogs()
 
 
@@ -37,10 +40,11 @@ async def load_cogs():
     cogs = [p.stem for p in Path("./cogs").glob("*.py")]
     for cog in cogs:
         await bot.load_extension(f"cogs.{cog}")
-        print(f"Loaded '{cog}' cog.")
+        logger.info(f"Loaded {cog} cog.")
 
 
 async def main():
+    discord.utils.setup_logging()
     async with bot:
         await bot.start(TOKEN)
 

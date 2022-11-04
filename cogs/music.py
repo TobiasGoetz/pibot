@@ -1,3 +1,4 @@
+import logging
 import os
 
 import discord
@@ -6,6 +7,8 @@ from discord.ext import commands
 
 from CustomPlayer import CustomPlayer
 from StringProgressBar import progressBar
+
+logger = logging.getLogger('discord')
 
 
 class Music(commands.Cog):
@@ -26,10 +29,11 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
-        print(f'Node: <{node.identifier}> is ready!')
+        logger.info(f"Node {node.identifier} is ready.")
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, player: CustomPlayer, track: wavelink.Track, reason):
+        logger.info(f"Track {track.title} ended for player {player.guild} with reason {reason}.")
         if not player.queue.is_empty and reason == 'FINISHED':
             next_track = player.queue.get()
             await player.play(next_track)
@@ -44,6 +48,7 @@ class Music(commands.Cog):
 
         if not vc:
             await ctx.author.voice.channel.connect(cls=CustomPlayer)
+            logger.info(f'User {ctx.author} connected the bot to {channel}')
         else:
             await ctx.send('I am already connected to a voice channel.')
 
@@ -52,17 +57,20 @@ class Music(commands.Cog):
         vc = ctx.voice_client
         if vc:
             await vc.disconnect()
+            logger.info(f'User {ctx.author} disconnected the bot from {vc.channel}')
         else:
             await ctx.send('I am not connected to a voice channel.')
 
     @commands.command()
     async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+        logger.info(f'User: {ctx.author} requested: {search}')
         vc = ctx.voice_client
         if not vc:
             custom_player = CustomPlayer()
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
 
         await vc.play(search)
+        logger.info(f'User: {ctx.author} is now playing: {search}')
 
         await ctx.send(embed=discord.Embed(
             title=vc.source.title,
@@ -77,6 +85,7 @@ class Music(commands.Cog):
             return await self.play(ctx, search=search)
 
         vc.queue.put(item=search)
+        logger.info(f'User: {ctx.author} added: {search} to the queue.')
 
         await ctx.send(embed=discord.Embed(
             title=search.title,
@@ -94,6 +103,7 @@ class Music(commands.Cog):
                 return await vc.stop()
 
             await vc.seek(vc.track.length * 1000)
+            logger.info(f"User: {ctx.author} skipped: {vc.source.title}")
             if vc.is_paused():
                 await vc.resume()
         else:
@@ -105,8 +115,10 @@ class Music(commands.Cog):
         if vc:
             if vc.is_playing() and not vc.is_paused():
                 await vc.pause()
+                logger.info(f'User: {ctx.author} paused the song.')
             elif vc.is_paused():
                 await vc.resume()
+                logger.info(f'User: {ctx.author} resumed the song.')
             else:
                 await ctx.send("Nothing is playing.")
         else:
@@ -143,8 +155,6 @@ class Music(commands.Cog):
                 await ctx.send('Nothing is playing.')
         else:
             await ctx.send("The bot is not connected to a voice channel")
-
-
 
     @play.error
     async def play_error(self, ctx, error):
