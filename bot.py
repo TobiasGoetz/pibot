@@ -5,14 +5,40 @@ import os
 from pathlib import Path
 
 import discord
-import wavelink
+import psycopg2
 from discord.ext import commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-
-bot = commands.Bot(command_prefix='.', case_insensitive=True, intents=discord.Intents.all())
-
+db = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
 logger = logging.getLogger('discord')
+
+
+async def get_prefix(bot, message):
+    await db_check_if_guild_exists(message.guild)
+    with db.cursor() as cursor:
+        cursor.execute("SELECT prefix FROM discord.settings WHERE guild_id = %s", (message.guild.id,))
+        prefix = cursor.fetchone()
+    return prefix
+
+
+async def db_initialize_guild(guild):
+    with db.cursor() as cursor:
+        cursor.execute("INSERT INTO discord.settings (guild_id, prefix) VALUES (%s, %s)", (guild.id, "."))
+        db.commit()
+        logger.info(f"Added {guild.name} to the database.")
+
+
+async def db_check_if_guild_exists(guild):
+    with db.cursor() as cursor:
+        cursor.execute("SELECT guild_id FROM discord.settings WHERE guild_id = %s", (guild.id,))
+        result = cursor.fetchone()
+    if result is None:
+        await db_initialize_guild(guild)
+        return False
+    return True
+
+
+bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=discord.Intents.all())
 
 
 @bot.event
@@ -24,16 +50,28 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     cmdchannel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name, name='botspam')
-    if message.content.lower().startswith(getattr(bot, 'command_prefix')):
-        if message.channel.id == cmdchannel.id:
-            await bot.process_commands(message)
-        else:
-            await message.channel.send(f'Write this command in {cmdchannel.mention}')
+    prefixes = await get_prefix(bot, message)
+    for prefix in prefixes:
+        if message.content.lower().startswith(prefix):
+            if message.channel.id == cmdchannel.id:
+                return await bot.process_commands(message)
+            else:
+                return await message.channel.send(f'Write this command in {cmdchannel.mention}')
 
 
 @bot.command(help="Displays the bots ping")
 async def ping(ctx):
     await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
+
+
+@bot.command()
+async def prefix(ctx, arg):
+    await db_check_if_guild_exists(ctx.guild)
+    with db.cursor() as cursor:
+        cursor.execute("UPDATE discord.settings SET prefix = %s WHERE guild_id = %s", (arg, ctx.guild.id))
+        db.commit()
+    logger.info(f"Changed prefix for {ctx.guild.name} to {arg}")
+    await ctx.send(f"Prefix set to {arg}")
 
 
 async def load_cogs():
