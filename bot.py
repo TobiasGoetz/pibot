@@ -78,6 +78,33 @@ async def prefix(ctx, arg):
     await ctx.send(f"Prefix set to {arg}")
 
 
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        logger.info(f'User {ctx.author} tried to use {ctx.command} without permissions.')
+        await ctx.send(
+            embed=discord.Embed(
+                description=f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}`.',
+            )
+        )
+
+    if isinstance(error, commands.MissingRole):
+        logger.info(f'User {ctx.author} tried to use {ctx.command} without the {error.missing_role} role.')
+        await ctx.send(
+            embed=discord.Embed(
+                description=f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}` without the {error.missing_role} role.',
+            )
+        )
+
+    if isinstance(error, commands.CommandNotFound):
+        logger.info(f'User {ctx.author} tried to use an invalid command.')
+        await ctx.send(
+            embed=discord.Embed(
+                description=f':no_entry_sign: **{ctx.author.name}** this command does not exist.',
+            )
+        )
+
+
 async def load_cogs():
     cogs = [p.stem for p in Path("./cogs").glob("*.py")]
     for cog in cogs:

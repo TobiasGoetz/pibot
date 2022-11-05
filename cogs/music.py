@@ -39,6 +39,7 @@ class Music(commands.Cog):
             await player.play(next_track)
 
     @commands.command(name='connect')
+    @commands.has_role('DJ')
     async def connect_(self, ctx):
         vc = ctx.voice_client
         try:
@@ -53,6 +54,7 @@ class Music(commands.Cog):
             await ctx.send('I am already connected to a voice channel.')
 
     @commands.command()
+    @commands.has_role('DJ')
     async def stop(self, ctx):
         vc = ctx.voice_client
         if vc:
@@ -62,6 +64,7 @@ class Music(commands.Cog):
             await ctx.send('I am not connected to a voice channel.')
 
     @commands.command()
+    @commands.has_role('DJ')
     async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
         logger.info(f'User: {ctx.author} requested: {search}')
         vc = ctx.voice_client
@@ -79,6 +82,7 @@ class Music(commands.Cog):
         ))
 
     @commands.command()
+    @commands.has_role('DJ')
     async def add(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
         vc = ctx.voice_client
         if not vc:
@@ -94,6 +98,7 @@ class Music(commands.Cog):
         ))
 
     @commands.command()
+    @commands.has_role('DJ')
     async def skip(self, ctx):
         vc = ctx.voice_client
         if vc:
@@ -110,6 +115,7 @@ class Music(commands.Cog):
             await ctx.send("The bot is not connected to a voice channel.")
 
     @commands.command()
+    @commands.has_role('DJ')
     async def pause(self, ctx):
         vc = ctx.voice_client
         if vc:

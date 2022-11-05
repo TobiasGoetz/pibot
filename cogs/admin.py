@@ -17,14 +17,6 @@ class Admin(commands.Cog):
         await ctx.channel.purge(limit=amount)
         logging.info(f'User {ctx.author} cleared {amount} messages in {ctx.channel}')
 
-    @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            logger.info(f'User {ctx.author} tried to use {ctx.command} without permissions.')
-            await ctx.send(embed=discord.Embed(
-                description=f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}`.',
-            ))
-
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
