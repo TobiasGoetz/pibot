@@ -9,11 +9,15 @@ import psycopg2
 from discord.ext import commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
+PREFIX = os.getenv('DISCORD_PREFIX')
 db = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
 logger = logging.getLogger('discord')
 
 
 async def get_prefix(bot, message):
+    if PREFIX:
+        return PREFIX
+
     await db_check_if_guild_exists(message.guild)
     with db.cursor() as cursor:
         cursor.execute("SELECT prefix FROM discord.settings WHERE guild_id = %s", (message.guild.id,))
