@@ -6,4 +6,4 @@ A discord bot providing administration and music features!
 * Easy to run (uses Python)
 
 ## Installation
-Coming soong
+Coming soonn
