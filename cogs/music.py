@@ -36,7 +36,9 @@ class Music(commands.Cog):
         logger.info(f"Track {track.title} ended for player {player.guild} with reason {reason}.")
         if not player.queue.is_empty and reason == 'FINISHED':
             next_track = player.queue.get()
-            await player.play(next_track)
+            return await player.play(next_track)
+        await player.disconnect()
+        logger.info(f"Queue is empty, disconnected from {player.guild}.")
 
     @commands.command(name='connect')
     @commands.has_role('DJ')
