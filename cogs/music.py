@@ -40,7 +40,7 @@ class Music(commands.Cog):
         await player.disconnect()
         logger.info(f"Queue is empty, disconnected from {player.guild}.")
 
-    @commands.command(name='connect')
+    @commands.command(name='connect', help='Connects the bot to your voice channel.')
     @commands.has_role('DJ')
     async def connect_(self, ctx):
         vc = ctx.voice_client
@@ -55,7 +55,7 @@ class Music(commands.Cog):
         else:
             await ctx.send('I am already connected to a voice channel.')
 
-    @commands.command()
+    @commands.command(help='Disconnects the bot from your voice channel.')
     @commands.has_role('DJ')
     async def stop(self, ctx):
         vc = ctx.voice_client
@@ -65,7 +65,7 @@ class Music(commands.Cog):
         else:
             await ctx.send('I am not connected to a voice channel.')
 
-    @commands.command()
+    @commands.command(help='Plays a song.')
     @commands.has_role('DJ')
     async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
         logger.info(f'User: {ctx.author} requested: {search}')
@@ -83,7 +83,7 @@ class Music(commands.Cog):
             description=f"Playing {vc.source.title} in {vc.channel}"
         ))
 
-    @commands.command()
+    @commands.command(help='Adds a song to the queue.')
     @commands.has_role('DJ')
     async def add(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
         vc = ctx.voice_client
@@ -99,7 +99,7 @@ class Music(commands.Cog):
             description=f"Queued {search.title} in {vc.channel}"
         ))
 
-    @commands.command()
+    @commands.command(help='Skips the current song.')
     @commands.has_role('DJ')
     async def skip(self, ctx):
         vc = ctx.voice_client
@@ -116,7 +116,7 @@ class Music(commands.Cog):
         else:
             await ctx.send("The bot is not connected to a voice channel.")
 
-    @commands.command()
+    @commands.command(help='Pauses the current song.')
     @commands.has_role('DJ')
     async def pause(self, ctx):
         vc = ctx.voice_client
@@ -132,7 +132,7 @@ class Music(commands.Cog):
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
-    @commands.command()
+    @commands.command(help='Shows the song queue.')
     async def queue(self, ctx):
         vc = ctx.voice_client
         if vc:
@@ -150,7 +150,7 @@ class Music(commands.Cog):
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
-    @commands.command()
+    @commands.command(help='Shows the current song.')
     async def now(self, ctx):
         vc = ctx.voice_client
         if vc:
