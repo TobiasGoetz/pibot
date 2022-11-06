@@ -136,17 +136,16 @@ class Music(commands.Cog):
     async def queue(self, ctx):
         vc = ctx.voice_client
         if vc:
-            if not vc.queue.is_empty:
-                description = f'Currently playing: {vc.source.title} [{round(vc.position)}/{round(vc.source.length)}sec]\n\n'
-                for i, track in enumerate(vc.queue):
-                    description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
+            if vc.queue.is_empty and not vc.is_playing():
+                return await ctx.send("The queue is empty.")
+            description = f'Currently playing: {vc.source.title} [{round(vc.position)}/{round(vc.source.length)}sec]\n'
+            for i, track in enumerate(vc.queue):
+                description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
 
-                await ctx.send(embed=discord.Embed(
-                    title='Queue',
-                    description='`' + description + '`',
-                ))
-            else:
-                await ctx.send('The queue is empty.')
+            await ctx.send(embed=discord.Embed(
+                title='Queue',
+                description='`' + description + '`',
+            ))
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
