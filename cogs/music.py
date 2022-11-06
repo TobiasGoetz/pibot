@@ -157,8 +157,21 @@ class Music(commands.Cog):
             if vc.is_playing():
                 await ctx.send(embed=discord.Embed(
                     title='Now Playing',
-                    description=f'{vc.source.title}\n{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]} [{round(vc.position / vc.source.length * 100)}%]\n'
+                    description=f'{vc.source.title}\n{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]} [{round(vc.position)} / {round(vc.source.length)}sec]\n'
                 ))
+            else:
+                await ctx.send('Nothing is playing.')
+        else:
+            await ctx.send("The bot is not connected to a voice channel")
+
+    @commands.command(help='Seek to a specific time in the current song.')
+    @commands.has_role('DJ')
+    async def seek(self, ctx, time: int):
+        vc = ctx.voice_client
+        if vc:
+            if vc.is_playing():
+                await vc.seek(time * 1000)
+                logger.info(f'User: {ctx.author} seeked to {time} seconds.')
             else:
                 await ctx.send('Nothing is playing.')
         else:
