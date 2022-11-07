@@ -109,7 +109,7 @@ class Music(commands.Cog):
         vc = ctx.voice_client
         if vc:
             if not vc.is_playing():
-                return await ctx.send("Nothing is playing.")
+                return await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
             if vc.queue.is_empty:
                 return await vc.stop()
 
@@ -132,7 +132,7 @@ class Music(commands.Cog):
                 await vc.resume()
                 logger.info(f'User: {ctx.author} resumed the song.')
             else:
-                await ctx.send("Nothing is playing.")
+                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
             await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
@@ -163,7 +163,7 @@ class Music(commands.Cog):
                     description=f'{vc.source.title}\n{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]} [{round(vc.position)} / {round(vc.source.length)}sec]\n'
                 ))
             else:
-                await ctx.send('Nothing is playing.')
+                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
             await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
@@ -176,7 +176,7 @@ class Music(commands.Cog):
                 await vc.seek(time * 1000)
                 logger.info(f'User: {ctx.author} seeked to {time} seconds.')
             else:
-                await ctx.send('Nothing is playing.')
+                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
             await ctx.send("The bot is not connected to a voice channel")
 
