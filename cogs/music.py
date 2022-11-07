@@ -10,6 +10,10 @@ from StringProgressBar import progressBar
 
 logger = logging.getLogger('discord.music')
 
+ERROR_MESSAGE_BOT_NOT_CONNECTED = "I'm not connected to a voice channel."
+ERROR_MESSAGE_USER_NOT_CONNECTED = "You're not connected to a voice channel."
+ERROR_MESSAGE_BOT_ALREADY_CONNECTED = "I'm already connected to a voice channel."
+
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -47,13 +51,13 @@ class Music(commands.Cog):
         try:
             channel = ctx.author.voice.channel
         except AttributeError:
-            return await ctx.send('You are not connected to a voice channel.')
+            return await ctx.send(ERROR_MESSAGE_USER_NOT_CONNECTED)
 
         if not vc:
             await ctx.author.voice.channel.connect(cls=CustomPlayer)
             logger.info(f'User {ctx.author} connected the bot to {channel}')
         else:
-            await ctx.send('I am already connected to a voice channel.')
+            await ctx.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
 
     @commands.command(help='Disconnects the bot from your voice channel.')
     @commands.has_role('DJ')
@@ -63,7 +67,7 @@ class Music(commands.Cog):
             await vc.disconnect()
             logger.info(f'User {ctx.author} disconnected the bot from {vc.channel}')
         else:
-            await ctx.send('I am not connected to a voice channel.')
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Plays a song.')
     @commands.has_role('DJ')
@@ -114,7 +118,7 @@ class Music(commands.Cog):
             if vc.is_paused():
                 await vc.resume()
         else:
-            await ctx.send("The bot is not connected to a voice channel.")
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Pauses the current song.')
     @commands.has_role('DJ')
@@ -130,7 +134,7 @@ class Music(commands.Cog):
             else:
                 await ctx.send("Nothing is playing.")
         else:
-            await ctx.send("The bot is not connected to a voice channel")
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Shows the song queue.')
     async def queue(self, ctx):
@@ -147,7 +151,7 @@ class Music(commands.Cog):
                 description='`' + description + '`',
             ))
         else:
-            await ctx.send("The bot is not connected to a voice channel")
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Shows the current song.')
     async def now(self, ctx):
@@ -161,7 +165,7 @@ class Music(commands.Cog):
             else:
                 await ctx.send('Nothing is playing.')
         else:
-            await ctx.send("The bot is not connected to a voice channel")
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Seek to a specific time in the current song.')
     @commands.has_role('DJ')
