@@ -13,6 +13,7 @@ logger = logging.getLogger('discord.music')
 ERROR_MESSAGE_BOT_NOT_CONNECTED = "I'm not connected to a voice channel."
 ERROR_MESSAGE_USER_NOT_CONNECTED = "You're not connected to a voice channel."
 ERROR_MESSAGE_BOT_ALREADY_CONNECTED = "I'm already connected to a voice channel."
+ERROR_MESSAGE_NOTHING_PLAYING = "I'm not playing anything."
 
 
 class Music(commands.Cog):
@@ -178,7 +179,7 @@ class Music(commands.Cog):
             else:
                 await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
-            await ctx.send("The bot is not connected to a voice channel")
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @play.error
     async def play_error(self, ctx, error):
