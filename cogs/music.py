@@ -3,10 +3,11 @@ import os
 
 import discord
 import wavelink
+from StringProgressBar import progressBar
 from discord.ext import commands
 
 from CustomPlayer import CustomPlayer
-from StringProgressBar import progressBar
+from bot import set_setting, get_setting
 
 logger = logging.getLogger('discord.music')
 
@@ -14,6 +15,9 @@ ERROR_MESSAGE_BOT_NOT_CONNECTED = "I'm not connected to a voice channel."
 ERROR_MESSAGE_USER_NOT_CONNECTED = "You're not connected to a voice channel."
 ERROR_MESSAGE_BOT_ALREADY_CONNECTED = "I'm already connected to a voice channel."
 ERROR_MESSAGE_NOTHING_PLAYING = "I'm not playing anything."
+ERROR_MESSAGE_VOLUME_OUT_OF_RANGE = "Volume must be between 0 and 100."
+
+DEFAULT_VOLUME = 25
 
 
 class Music(commands.Cog):
@@ -78,6 +82,7 @@ class Music(commands.Cog):
         if not vc:
             custom_player = CustomPlayer()
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
+            await vc.set_volume(int(await get_setting(ctx.guild, "volume")))
 
         await vc.play(search)
         logger.info(f'User: {ctx.author} is now playing: {search}')
@@ -178,6 +183,21 @@ class Music(commands.Cog):
                 logger.info(f'User: {ctx.author} seeked to {time} seconds.')
             else:
                 await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
+        else:
+            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+
+    @commands.command(help='Sets the volume.')
+    @commands.has_role('DJ')
+    async def volume(self, ctx, volume: int):
+        vc = ctx.voice_client
+        if vc:
+            await vc.set_volume(volume)
+            await set_setting(ctx.guild, 'volume', volume)
+            logger.info(f'User: {ctx.author} set the volume to {volume}.')
+            await ctx.send(embed=discord.Embed(
+                title='Volume',
+                description=f'Volume set to {volume}.'
+            ))
         else:
             await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 

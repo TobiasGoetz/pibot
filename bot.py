@@ -10,31 +10,30 @@ from discord.ext import commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 PREFIX = os.getenv('DISCORD_PREFIX')
-db = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
+DB = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
 logger = logging.getLogger('discord')
 
-
-async def get_prefix(bot, message):
-    if PREFIX:
-        return PREFIX
-
-    await db_check_if_guild_exists(message.guild)
-    with db.cursor() as cursor:
-        cursor.execute("SELECT prefix FROM discord.settings WHERE guild_id = %s", (message.guild.id,))
-        prefix = cursor.fetchone()
-    return prefix
+DEFAULT_PREFIX = "."
 
 
+# Database interaction
 async def db_initialize_guild(guild):
-    with db.cursor() as cursor:
-        cursor.execute("INSERT INTO discord.settings (guild_id, prefix) VALUES (%s, %s)", (guild.id, "."))
-        db.commit()
+    with DB.cursor() as cursor:
+        cursor.execute("INSERT INTO discord.guilds (id, name) VALUES (%s, %s)", (guild.id, guild.name))
+        DB.commit()
         logger.info(f"Added {guild.name} to the database.")
 
 
+async def db_remove_guild(guild):
+    with DB.cursor() as cursor:
+        cursor.execute("DELETE FROM discord.guilds WHERE id = %s", (guild.id,))
+        DB.commit()
+        logger.info(f"Removed {guild.name} from the database.")
+
+
 async def db_check_if_guild_exists(guild):
-    with db.cursor() as cursor:
-        cursor.execute("SELECT guild_id FROM discord.settings WHERE guild_id = %s", (guild.id,))
+    with DB.cursor() as cursor:
+        cursor.execute("SELECT id FROM discord.guilds WHERE id = %s", (guild.id,))
         result = cursor.fetchone()
     if result is None:
         await db_initialize_guild(guild)
@@ -42,13 +41,66 @@ async def db_check_if_guild_exists(guild):
     return True
 
 
+async def get_prefix(bot, message):
+    if PREFIX:
+        return PREFIX
+
+    db_prefix = await get_setting(message.guild, "prefix")
+    if db_prefix is None:
+        return DEFAULT_PREFIX
+    return db_prefix
+
+
+async def get_setting(guild: discord.Guild, setting):
+    with DB.cursor() as cursor:
+        cursor.execute("SELECT value FROM discord.settings WHERE guild_id = %s AND key = %s", (guild.id, setting))
+        result = cursor.fetchone()
+        if result is None:
+            return None
+        return result[0]
+
+
+async def set_setting(guild: discord.Guild, setting, value):
+    if await get_setting(guild, setting) is not None:
+        with DB.cursor() as cursor:
+            cursor.execute(
+                "UPDATE discord.settings SET value = %s WHERE guild_id = %s AND key = %s", (value, guild.id, setting)
+            )
+            DB.commit()
+        logger.info(f"Updated {setting} to {value} for {guild.name}")
+    else:
+        with DB.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO discord.settings (guild_id, key, value) VALUES (%s, %s, %s)", (guild.id, setting, value)
+            )
+            DB.commit()
+        logger.info(f"Added {setting} with value {value} for {guild.name}")
+
+
+# Bot
 bot = commands.Bot(command_prefix=get_prefix, case_insensitive=True, intents=discord.Intents.all())
 
 
+# Events
 @bot.event
 async def on_ready():
     logger.info('Logged in as %s', bot.user)
     await load_cogs()
+
+
+@bot.event
+async def on_guild_join(guild):
+    await db_initialize_guild(guild)
+
+
+@bot.event
+async def on_guild_remove(guild):
+    await db_remove_guild(guild)
+
+
+@bot.event
+async def on_guild_available(guild):
+    await db_check_if_guild_exists(guild)
 
 
 @bot.event
@@ -63,6 +115,7 @@ async def on_message(message):
                 return await message.channel.send(f'Write this command in {cmdchannel.mention}')
 
 
+# Commands
 @bot.command(help="Displays the bots ping")
 async def ping(ctx):
     await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
@@ -71,13 +124,14 @@ async def ping(ctx):
 @bot.command()
 async def prefix(ctx, arg):
     await db_check_if_guild_exists(ctx.guild)
-    with db.cursor() as cursor:
+    with DB.cursor() as cursor:
         cursor.execute("UPDATE discord.settings SET prefix = %s WHERE guild_id = %s", (arg, ctx.guild.id))
-        db.commit()
+        DB.commit()
     logger.info(f"Changed prefix for {ctx.guild.name} to {arg}")
     await ctx.send(f"Prefix set to {arg}")
 
 
+# Error handling
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
@@ -105,6 +159,7 @@ async def on_command_error(ctx, error):
         )
 
 
+# Loading Cogs
 async def load_cogs():
     cogs = [p.stem for p in Path("./cogs").glob("*.py")]
     for cog in cogs:
@@ -112,6 +167,7 @@ async def load_cogs():
         logger.info(f"Loaded {cog} cog.")
 
 
+# Run
 async def main():
     discord.utils.setup_logging()
     async with bot:
