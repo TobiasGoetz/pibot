@@ -192,14 +192,12 @@ class Music(commands.Cog):
         vc = ctx.voice_client
         if vc:
             await vc.set_volume(volume)
-            await set_setting(ctx.guild, 'volume', volume)
-            logger.info(f'User: {ctx.author} set the volume to {volume}.')
-            await ctx.send(embed=discord.Embed(
-                title='Volume',
-                description=f'Volume set to {volume}.'
-            ))
-        else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        await set_setting(ctx.guild, 'volume', volume)
+        await ctx.send(embed=discord.Embed(
+            title='Volume',
+            description=f'Volume set to {volume}.'
+        ))
+        logger.info(f'User: {ctx.author} set the volume to {volume}.')
 
     @play.error
     async def play_error(self, ctx, error):
