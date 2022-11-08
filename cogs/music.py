@@ -82,7 +82,7 @@ class Music(commands.Cog):
         if not vc:
             custom_player = CustomPlayer()
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
-            await vc.set_volume(int(await get_setting(ctx.guild, "volume")))
+            await vc.set_volume(int(await get_setting(ctx.guild, "volume") or DEFAULT_VOLUME))
 
         await vc.play(search)
         logger.info(f'User: {ctx.author} is now playing: {search}')
