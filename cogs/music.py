@@ -6,7 +6,7 @@ import wavelink
 from StringProgressBar import progressBar
 from discord.ext import commands
 
-from CustomPlayer import CustomPlayer
+from Player import Player
 from bot import set_setting, get_setting
 
 logger = logging.getLogger('discord.music')
@@ -23,9 +23,9 @@ DEFAULT_VOLUME = 25
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        bot.loop.create_task(self.connect_nodes())
+        bot.loop.create_task(self.start_nodes())
 
-    async def connect_nodes(self):
+    async def start_nodes(self):
         await self.bot.wait_until_ready()
         await wavelink.NodePool.create_node(
             bot=self.bot,
@@ -41,7 +41,7 @@ class Music(commands.Cog):
         logger.info(f"Node {node.identifier} is ready.")
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, player: CustomPlayer, track: wavelink.Track, reason):
+    async def on_wavelink_track_end(self, player: Player, track: wavelink.Track, reason):
         logger.info(f"Track {track.title} ended for player {player.guild} with reason {reason}.")
         if not player.queue.is_empty and reason == 'FINISHED':
             next_track = player.queue.get()
@@ -59,7 +59,7 @@ class Music(commands.Cog):
             return await ctx.send(ERROR_MESSAGE_USER_NOT_CONNECTED)
 
         if not vc:
-            await ctx.author.voice.channel.connect(cls=CustomPlayer)
+            await ctx.author.voice.channel.connect(cls=Player)
             logger.info(f'User {ctx.author} connected the bot to {channel}')
         else:
             await ctx.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
@@ -80,8 +80,8 @@ class Music(commands.Cog):
         logger.info(f'User: {ctx.author} requested: {search}')
         vc = ctx.voice_client
         if not vc:
-            custom_player = CustomPlayer()
-            vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=custom_player)
+            custom_player = Player()
+            vc: Player = await ctx.author.voice.channel.connect(cls=custom_player)
             await vc.set_volume(int(await get_setting(ctx.guild, "volume") or DEFAULT_VOLUME))
 
         await vc.play(search)
