@@ -42,7 +42,7 @@ async def db_check_if_guild_exists(guild):
 
 
 async def get_prefix(bot, message):
-    return OVERWRITE_PREFIX or get_setting(message.guild, "prefix") or DEFAULT_PREFIX
+    return OVERWRITE_PREFIX or await get_setting(message.guild, "prefix") or DEFAULT_PREFIX
 
 
 async def get_setting(guild: discord.Guild, setting):
