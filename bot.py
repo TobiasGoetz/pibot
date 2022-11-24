@@ -9,7 +9,7 @@ import psycopg2
 from discord.ext import commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-PREFIX = os.getenv('DISCORD_PREFIX')
+OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
 DB = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
 logger = logging.getLogger('discord')
 
@@ -42,13 +42,7 @@ async def db_check_if_guild_exists(guild):
 
 
 async def get_prefix(bot, message):
-    if PREFIX:
-        return PREFIX
-
-    db_prefix = await get_setting(message.guild, "prefix")
-    if db_prefix is None:
-        return DEFAULT_PREFIX
-    return db_prefix
+    return OVERWRITE_PREFIX or get_setting(message.guild, "prefix") or DEFAULT_PREFIX
 
 
 async def get_setting(guild: discord.Guild, setting):
@@ -124,9 +118,7 @@ async def ping(ctx):
 @bot.command()
 async def prefix(ctx, arg):
     await db_check_if_guild_exists(ctx.guild)
-    with DB.cursor() as cursor:
-        cursor.execute("UPDATE discord.settings SET prefix = %s WHERE guild_id = %s", (arg, ctx.guild.id))
-        DB.commit()
+    await set_setting(ctx.guild, "prefix", arg)
     logger.info(f"Changed prefix for {ctx.guild.name} to {arg}")
     await ctx.send(f"Prefix set to {arg}")
 
