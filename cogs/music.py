@@ -1,3 +1,6 @@
+"""
+Music cog
+"""
 import logging
 import os
 
@@ -21,11 +24,15 @@ DEFAULT_VOLUME = 25
 
 
 class Music(commands.Cog):
+    """
+    Music commands for the bot.
+    """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         bot.loop.create_task(self.start_nodes())
 
     async def start_nodes(self):
+        """ Start the nodes for the bot. """
         await self.bot.wait_until_ready()
         await wavelink.NodePool.create_node(
             bot=self.bot,
@@ -38,20 +45,26 @@ class Music(commands.Cog):
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
-        logger.info(f"Node {node.identifier} is ready.")
+        """ Node ready event. """
+        logger.info("Node %s is ready.", node.identifier)
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, player: Player, track: wavelink.Track, reason):
-        logger.info(f"Track {track.title} ended for player {player.guild} with reason {reason}.")
+        """ Track end event. """
+        logger.info("Track %s ended for player %s with reason %s.", track.title, player.guild, reason)
         if not player.queue.is_empty and reason == 'FINISHED':
             next_track = player.queue.get()
             return await player.play(next_track)
         await player.disconnect()
-        logger.info(f"Queue is empty, disconnected from {player.guild}.")
+        logger.info("Queue is empty, disconnected from %s.", player.guild)
 
     @commands.command(name='connect', help='Connects the bot to your voice channel.')
     @commands.has_role('DJ')
     async def connect_(self, ctx):
+        """
+        Connects the bot to your voice channel.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         try:
             channel = ctx.author.voice.channel
@@ -60,24 +73,33 @@ class Music(commands.Cog):
 
         if not vc:
             await ctx.author.voice.channel.connect(cls=Player)
-            logger.info(f'User {ctx.author} connected the bot to {channel}')
+            logger.info('User %s connected the bot to %s', ctx.author, channel)
         else:
             await ctx.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
 
     @commands.command(help='Disconnects the bot from your voice channel.')
     @commands.has_role('DJ')
     async def stop(self, ctx):
+        """
+        Disconnects the bot from your voice channel.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         if vc:
             await vc.disconnect()
-            logger.info(f'User {ctx.author} disconnected the bot from {vc.channel}')
+            logger.info('User %s disconnected the bot from %s', ctx.author, vc.channel)
         else:
             await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
     @commands.command(help='Plays a song.')
     @commands.has_role('DJ')
     async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
-        logger.info(f'User: {ctx.author} requested: {search}')
+        """
+        Plays a song and connects to the voice channel of the user.
+        :param ctx: The context of the command.
+        :param search: The search query.
+        """
+        logger.info('User: %s requested: %s', ctx.author, search)
         vc = ctx.voice_client
         if not vc:
             custom_player = Player()
@@ -85,7 +107,7 @@ class Music(commands.Cog):
             await vc.set_volume(int(await get_setting(ctx.guild, "volume") or DEFAULT_VOLUME))
 
         await vc.play(search)
-        logger.info(f'User: {ctx.author} is now playing: {search}')
+        logger.info('User: %s is now playing: %s', ctx.author, search)
 
         await ctx.send(embed=discord.Embed(
             title=vc.source.title,
@@ -96,12 +118,17 @@ class Music(commands.Cog):
     @commands.command(help='Adds a song to the queue.')
     @commands.has_role('DJ')
     async def add(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+        """
+        Adds a song to the queue.
+        :param ctx: The context of the command.
+        :param search: The search query.
+        """
         vc = ctx.voice_client
         if not vc:
             return await self.play(ctx, search=search)
 
         vc.queue.put(item=search)
-        logger.info(f'User: {ctx.author} added: {search} to the queue.')
+        logger.info('User: %s added: %s to the queue.', ctx.author, search)
 
         await ctx.send(embed=discord.Embed(
             title=search.title,
@@ -112,6 +139,10 @@ class Music(commands.Cog):
     @commands.command(help='Skips the current song.')
     @commands.has_role('DJ')
     async def skip(self, ctx):
+        """
+        Skips the current song.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         if vc:
             if not vc.is_playing():
@@ -120,7 +151,7 @@ class Music(commands.Cog):
                 return await vc.stop()
 
             await vc.seek(vc.track.length * 1000)
-            logger.info(f"User: {ctx.author} skipped: {vc.source.title}")
+            logger.info("User: %s skipped: %s", ctx.author, vc.source.title)
             if vc.is_paused():
                 await vc.resume()
         else:
@@ -129,14 +160,18 @@ class Music(commands.Cog):
     @commands.command(help='Pauses the current song.')
     @commands.has_role('DJ')
     async def pause(self, ctx):
+        """
+        Pauses the current song.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         if vc:
             if vc.is_playing() and not vc.is_paused():
                 await vc.pause()
-                logger.info(f'User: {ctx.author} paused the song.')
+                logger.info('User: %s paused the song.', ctx.author)
             elif vc.is_paused():
                 await vc.resume()
-                logger.info(f'User: {ctx.author} resumed the song.')
+                logger.info('User: %s resumed the song.', ctx.author)
             else:
                 await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
@@ -144,6 +179,10 @@ class Music(commands.Cog):
 
     @commands.command(help='Shows the song queue.')
     async def queue(self, ctx):
+        """
+        Shows the song queue.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         if vc:
             if vc.queue.is_empty and not vc.is_playing():
@@ -161,12 +200,19 @@ class Music(commands.Cog):
 
     @commands.command(help='Shows the current song.')
     async def now(self, ctx):
+        """
+        Shows the current song.
+        :param ctx: The context of the command.
+        """
         vc = ctx.voice_client
         if vc:
             if vc.is_playing():
                 await ctx.send(embed=discord.Embed(
                     title='Now Playing',
-                    description=f'{vc.source.title}\n{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]} [{round(vc.position)} / {round(vc.source.length)}sec]\n'
+                    description=
+                    f'{vc.source.title}\n'
+                    f'{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]}'
+                    f'[{round(vc.position)} / {round(vc.source.length)}sec]\n'
                 ))
             else:
                 await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
@@ -176,11 +222,16 @@ class Music(commands.Cog):
     @commands.command(help='Seek to a specific time in the current song.')
     @commands.has_role('DJ')
     async def seek(self, ctx, time: int):
+        """
+        Seek to a specific time in the current song.
+        :param ctx: The context of the command.
+        :param time: The time to seek to.
+        """
         vc = ctx.voice_client
         if vc:
             if vc.is_playing():
                 await vc.seek(time * 1000)
-                logger.info(f'User: {ctx.author} seeked to {time} seconds.')
+                logger.info('User: %s seeked to %s seconds.', ctx.author, time)
             else:
                 await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
         else:
@@ -189,6 +240,11 @@ class Music(commands.Cog):
     @commands.command(help='Sets the volume.')
     @commands.has_role('DJ')
     async def volume(self, ctx, volume: int):
+        """
+        Sets the volume.
+        :param ctx: The context of the command.
+        :param volume: The volume to set.
+        """
         vc = ctx.voice_client
         if vc:
             await vc.set_volume(volume)
@@ -197,10 +253,11 @@ class Music(commands.Cog):
             title='Volume',
             description=f'Volume set to {volume}.'
         ))
-        logger.info(f'User: {ctx.author} set the volume to {volume}.')
+        logger.info('User: %s set the volume to %s.', ctx.author, volume)
 
     @play.error
     async def play_error(self, ctx, error):
+        """ Handles errors for the play command. """
         if isinstance(error, commands.BadArgument):
             await ctx.send("Could not find a track.")
         else:
@@ -208,4 +265,5 @@ class Music(commands.Cog):
 
 
 async def setup(bot):
+    """ Adds the cog to the bot. """
     await bot.add_cog(Music(bot))
