@@ -150,6 +150,16 @@ async def on_command_error(ctx, error):
             )
         )
 
+    if isinstance(error, commands.BadArgument):
+        logger.info(f'User {ctx.author} tried to use {ctx.command} with invalid arguments. [{error}]')
+        await ctx.send(
+            embed=discord.Embed(
+                description=
+                f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}` with those arguments.\n'
+                f'```{error}```',
+            )
+        )
+
 
 # Loading Cogs
 async def load_cogs():
