@@ -67,6 +67,7 @@ class General(commands.Cog):
 
 async def setup(bot):
     """
+    Setup the cog.
     :param bot: The bot to add the cog to.
     :return: None
     """
