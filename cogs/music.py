@@ -9,7 +9,7 @@ import wavelink
 from StringProgressBar import progressBar
 from discord.ext import commands
 
-from Player import Player
+from player import Player
 from bot import set_setting, get_setting
 
 logger = logging.getLogger('discord.music')
