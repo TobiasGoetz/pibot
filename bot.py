@@ -208,6 +208,16 @@ async def on_command_error(ctx, error):
             )
         )
 
+    if isinstance(error, commands.CommandOnCooldown):
+        logger.info('User %s tried to use %s on cooldown. [%s]', ctx.author, ctx.command, error)
+        await ctx.send(
+            embed=discord.Embed(
+                description=
+                f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}` on cooldown.\n'
+                f'```{error}```',
+            )
+        )
+
 
 # Loading Cogs
 async def load_cogs():
