@@ -152,19 +152,6 @@ async def ping(ctx):
     await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
 
 
-@bot.command()
-async def prefix(ctx, arg):
-    """
-    Set the prefix for the guild.
-    :param ctx: The context of the command.
-    :param arg: The prefix to set.
-    """
-    await db_check_if_guild_exists_else_initialize(ctx.guild)
-    await set_setting(ctx.guild, "prefix", arg)
-    logger.info("Changed prefix for %s to %s.", ctx.guild.name, arg)
-    await ctx.send(f"Prefix set to {arg}")
-
-
 # Error handling
 @bot.event
 async def on_command_error(ctx, error):

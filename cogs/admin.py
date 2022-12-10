@@ -6,6 +6,8 @@ import logging
 import discord
 from discord.ext import commands
 
+from bot import db_check_if_guild_exists_else_initialize, set_setting
+
 logger = logging.getLogger('discord.admin')
 
 
@@ -15,6 +17,19 @@ class Admin(commands.Cog):
     """
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def prefix(self, ctx, arg):
+        """
+        Set the prefix for the guild.
+        :param ctx: The context of the command.
+        :param arg: The prefix to set.
+        """
+        await db_check_if_guild_exists_else_initialize(ctx.guild)
+        await set_setting(ctx.guild, "prefix", arg)
+        logger.info("Changed prefix for %s to %s.", ctx.guild.name, arg)
+        await ctx.send(f"Prefix set to {arg}")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
