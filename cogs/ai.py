@@ -23,9 +23,9 @@ class AI(commands.Cog):
 
     @commands.cooldown(1, 60, commands.BucketType.user)
     @commands.command()
-    async def image(self, ctx, *, query):
+    async def image(self, ctx, *, query: str):
         """
-        Search for an image.
+        Generate an image from a query.
         :param ctx: The context of the command.
         :param query: The query to search for.
         """
