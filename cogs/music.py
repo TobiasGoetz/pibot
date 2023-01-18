@@ -105,8 +105,11 @@ class Music(commands.Cog):
             custom_player = Player()
             vc: Player = await ctx.author.voice.channel.connect(cls=custom_player)
             await vc.set_volume(int(await get_setting(ctx.guild, "volume") or DEFAULT_VOLUME))
+            await vc.play(search)
 
-        await vc.play(search)
+        vc.queue.put_at_front(search)
+        await self.skip(ctx)
+
         logger.info('User: %s is now playing: %s', ctx.author, search)
 
         await ctx.send(embed=discord.Embed(
