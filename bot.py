@@ -136,7 +136,7 @@ async def on_guild_available(guild):
 @bot.event
 async def on_message(message):
     """ When a message is sent. """
-    cmdchannel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name, name='botspam')
+    cmdchannel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name, name='🤖botspam')
     prefixes = await get_prefix(bot, message)
     for pref in prefixes:
         if message.content.lower().startswith(pref):
