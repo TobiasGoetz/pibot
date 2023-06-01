@@ -72,7 +72,7 @@ async def get_setting(guild: discord.Guild, setting):
     try:
         return DB.guilds.find_one({"id": guild.id}).settings[setting]
     except AttributeError:
-        logger.error("Setting %s not found for %s.", setting, guild.name)
+        logger.debug("Setting %s not found for %s.", setting, guild.name)
         return None
 
 
