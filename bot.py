@@ -67,13 +67,10 @@ async def get_setting(guild: discord.Guild, setting):
     :param setting: The key for the setting to get.
     :return: The value of the setting.
     """
-
-    # setting is located in DB collection guilds in the guild document under settings object
-    try:
-        return DB.guilds.find_one({"id": guild.id}).settings[setting]
-    except AttributeError:
-        logger.debug("Setting %s not found for %s.", setting, guild.name)
-        return None
+    guild_data = DB.guilds.find_one({"id": guild.id})
+    if guild_data is not None and "settings" in guild_data and setting in guild_data["settings"]:
+        return guild_data["settings"][setting]
+    return None
 
 
 async def set_setting(guild: discord.Guild, setting, value):
@@ -129,18 +126,17 @@ async def on_message(message):
         if message.content.lower().startswith(pref):
             default_command_channel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name,
                                                         name='botspam')
-            command_channel = await get_setting(message.guild, "command_channel")
+            command_channel = message.guild.get_channel(
+                await get_setting(message.guild, "command_channel")) or default_command_channel
 
-            if message.channel.id == (command_channel or default_command_channel.id):
+            if message.channel.id == command_channel.id:
                 return await bot.process_commands(message)
-
-            channel_mention = command_channel.mention if command_channel else default_command_channel.mention
 
             await message.delete()
             response = await message.channel.send(
                 embed=discord.Embed(
                     description=
-                    f':no_entry_sign: **{message.author.name}** you can only use commands in {channel_mention}.',
+                    f':no_entry_sign: **{message.author.name}** you can only use commands in {command_channel.mention}.'
                 ))
             await asyncio.sleep(5)
             await response.delete()
