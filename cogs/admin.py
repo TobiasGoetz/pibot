@@ -33,6 +33,24 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
+    async def command_channel(self, ctx, arg):
+        """
+        Set the command channel for the guild.
+        :param ctx: The context of the command.
+        :param arg: The channel to set.
+        """
+        await db_check_if_guild_exists_else_initialize(ctx.guild)
+
+        # Get the channel id by the name provided as arg
+        channel = discord.utils.get(ctx.guild.channels, name=arg, type=discord.ChannelType.text)
+        if channel is None:
+            return await ctx.send(f"Channel {arg} not found.")
+
+        await set_setting(ctx.guild, "command_channel", channel.id)
+        await ctx.send(f"Command channel set to {channel.mention}")
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
     async def clear(self, ctx, amount=1):
         """
         Clear a specified amount of messages.
