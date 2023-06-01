@@ -5,14 +5,15 @@ import asyncio
 import logging
 import os
 from pathlib import Path
+from pymongo import MongoClient
 
 import discord
-import psycopg2
 from discord.ext import commands
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
-DB = psycopg2.connect(os.getenv('DATABASE_URL'), sslmode='require')
+DB_CLIENT = MongoClient(os.getenv('MONGODB_URI'))
+DB = DB_CLIENT['discord']
 logger = logging.getLogger('discord')
 
 DEFAULT_PREFIX = "."
@@ -24,10 +25,8 @@ async def db_initialize_guild(guild):
     Initialize a guild in the database.
     :param guild: The guild to initialize.
     """
-    with DB.cursor() as cursor:
-        cursor.execute("INSERT INTO discord.guilds (id, name) VALUES (%s, %s)", (guild.id, guild.name))
-        DB.commit()
-        logger.info("Added %s to the database.", guild.name)
+    DB.guilds.insert_one({"id": guild.id, "name": guild.name})
+    logger.info("Added %s to the database.", guild.name)
 
 
 async def db_remove_guild(guild):
@@ -35,10 +34,8 @@ async def db_remove_guild(guild):
     Remove a guild from the database.
     :param guild: The guild to remove.
     """
-    with DB.cursor() as cursor:
-        cursor.execute("DELETE FROM discord.guilds WHERE id = %s", (guild.id,))
-        DB.commit()
-        logger.info("Removed %s from the database.", guild.name)
+    DB.guilds.delete_one({"id": guild.id})
+    logger.info("Removed %s from the database.", guild.name)
 
 
 async def db_check_if_guild_exists_else_initialize(guild):
@@ -46,9 +43,7 @@ async def db_check_if_guild_exists_else_initialize(guild):
     Check if a guild exists in the database. If not, add it.
     :param guild: The guild to check.
     """
-    with DB.cursor() as cursor:
-        cursor.execute("SELECT id FROM discord.guilds WHERE id = %s", (guild.id,))
-        result = cursor.fetchone()
+    result = DB.guilds.find_one({"id": guild.id})
     if result is None:
         await db_initialize_guild(guild)
         return False
@@ -72,12 +67,13 @@ async def get_setting(guild: discord.Guild, setting):
     :param setting: The key for the setting to get.
     :return: The value of the setting.
     """
-    with DB.cursor() as cursor:
-        cursor.execute("SELECT value FROM discord.settings WHERE guild_id = %s AND key = %s", (guild.id, setting))
-        result = cursor.fetchone()
-        if result is None:
-            return None
-        return result[0]
+
+    # setting is located in DB collection guilds in the guild document under settings object
+    try:
+        return DB.guilds.find_one({"id": guild.id}).settings[setting]
+    except AttributeError:
+        logger.error("Setting %s not found for %s.", setting, guild.name)
+        return None
 
 
 async def set_setting(guild: discord.Guild, setting, value):
@@ -87,20 +83,8 @@ async def set_setting(guild: discord.Guild, setting, value):
     :param setting: The key for the setting to set.
     :param value: The value to set the setting to.
     """
-    if await get_setting(guild, setting) is not None:
-        with DB.cursor() as cursor:
-            cursor.execute(
-                "UPDATE discord.settings SET value = %s WHERE guild_id = %s AND key = %s", (value, guild.id, setting)
-            )
-            DB.commit()
-        logger.info("Updated %s to %s for %s.", setting, value, guild.name)
-    else:
-        with DB.cursor() as cursor:
-            cursor.execute(
-                "INSERT INTO discord.settings (guild_id, key, value) VALUES (%s, %s, %s)", (guild.id, setting, value)
-            )
-            DB.commit()
-        logger.info("Added %s with value %s for %s.", setting, value, guild.name)
+    DB.guilds.update_one({"id": guild.id}, {"$set": {f"settings.{setting}": value}})
+    logger.info("Updated %s to %s for %s.", setting, value, guild.name)
 
 
 # Bot
@@ -136,13 +120,21 @@ async def on_guild_available(guild):
 @bot.event
 async def on_message(message):
     """ When a message is sent. """
-    cmdchannel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name, name='🤖botspam')
+    if "bot" in [role.name.lower() for role in message.author.roles]:
+        logger.debug('User %s is a bot. Ignoring message.', message.author)
+        return
+
     prefixes = await get_prefix(bot, message)
     for pref in prefixes:
         if message.content.lower().startswith(pref):
-            if message.channel.id == cmdchannel.id:
+            default_command_channel = discord.utils.get(bot.get_all_channels(), guild__name=message.guild.name,
+                                                        name='botspam')
+            command_channel = await get_setting(message.guild, "command_channel")
+
+            if message.channel.id == (command_channel or default_command_channel.id):
                 return await bot.process_commands(message)
-            return await message.channel.send(f'Write this command in {cmdchannel.mention}')
+            return await message.channel.send(
+                f'Write this command in {command_channel.mention if command_channel else default_command_channel.mention}')
 
 
 # Commands
