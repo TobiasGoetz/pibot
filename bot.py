@@ -5,10 +5,10 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from pymongo import MongoClient
 
 import discord
 from discord.ext import commands
+from pymongo import MongoClient
 
 TOKEN = os.getenv('DISCORD_TOKEN')
 OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
@@ -133,8 +133,17 @@ async def on_message(message):
 
             if message.channel.id == (command_channel or default_command_channel.id):
                 return await bot.process_commands(message)
-            return await message.channel.send(
-                f'Write this command in {command_channel.mention if command_channel else default_command_channel.mention}')
+
+            channel_mention = command_channel.mention if command_channel else default_command_channel.mention
+
+            await message.delete()
+            response = await message.channel.send(
+                embed=discord.Embed(
+                    description=
+                    f':no_entry_sign: **{message.author.name}** you can only use commands in {channel_mention}.',
+                ))
+            await asyncio.sleep(5)
+            await response.delete()
 
 
 # Commands
