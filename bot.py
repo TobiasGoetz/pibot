@@ -94,6 +94,7 @@ async def on_ready():
     """ When the bot is ready. """
     logger.info('Logged in as %s', bot.user)
     await load_cogs()
+    await bot.tree.sync()
 
 
 @bot.event
@@ -117,10 +118,6 @@ async def on_guild_available(guild):
 @bot.event
 async def on_message(message):
     """ When a message is sent. """
-    if "bot" in [role.name.lower() for role in message.author.roles]:
-        logger.debug('User %s is a bot. Ignoring message.', message.author)
-        return
-
     prefixes = await get_prefix(bot, message)
     for pref in prefixes:
         if message.content.lower().startswith(pref):
@@ -143,10 +140,10 @@ async def on_message(message):
 
 
 # Commands
-@bot.command(help="Displays the bots ping")
-async def ping(ctx):
+@bot.tree.command(name="ping", description="Displays the bots ping")
+async def ping(interaction):
     """ Displays the bots ping. """
-    await ctx.send(f"Ping: {bot.latency * 1000:.0f}ms")
+    await interaction.response.send_message(f"Ping: {bot.latency * 1000:.0f}ms", ephemeral=True)
 
 
 # Error handling
@@ -155,52 +152,38 @@ async def on_command_error(ctx, error):
     """ When a command has an error. """
     if isinstance(error, commands.MissingPermissions):
         logger.info('User %s tried to use %s without permissions.', ctx.author, ctx.command)
-        await ctx.send(
-            embed=discord.Embed(
-                description=f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}`.',
-            )
-        )
+        await send_error_message(ctx, f'You cannot use `{ctx.command}`.', error)
 
     if isinstance(error, commands.MissingRole):
         logger.info(
             'User %s tried to use %s without the %s role.',
             ctx.author, ctx.command, error.missing_role
         )
-        await ctx.send(
-            embed=discord.Embed(
-                description=
-                f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}`'
-                f'without the {error.missing_role} role.',
-            )
-        )
+        await send_error_message(ctx, f'You cannot use `{ctx.command}` without the {error.missing_role} role.', error)
 
     if isinstance(error, commands.CommandNotFound):
         logger.info('User %s tried to use an invalid command.', ctx.author)
-        await ctx.send(
-            embed=discord.Embed(
-                description=f':no_entry_sign: **{ctx.author.name}** this command does not exist.',
-            )
-        )
+        await send_error_message(ctx, f':no_entry_sign: **{ctx.author.name}** this command does not exist.', error)
 
     if isinstance(error, commands.BadArgument):
         logger.info('User %s tried to use %s with invalid arguments. [%s]', ctx.author, ctx.command, error)
-        await ctx.send(
-            embed=discord.Embed(
-                description=
-                f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}` with those arguments.\n'
-                f'```{error}```',
-            )
-        )
+        await send_error_message(ctx, f'You cannot use `{ctx.command}` with those arguments.\n```{error}```', error)
 
     if isinstance(error, commands.CommandOnCooldown):
         logger.info('User %s tried to use %s on cooldown. [%s]', ctx.author, ctx.command, error)
-        await ctx.send(
-            embed=discord.Embed(
-                description=
-                f':no_entry_sign: **{ctx.author.name}** you cannot use `{ctx.command}` on cooldown.\n'
-                f'```{error}```',
-            )
+        await send_error_message(ctx, f'You cannot use `{ctx.command}` on cooldown.\n```{error}```', error)
+
+
+async def send_error_message(ctx, description, error):
+    """ Send an error message. """
+    await ctx.send(
+        embed=discord.Embed(
+            title={error},
+            description=
+            f':no_entry_sign: **{ctx.author.name}** {description}\n'
+            f'```{error}```',
         )
+    )
 
 
 # Loading Cogs
