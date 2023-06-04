@@ -7,6 +7,7 @@ import os
 import discord
 import wavelink
 from StringProgressBar import progressBar
+from discord import app_commands
 from discord.ext import commands
 
 from player import Player
@@ -27,6 +28,7 @@ class Music(commands.Cog):
     """
     Music commands for the bot.
     """
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         bot.loop.create_task(self.start_nodes())
@@ -58,38 +60,41 @@ class Music(commands.Cog):
         await player.disconnect()
         logger.info("Queue is empty, disconnected from %s.", player.guild)
 
-    @commands.command(name='connect', help='Connects the bot to your voice channel.')
-    @commands.has_role('DJ')
-    async def connect_(self, ctx):
+    @staticmethod
+    async def connect(interaction: discord.Interaction) -> None:
         """
         Connects the bot to your voice channel.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
+        await interaction.response.defer()
+        vc = interaction.guild.voice_client
         try:
-            channel = ctx.author.voice.channel
+            channel = interaction.user.voice.channel
         except AttributeError:
-            return await ctx.send(ERROR_MESSAGE_USER_NOT_CONNECTED)
+            return await interaction.followup.send(ERROR_MESSAGE_USER_NOT_CONNECTED)
 
         if not vc:
-            await ctx.author.voice.channel.connect(cls=Player)
-            logger.info('User %s connected the bot to %s', ctx.author, channel)
+            await interaction.user.voice.channel.connect(cls=Player)
+            logger.info('User %s connected the bot to %s', interaction.user, channel)
         else:
-            await ctx.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
+            await interaction.followup.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
 
-    @commands.command(help='Disconnects the bot from your voice channel.')
+    @app_commands.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
     @commands.has_role('DJ')
-    async def stop(self, ctx):
+    async def stop(self, interaction: discord.Interaction):
         """
         Disconnects the bot from your voice channel.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
+        await interaction.response.defer()
+        vc = interaction.guild.voice_client
         if vc:
             await vc.disconnect()
-            logger.info('User %s disconnected the bot from %s', ctx.author, vc.channel)
+            logger.info('User %s disconnected the bot from %s', interaction.user, vc.channel)
         else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        # end defer without sending a message
+        await interaction.followup.send("Disconnected from voice channel.")
 
     @commands.command(help='Plays a song.')
     @commands.has_role('DJ')
