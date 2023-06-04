@@ -90,11 +90,10 @@ class Music(commands.Cog):
         vc = interaction.guild.voice_client
         if vc:
             await vc.disconnect()
+            await interaction.followup.send("Disconnected from voice channel.")
             logger.info('User %s disconnected the bot from %s', interaction.user, vc.channel)
         else:
             await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-        # end defer without sending a message
-        await interaction.followup.send("Disconnected from voice channel.")
 
     @commands.command(help='Plays a song.')
     @commands.has_role('DJ')
