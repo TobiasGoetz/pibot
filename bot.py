@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 from pymongo import MongoClient
 
@@ -147,40 +148,47 @@ async def ping(interaction):
 
 
 # Error handling
-@bot.event
-async def on_command_error(ctx, error):
+@bot.tree.error
+async def on_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     """ When a command has an error. """
-    if isinstance(error, commands.MissingPermissions):
-        logger.info('User %s tried to use %s without permissions.', ctx.author, ctx.command)
-        await send_error_message(ctx, f'You cannot use `{ctx.command}`.', error)
+    if isinstance(error, app_commands.errors.MissingPermissions):
+        logger.info('User %s tried to use %s without permissions.', interaction.user, interaction.command.name)
+        await send_error_message(interaction, f'You cannot use `{interaction.command.name}`.', error)
 
-    if isinstance(error, commands.MissingRole):
+    if isinstance(error, app_commands.errors.MissingRole):
         logger.info(
             'User %s tried to use %s without the %s role.',
-            ctx.author, ctx.command, error.missing_role
+            interaction.user, interaction.command.name, error.missing_role
         )
-        await send_error_message(ctx, f'You cannot use `{ctx.command}` without the {error.missing_role} role.', error)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` without the {error.missing_role} role.',
+                                 error)
 
-    if isinstance(error, commands.CommandNotFound):
-        logger.info('User %s tried to use an invalid command.', ctx.author)
-        await send_error_message(ctx, f':no_entry_sign: **{ctx.author.name}** this command does not exist.', error)
+    if isinstance(error, app_commands.errors.CommandNotFound):
+        logger.info('User %s tried to use an invalid command.', interaction.user)
+        await send_error_message(interaction,
+                                 f':no_entry_sign: **{interaction.user.name}** this command does not exist.', error)
 
-    if isinstance(error, commands.BadArgument):
-        logger.info('User %s tried to use %s with invalid arguments. [%s]', ctx.author, ctx.command, error)
-        await send_error_message(ctx, f'You cannot use `{ctx.command}` with those arguments.\n```{error}```', error)
+    if isinstance(error, app_commands.errors.CommandSignatureMismatch):
+        logger.info('User %s tried to use %s with invalid arguments. [%s]', interaction.user, interaction.command.name,
+                    error)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` with those arguments.\n```{error}```',
+                                 error)
 
-    if isinstance(error, commands.CommandOnCooldown):
-        logger.info('User %s tried to use %s on cooldown. [%s]', ctx.author, ctx.command, error)
-        await send_error_message(ctx, f'You cannot use `{ctx.command}` on cooldown.\n```{error}```', error)
+    if isinstance(error, app_commands.errors.CommandOnCooldown):
+        logger.info('User %s tried to use %s on cooldown. [%s]', interaction.user, interaction.command.name, error)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` on cooldown.\n```{error}```', error)
 
 
-async def send_error_message(ctx, description, error):
+async def send_error_message(interaction: discord.Interaction, description: str, error):
     """ Send an error message. """
-    await ctx.send(
+    await interaction.response.send_message(
         embed=discord.Embed(
-            title={error},
+            title=error.__class__.__name__,
             description=
-            f':no_entry_sign: **{ctx.author.name}** {description}\n'
+            f':no_entry_sign: **{interaction.user}** {description}\n'
             f'```{error}```',
         )
     )
