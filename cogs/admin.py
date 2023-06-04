@@ -4,6 +4,7 @@ Admin cog
 import logging
 
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from bot import db_check_if_guild_exists_else_initialize, set_setting
@@ -15,6 +16,7 @@ class Admin(commands.Cog):
     """
     Admin commands
     """
+
     def __init__(self, bot):
         self.bot = bot
 
@@ -49,17 +51,17 @@ class Admin(commands.Cog):
         await set_setting(ctx.guild, "command_channel", channel.id)
         await ctx.send(f"Command channel set to {channel.mention}")
 
-    @commands.command()
+    @app_commands.command(name="clear", description="Clear a specified amount of messages.")
     @commands.has_permissions(administrator=True)
-    async def clear(self, ctx, amount=1):
+    async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """
         Clear a specified amount of messages.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param amount: The amount of messages to clear.
         """
-        await ctx.message.delete()
-        await ctx.channel.purge(limit=amount)
-        logging.info('User %s cleared %s messages in %s.', ctx.author, amount, ctx.channel)
+        await interaction.response.defer()
+        await interaction.channel.purge(limit=amount + 1)
+        logging.info('User %s cleared %s messages in %s.', interaction.user, amount, interaction.channel)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
