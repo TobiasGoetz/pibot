@@ -63,23 +63,24 @@ class Admin(commands.Cog):
         await interaction.channel.purge(limit=amount + 1)
         logging.info('User %s cleared %s messages in %s.', interaction.user, amount, interaction.channel)
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def mute(self, ctx, member: discord.Member, *, reason=None):
+    @app_commands.command(name="mute", description="Mute a member.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def mute(self, interaction: discord.Interaction, member: discord.Member, *, reason: str=None) -> None:
         """
         Mute a member.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param member: The member to mute.
         :param reason: The reason for the mute.
         """
-        role = discord.utils.get(ctx.guild.roles, name='Muted')
+        await interaction.response.defer()
+        role = discord.utils.get(interaction.guild.roles, name='Muted')
 
         if role is None:
             logger.info('Muted role not found, creating one.')
-            await ctx.guild.create_role(name='Muted')
-            role = discord.utils.get(ctx.guild.roles, name='Muted')
+            await interaction.guild.create_role(name='Muted')
+            role = discord.utils.get(interaction.guild.roles, name='Muted')
 
-        for channel in ctx.guild.channels:
+        for channel in interaction.guild.channels:
             await channel.set_permissions(
                 role,
                 speak=False,
@@ -90,10 +91,10 @@ class Admin(commands.Cog):
         await member.add_roles(role)
 
         if reason is None:
-            await ctx.send(f'{member.mention} has been muted.')
+            await interaction.followup.send(f'{member.mention} has been muted.')
         else:
-            await ctx.send(f'{member.mention} has been muted for {reason}')
-        logging.info('User %s muted %s for %s.', ctx.author, member, reason)
+            await interaction.followup.send(f'{member.mention} has been muted for {reason}')
+        logging.info('User %s muted %s for %s.', interaction.user, member, reason)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
