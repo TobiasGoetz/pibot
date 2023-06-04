@@ -10,8 +10,8 @@ from StringProgressBar import progressBar
 from discord import app_commands
 from discord.ext import commands
 
+from bot import get_setting, set_setting
 from player import Player
-from bot import set_setting, get_setting
 
 logger = logging.getLogger('discord.music')
 
@@ -28,6 +28,8 @@ class Music(commands.Cog):
     """
     Music commands for the bot.
     """
+
+    group = app_commands.Group(name="music", description="Music commands for the bot.")
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -60,26 +62,7 @@ class Music(commands.Cog):
         await player.disconnect()
         logger.info("Queue is empty, disconnected from %s.", player.guild)
 
-    @staticmethod
-    async def connect(interaction: discord.Interaction) -> None:
-        """
-        Connects the bot to your voice channel.
-        :param interaction: The interaction of the slash command.
-        """
-        await interaction.response.defer()
-        vc = interaction.guild.voice_client
-        try:
-            channel = interaction.user.voice.channel
-        except AttributeError:
-            return await interaction.followup.send(ERROR_MESSAGE_USER_NOT_CONNECTED)
-
-        if not vc:
-            await interaction.user.voice.channel.connect(cls=Player)
-            logger.info('User %s connected the bot to %s', interaction.user, channel)
-        else:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
-
-    @app_commands.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
+    @group.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
     @app_commands.checks.has_role('DJ')
     async def stop(self, interaction: discord.Interaction):
         """
@@ -87,82 +70,119 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        vc = interaction.guild.voice_client
-        if vc:
-            await vc.disconnect()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        if player:
+            await player.disconnect()
             await interaction.followup.send("Disconnected from voice channel.")
-            logger.info('User %s disconnected the bot from %s', interaction.user, vc.channel)
+            logger.info('User %s disconnected the bot from %s', interaction.user, player.channel)
         else:
             await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
-    @commands.command(help='Plays a song.')
-    @commands.has_role('DJ')
-    async def play(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+    @group.command(name="play", description='Plays a song and connects to your voice channel.')
+    @app_commands.checks.has_role('DJ')
+    async def play(self, interaction: discord.Interaction, *, search: str):
         """
         Plays a song and connects to the voice channel of the user.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param search: The search query.
         """
-        logger.info('User: %s requested: %s', ctx.author, search)
-        vc = ctx.voice_client
-        if not vc:
-            custom_player = Player()
-            vc: Player = await ctx.author.voice.channel.connect(cls=custom_player)
-            await vc.set_volume(int(await get_setting(ctx.guild, "volume") or DEFAULT_VOLUME))
-            await vc.play(search)
+        await interaction.response.defer()
+        track: wavelink.YouTubeTrack = await wavelink.YouTubeTrack.search(search, return_first=True)
 
-        vc.queue.put_at_front(search)
-        await self.skip(ctx)
+        logger.info('User: %s requested: %s', interaction.user, track)
 
-        logger.info('User: %s is now playing: %s', ctx.author, search)
+        await self.play_song(interaction, track)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
-        await ctx.send(embed=discord.Embed(
-            title=vc.source.title,
-            url=vc.source.uri,
-            description=f"Playing {vc.source.title} in {vc.channel}"
+        logger.info('User: %s is now playing: %s', interaction.user, track)
+        await interaction.followup.send(embed=discord.Embed(
+            title=track.title,
+            url=track.uri,
+            description=f"Playing {track.title} in {player.channel}"
         ))
 
-    @commands.command(help='Adds a song to the queue.')
-    @commands.has_role('DJ')
-    async def add(self, ctx: commands.Context, *, search: wavelink.YouTubeTrack):
+    async def play_song(self, interaction: discord.Interaction, track: wavelink.YouTubeTrack):
+        """
+        Plays a song.
+        :param interaction: The interaction of the slash command.
+        :param track: The track to play.
+        """
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player is None or not player.is_connected:
+            player: Player = await interaction.user.voice.channel.connect(cls=Player)
+            await player.set_volume(int(await get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
+            await player.play(track)
+            return
+
+        player.queue.put_at_front(track)
+        await self.skip_song(player)
+        return
+
+    @group.command(name="add", description='Adds a song to the queue.')
+    @app_commands.checks.has_role('DJ')
+    async def add(self, interaction: discord.Interaction, *, search: str):
         """
         Adds a song to the queue.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param search: The search query.
         """
-        vc = ctx.voice_client
-        if not vc:
-            return await self.play(ctx, search=search)
+        await interaction.response.defer()
+        track: wavelink.YouTubeTrack = await wavelink.YouTubeTrack.search(search, return_first=True)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
-        vc.queue.put(item=search)
-        logger.info('User: %s added: %s to the queue.', ctx.author, search)
+        if not player:
+            await self.play_song(interaction, track)
+        else:
+            player.queue.put(item=track)
+        logger.info('User: %s added: %s to the queue.', interaction.user, track.title)
 
-        await ctx.send(embed=discord.Embed(
-            title=search.title,
-            url=search.uri,
-            description=f"Queued {search.title} in {vc.channel}"
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        await interaction.followup.send(embed=discord.Embed(
+            title=track.title,
+            url=track.uri,
+            description=f"Queued {track.title} in {player.channel}"
         ))
 
-    @commands.command(help='Skips the current song.')
-    @commands.has_role('DJ')
-    async def skip(self, ctx):
+    @group.command(name="skip", description='Skips the current song.')
+    @app_commands.checks.has_role('DJ')
+    async def skip(self, interaction: discord.Interaction):
         """
         Skips the current song.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
-        if vc:
-            if not vc.is_playing():
-                return await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
-            if vc.queue.is_empty:
-                return await vc.stop()
+        await interaction.response.defer()
 
-            await vc.seek(vc.track.length * 1000)
-            logger.info("User: %s skipped: %s", ctx.author, vc.source.title)
-            if vc.is_paused():
-                await vc.resume()
-        else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        song = player.source.title
+
+        status: bool = await self.skip_song(player)
+        if status is False:
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            return
+        logger.info("User: %s skipped: %s", interaction.user, song)
+        await interaction.followup.send("Skipped song.")
+
+    @staticmethod
+    async def skip_song(player: Player) -> bool:
+        """
+        Skips the current song.
+        :param player: The player.
+        """
+        if player is None:
+            return False
+        if not player.is_playing():
+            return False
+        if player.queue.is_empty:
+            await player.stop()
+            return True
+
+        await player.seek(player.track.length * 1000)
+        logger.info("Skipped: %s", player.source.title)
+        if player.is_paused():
+            await player.resume()
+        return True
 
     @commands.command(help='Pauses the current song.')
     @commands.has_role('DJ')
@@ -263,12 +283,13 @@ class Music(commands.Cog):
         logger.info('User: %s set the volume to %s.', ctx.author, volume)
 
     @play.error
-    async def play_error(self, ctx, error):
+    async def play_error(self, interaction: discord.Interaction, error):
         """ Handles errors for the play command. """
         if isinstance(error, commands.BadArgument):
-            await ctx.send("Could not find a track.")
+            await interaction.followup.send("Could not find a track.")
         else:
-            await ctx.send("Please join a voice channel.")
+            logger.error(error)
+            await interaction.followup.send("Please join a voice channel.")
 
 
 async def setup(bot):
