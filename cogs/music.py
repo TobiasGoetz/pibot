@@ -80,7 +80,7 @@ class Music(commands.Cog):
             await interaction.followup.send(ERROR_MESSAGE_BOT_ALREADY_CONNECTED)
 
     @app_commands.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
-    @commands.has_role('DJ')
+    @app_commands.checks.has_role('DJ')
     async def stop(self, interaction: discord.Interaction):
         """
         Disconnects the bot from your voice channel.
