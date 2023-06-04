@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 
 import discord
 import pytimeparse
+from discord import app_commands
 from discord.ext import commands
 
 logger = logging.getLogger('discord.general')
@@ -19,13 +20,12 @@ class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def countdown(self, ctx, time_str: str):
+    @app_commands.command(name="countdown", description="Start a countdown for a specified amount of time.")
+    async def countdown(self, interaction: discord.Interaction, time_str: str):
         """
         Start a countdown for a specified amount of time.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param time_str: The time to count down from.
-        :return: None
         """
         seconds = pytimeparse.parse(time_str)
 
@@ -37,10 +37,10 @@ class General(commands.Cog):
         if seconds > 86400:
             raise commands.BadArgument("Countdowns cannot be longer than 24 hours.")
 
-        start_time = ctx.message.created_at
+        start_time = interaction.created_at
         end_time = (start_time + timedelta(seconds=seconds)).strftime("%H:%M:%S")
-        logger.info("%s started a countdown for %s seconds.", ctx.author, seconds)
-        message = await ctx.send(embed=discord.Embed(
+        logger.info("%s started a countdown for %s seconds.", interaction.user, seconds)
+        await interaction.response.send_message(embed=discord.Embed(
             title=f'Countdown - {seconds}s',
             description=(
                 f'{seconds} seconds remaining.\n'
@@ -49,7 +49,7 @@ class General(commands.Cog):
         ))
 
         while (datetime.now(timezone.utc) - start_time).total_seconds() < seconds:
-            await message.edit(embed=discord.Embed(
+            await interaction.edit_original_response(embed=discord.Embed(
                 title=f'Countdown - {seconds}s',
                 description=
                 f'{seconds - round((datetime.now(timezone.utc) - start_time).total_seconds())}'
@@ -58,11 +58,11 @@ class General(commands.Cog):
             ))
             await asyncio.sleep(1)
 
-        await message.edit(embed=discord.Embed(
+        await interaction.edit_original_response(embed=discord.Embed(
             title=f'Countdown - {seconds}s',
             description=f'Countdown finished at {end_time} UTC.'
         ))
-        logger.info("Finished %s's countdown for %s seconds.", ctx.author, seconds)
+        logger.info("Finished %s's countdown for %s seconds.", interaction.user, seconds)
 
 
 async def setup(bot):
