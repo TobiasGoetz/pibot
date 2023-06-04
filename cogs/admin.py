@@ -52,7 +52,7 @@ class Admin(commands.Cog):
         await ctx.send(f"Command channel set to {channel.mention}")
 
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
-    @commands.has_permissions(administrator=True)
+    @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """
         Clear a specified amount of messages.
