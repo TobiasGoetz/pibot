@@ -96,18 +96,19 @@ class Admin(commands.Cog):
             await interaction.followup.send(f'{member.mention} has been muted for {reason}')
         logging.info('User %s muted %s for %s.', interaction.user, member, reason)
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def unmute(self, ctx, member: discord.Member):
+    @app_commands.command(name="unmute", description="Unmute a member.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """
         Unmute a member.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param member: The member to unmute.
         """
-        role = discord.utils.get(ctx.guild.roles, name='Muted')
+        await interaction.response.defer()
+        role = discord.utils.get(interaction.guild.roles, name='Muted')
         await member.remove_roles(role)
-        await ctx.send(f'{member.mention} has been unmuted.')
-        logging.info('User %s unmuted %s.', ctx.author, member)
+        await interaction.followup.send(f'{member.mention} has been unmuted.')
+        logging.info('User %s unmuted %s.', interaction.user, member)
 
 
 async def setup(bot):
