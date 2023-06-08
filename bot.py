@@ -153,12 +153,11 @@ async def ping(interaction):
 @bot.tree.error
 async def on_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     """ When a command has an error. """
-    logger.info("User %s tried to use %s but got %s.", interaction.user, interaction.command.name, error)
     if isinstance(error, app_commands.errors.MissingPermissions):
         logger.info('User %s tried to use %s without permissions.', interaction.user, interaction.command.name)
         await send_error_message(interaction, f'You cannot use `{interaction.command.name}`.', error)
 
-    if isinstance(error, app_commands.errors.MissingRole):
+    elif isinstance(error, app_commands.errors.MissingRole):
         logger.info(
             'User %s tried to use %s without the %s role.',
             interaction.user, interaction.command.name, error.missing_role
@@ -167,24 +166,24 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
                                  f'You cannot use `{interaction.command.name}` without the {error.missing_role} role.',
                                  error)
 
-    if isinstance(error, app_commands.errors.CommandNotFound):
+    elif isinstance(error, app_commands.errors.CommandNotFound):
         logger.info('User %s tried to use an invalid command.', interaction.user)
         await send_error_message(interaction,
                                  f'**{interaction.user.name}** this command does not exist.', error)
 
-    if isinstance(error, app_commands.errors.CommandSignatureMismatch):
+    elif isinstance(error, app_commands.errors.CommandSignatureMismatch):
         logger.info('User %s tried to use %s with invalid arguments. [%s]', interaction.user, interaction.command.name,
                     error)
         await send_error_message(interaction,
                                  f'You cannot use `{interaction.command.name}` with those arguments.\n```{error}```',
                                  error)
 
-    if isinstance(error, app_commands.errors.CommandOnCooldown):
+    elif isinstance(error, app_commands.errors.CommandOnCooldown):
         logger.info('User %s tried to use %s on cooldown. [%s]', interaction.user, interaction.command.name, error)
         await send_error_message(interaction,
                                  f'You cannot use `{interaction.command.name}` on cooldown.\n```{error}```', error)
 
-    if isinstance(error, errors.UserNotConnectedToVoice):
+    elif isinstance(error, errors.UserNotConnectedToVoice):
         logger.info('User %s tried to use %s without being connected to a voice channel.', interaction.user,
                     interaction.command.name)
         await send_error_message(interaction,
@@ -192,7 +191,7 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
                                  f'without being connected to a voice channel.',
                                  error)
 
-    if isinstance(error, errors.BotNotConnectedToVoice):
+    elif isinstance(error, errors.BotNotConnectedToVoice):
         logger.info('User %s tried to use %s without the bot being connected to a voice channel.', interaction.user,
                     interaction.command.name)
         await send_error_message(interaction,
@@ -200,13 +199,16 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
                                  f'without the bot being connected to a voice channel.',
                                  error)
 
-    if isinstance(error, errors.BotNotPlayingAudio):
+    elif isinstance(error, errors.BotNotPlayingAudio):
         logger.info('User %s tried to use %s without the bot playing audio.', interaction.user,
                     interaction.command.name)
         await send_error_message(interaction,
                                  f'You cannot use `{interaction.command.name}` '
                                  f'without the bot playing audio.',
                                  error)
+
+    else:
+        logger.error("Undefined error caused by %s using %s. [%s]", interaction.user, interaction.command.name, error)
 
 
 async def send_error_message(interaction: discord.Interaction, description: str, error: app_commands.AppCommandError):
