@@ -263,23 +263,28 @@ class Music(commands.Cog):
             f'[{round(player.position)} / {round(player.source.length)}sec]\n'
         ))
 
-    @commands.command(help='Seek to a specific time in the current song.')
-    @commands.has_role('DJ')
-    async def seek(self, ctx, time: int):
+    @group.command(name="seek", description='Seeks to a specific time in the current song.')
+    @app_commands.checks.has_role('DJ')
+    async def seek(self, interaction: discord.Interaction, time: int):
         """
         Seek to a specific time in the current song.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param time: The time to seek to.
         """
-        vc = ctx.voice_client
-        if vc:
-            if vc.is_playing():
-                await vc.seek(time * 1000)
-                logger.info('User: %s seeked to %s seconds.', ctx.author, time)
-            else:
-                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
-        else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player is None:
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            return
+
+        if not player.is_playing():
+            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
+            return
+
+        await player.seek(time * 1000)
+        logger.info('User: %s seeked to %s seconds.', interaction.user, time)
+        await interaction.followup.send("Seeked to " + str(time) + " seconds.")
 
     @commands.command(help='Sets the volume.')
     @commands.has_role('DJ')
