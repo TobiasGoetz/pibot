@@ -230,26 +230,30 @@ class Music(commands.Cog):
         else:
             await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
 
-    @commands.command(help='Shows the current song.')
-    async def now(self, ctx):
+    @group.command(name="now", description='Shows the current song.')
+    async def now(self, interaction: discord.Interaction):
         """
         Shows the current song.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
-        if vc:
-            if vc.is_playing():
-                await ctx.send(embed=discord.Embed(
-                    title='Now Playing',
-                    description=
-                    f'{vc.source.title}\n'
-                    f'{progressBar.splitBar(total=round(vc.source.length), current=round(vc.position), size=20)[0]}'
-                    f'[{round(vc.position)} / {round(vc.source.length)}sec]\n'
-                ))
-            else:
-                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
-        else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player is None:
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            return
+
+        if not player.is_playing():
+            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
+            return
+
+        await interaction.followup.send(embed=discord.Embed(
+            title='Now Playing',
+            description=
+            f'{player.source.title}\n'
+            f'{progressBar.splitBar(total=round(player.source.length), current=round(player.position), size=20)[0]}'
+            f'[{round(player.position)} / {round(player.source.length)}sec]\n'
+        ))
 
     @commands.command(help='Seek to a specific time in the current song.')
     @commands.has_role('DJ')
