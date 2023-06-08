@@ -19,7 +19,6 @@ ERROR_MESSAGE_BOT_NOT_CONNECTED = "I'm not connected to a voice channel."
 ERROR_MESSAGE_USER_NOT_CONNECTED = "You're not connected to a voice channel."
 ERROR_MESSAGE_BOT_ALREADY_CONNECTED = "I'm already connected to a voice channel."
 ERROR_MESSAGE_NOTHING_PLAYING = "I'm not playing anything."
-ERROR_MESSAGE_VOLUME_OUT_OF_RANGE = "Volume must be between 0 and 100."
 
 DEFAULT_VOLUME = 25
 
@@ -286,23 +285,25 @@ class Music(commands.Cog):
         logger.info('User: %s seeked to %s seconds.', interaction.user, time)
         await interaction.followup.send("Seeked to " + str(time) + " seconds.")
 
-    @commands.command(help='Sets the volume.')
-    @commands.has_role('DJ')
-    async def volume(self, ctx, volume: int):
+    @group.command(name="volume", description='Sets the volume.')
+    @app_commands.checks.has_role('DJ')
+    async def volume(self, interaction: discord.Interaction, volume: int):
         """
         Sets the volume.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param volume: The volume to set.
         """
-        vc = ctx.voice_client
-        if vc:
-            await vc.set_volume(volume)
-        await set_setting(ctx.guild, 'volume', volume)
-        await ctx.send(embed=discord.Embed(
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player:
+            await player.set_volume(volume)
+        await set_setting(interaction.guild, 'volume', volume)
+        logger.info('User: %s set the volume to %s.', interaction.user, volume)
+        await interaction.followup.send(embed=discord.Embed(
             title='Volume',
             description=f'Volume set to {volume}.'
         ))
-        logger.info('User: %s set the volume to %s.', ctx.author, volume)
 
     @play.error
     async def play_error(self, interaction: discord.Interaction, error):
