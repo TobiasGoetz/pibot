@@ -17,41 +17,49 @@ class Admin(commands.Cog):
     Admin commands
     """
 
+    group = app_commands.Group(name="admin", description="Admin commands for the bot.")
+
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def prefix(self, ctx, arg):
+    @group.command(name="prefix", description="Set the prefix for the guild.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def prefix(self, interaction: discord.Interaction, arg: str):
         """
         Set the prefix for the guild.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param arg: The prefix to set.
         """
-        await db_check_if_guild_exists_else_initialize(ctx.guild)
-        await set_setting(ctx.guild, "prefix", arg)
-        logger.info("Changed prefix for %s to %s.", ctx.guild.name, arg)
-        await ctx.send(f"Prefix set to {arg}")
+        await interaction.response.defer()
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def command_channel(self, ctx, arg):
+        await db_check_if_guild_exists_else_initialize(interaction.guild)
+        await set_setting(interaction.guild, "prefix", arg)
+
+        logger.info("Changed prefix for %s to %s.", interaction.guild.name, arg)
+        await interaction.followup.send(f"Prefix set to {arg}")
+
+    @group.command(name="command_channel", description="Set the command channel for the guild.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def command_channel(self, interaction: discord.Interaction, arg: str):
         """
         Set the command channel for the guild.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         :param arg: The channel to set.
         """
-        await db_check_if_guild_exists_else_initialize(ctx.guild)
+        await interaction.response.defer()
+
+        await db_check_if_guild_exists_else_initialize(interaction.guild)
 
         # Get the channel id by the name provided as arg
-        channel = discord.utils.get(ctx.guild.channels, name=arg, type=discord.ChannelType.text)
+        channel = discord.utils.get(interaction.guild.channels, name=arg, type=discord.ChannelType.text)
         if channel is None:
-            return await ctx.send(f"Channel {arg} not found.")
+            return await interaction.followup.send(f"Channel {arg} not found.")
 
-        await set_setting(ctx.guild, "command_channel", channel.id)
-        await ctx.send(f"Command channel set to {channel.mention}")
+        await set_setting(interaction.guild, "command_channel", channel.id)
+        logger.info("Changed command channel for %s to %s.", interaction.guild.name, channel.name)
+        await interaction.followup.send(f"Command channel set to {channel.mention}")
 
-    @app_commands.command(name="clear", description="Clear a specified amount of messages.")
+    @group.command(name="clear", description="Clear a specified amount of messages.")
     @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """
@@ -63,7 +71,7 @@ class Admin(commands.Cog):
         await interaction.channel.purge(limit=amount + 1)
         logging.info('User %s cleared %s messages in %s.', interaction.user, amount, interaction.channel)
 
-    @app_commands.command(name="mute", description="Mute a member.")
+    @group.command(name="mute", description="Mute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def mute(self, interaction: discord.Interaction, member: discord.Member, *, reason: str=None) -> None:
         """
@@ -96,7 +104,7 @@ class Admin(commands.Cog):
             await interaction.followup.send(f'{member.mention} has been muted for {reason}')
         logging.info('User %s muted %s for %s.', interaction.user, member, reason)
 
-    @app_commands.command(name="unmute", description="Unmute a member.")
+    @group.command(name="unmute", description="Unmute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """
