@@ -184,25 +184,30 @@ class Music(commands.Cog):
             await player.resume()
         return True
 
-    @commands.command(help='Pauses the current song.')
-    @commands.has_role('DJ')
-    async def pause(self, ctx):
+    @group.command(name="pause", description='Pauses the current song.')
+    @app_commands.checks.has_role('DJ')
+    async def pause(self, interaction: discord.Interaction):
         """
         Pauses the current song.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
-        if vc:
-            if vc.is_playing() and not vc.is_paused():
-                await vc.pause()
-                logger.info('User: %s paused the song.', ctx.author)
-            elif vc.is_paused():
-                await vc.resume()
-                logger.info('User: %s resumed the song.', ctx.author)
-            else:
-                await ctx.send(ERROR_MESSAGE_NOTHING_PLAYING)
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player is None:
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            return
+
+        if player.is_playing() and not player.is_paused():
+            await player.pause()
+            logger.info('User: %s paused the song.', interaction.user)
+            await interaction.followup.send("Paused song.")
+        elif player.is_paused():
+            await player.resume()
+            logger.info('User: %s resumed the song.', interaction.user)
+            await interaction.followup.send("Resumed song.")
         else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
 
     @commands.command(help='Shows the song queue.')
     async def queue(self, ctx):
