@@ -153,35 +153,38 @@ async def ping(interaction):
 @bot.tree.error
 async def on_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     """ When a command has an error. """
-    if isinstance(error, app_commands.errors.MissingPermissions):
+    if isinstance(error, app_commands.MissingPermissions):
         logger.info('User %s tried to use %s without permissions.', interaction.user, interaction.command.name)
-        await send_error_message(interaction, f'You cannot use `{interaction.command.name}`.', error)
+        await send_final_error_message(interaction, f'You cannot use `{interaction.command.name}`.', error)
 
-    elif isinstance(error, app_commands.errors.MissingRole):
+    elif isinstance(error, app_commands.MissingRole):
         logger.info(
             'User %s tried to use %s without the %s role.',
             interaction.user, interaction.command.name, error.missing_role
         )
-        await send_error_message(interaction,
-                                 f'You cannot use `{interaction.command.name}` without the {error.missing_role} role.',
-                                 error)
+        await send_final_error_message(interaction,
+                                       f'You cannot use `{interaction.command.name}` '
+                                       f'without the {error.missing_role} role.',
+                                       error)
 
-    elif isinstance(error, app_commands.errors.CommandNotFound):
+    elif isinstance(error, app_commands.CommandNotFound):
         logger.info('User %s tried to use an invalid command.', interaction.user)
-        await send_error_message(interaction,
-                                 f'**{interaction.user.name}** this command does not exist.', error)
+        await send_final_error_message(interaction,
+                                       f'**{interaction.user.name}** this command does not exist.', error)
 
-    elif isinstance(error, app_commands.errors.CommandSignatureMismatch):
+    elif isinstance(error, app_commands.CommandSignatureMismatch):
         logger.info('User %s tried to use %s with invalid arguments. [%s]', interaction.user, interaction.command.name,
                     error)
-        await send_error_message(interaction,
-                                 f'You cannot use `{interaction.command.name}` with those arguments.\n```{error}```',
-                                 error)
+        await send_final_error_message(interaction,
+                                       f'You cannot use `{interaction.command.name}` '
+                                       f'with those arguments.\n```{error}```',
+                                       error)
 
-    elif isinstance(error, app_commands.errors.CommandOnCooldown):
+    elif isinstance(error, app_commands.CommandOnCooldown):
         logger.info('User %s tried to use %s on cooldown. [%s]', interaction.user, interaction.command.name, error)
-        await send_error_message(interaction,
-                                 f'You cannot use `{interaction.command.name}` on cooldown.\n```{error}```', error)
+        await send_final_error_message(interaction,
+                                       f'You cannot use `{interaction.command.name}` on cooldown.\n```{error}```',
+                                       error)
 
     elif isinstance(error, errors.UserNotConnectedToVoice):
         logger.info('User %s tried to use %s without being connected to a voice channel.', interaction.user,
@@ -224,6 +227,22 @@ async def send_error_message(interaction: discord.Interaction, description: str,
         embed.add_field(name="Error", value=f"```{error}```")
 
     await interaction.followup.send(embed=embed, ephemeral=True)
+
+
+async def send_final_error_message(interaction: discord.Interaction, description: str,
+                                   error: app_commands.AppCommandError):
+    """ Send a final error message. """
+    embed = discord.Embed(
+        title=error.__class__.__name__,
+        description=f':no_entry_sign: **{interaction.user.mention}**'
+    )
+
+    embed.add_field(name="Description", value=f"{description}")
+
+    if str(error) != "":
+        embed.add_field(name="Error", value=f"```{error}```")
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 # Loading Cogs
