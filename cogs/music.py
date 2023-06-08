@@ -209,26 +209,34 @@ class Music(commands.Cog):
         else:
             await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
 
-    @commands.command(help='Shows the song queue.')
-    async def queue(self, ctx):
+    @group.command(name="queue", description='Shows the song queue.')
+    async def queue(self, interaction: discord.Interaction):
         """
         Shows the song queue.
-        :param ctx: The context of the command.
+        :param interaction: The interaction of the slash command.
         """
-        vc = ctx.voice_client
-        if vc:
-            if vc.queue.is_empty and not vc.is_playing():
-                return await ctx.send("The queue is empty.")
-            description = f'Currently playing: {vc.source.title} [{round(vc.position)}/{round(vc.source.length)}sec]\n'
-            for i, track in enumerate(vc.queue):
-                description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
-            await ctx.send(embed=discord.Embed(
-                title='Queue',
-                description='`' + description + '`',
-            ))
-        else:
-            await ctx.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+        if player is None:
+            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+            return
+
+        if player.queue.is_empty and not player.is_playing():
+            await interaction.followup.send("The queue is empty.")
+            return
+
+        description = (
+            f'Currently playing: {player.source.title}'
+            f'[{round(player.position)}/{round(player.source.length)}sec]\n'
+        )
+        for i, track in enumerate(player.queue):
+            description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
+
+        await interaction.followup.send(embed=discord.Embed(
+            title='Queue',
+            description='`' + description + '`',
+        ))
 
     @group.command(name="now", description='Shows the current song.')
     async def now(self, interaction: discord.Interaction):
