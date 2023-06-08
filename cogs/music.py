@@ -10,15 +10,11 @@ from StringProgressBar import progressBar
 from discord import app_commands
 from discord.ext import commands
 
+import errors
 from bot import get_setting, set_setting
 from player import Player
 
 logger = logging.getLogger('discord.music')
-
-ERROR_MESSAGE_BOT_NOT_CONNECTED = "I'm not connected to a voice channel."
-ERROR_MESSAGE_USER_NOT_CONNECTED = "You're not connected to a voice channel."
-ERROR_MESSAGE_BOT_ALREADY_CONNECTED = "I'm already connected to a voice channel."
-ERROR_MESSAGE_NOTHING_PLAYING = "I'm not playing anything."
 
 DEFAULT_VOLUME = 25
 
@@ -70,12 +66,13 @@ class Music(commands.Cog):
         """
         await interaction.response.defer()
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
-        if player:
-            await player.disconnect()
-            await interaction.followup.send("Disconnected from voice channel.")
-            logger.info('User %s disconnected the bot from %s', interaction.user, player.channel)
-        else:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
+
+        if player is None:
+            raise errors.BotNotConnectedToVoice
+
+        await player.disconnect()
+        logger.info('User %s disconnected the bot from %s', interaction.user, player.channel)
+        await interaction.followup.send("Disconnected from voice channel.")
 
     @group.command(name="play", description='Plays a song and connects to your voice channel.')
     @app_commands.checks.has_role('DJ')
@@ -107,6 +104,9 @@ class Music(commands.Cog):
         :param track: The track to play.
         """
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if interaction.user.voice is None:
+            raise errors.UserNotConnectedToVoice
 
         if player is None or not player.is_connected:
             player: Player = await interaction.user.voice.channel.connect(cls=Player)
@@ -154,12 +154,15 @@ class Music(commands.Cog):
         await interaction.response.defer()
 
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        if player is None:
+            raise errors.BotNotConnectedToVoice
+
         song = player.source.title
 
         status: bool = await self.skip_song(player)
         if status is False:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-            return
+            raise errors.BotNotConnectedToVoice
         logger.info("User: %s skipped: %s", interaction.user, song)
         await interaction.followup.send("Skipped song.")
 
@@ -170,9 +173,9 @@ class Music(commands.Cog):
         :param player: The player.
         """
         if player is None:
-            return False
+            raise errors.BotNotConnectedToVoice
         if not player.is_playing():
-            return False
+            raise errors.BotNotPlayingAudio
         if player.queue.is_empty:
             await player.stop()
             return True
@@ -194,8 +197,7 @@ class Music(commands.Cog):
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
         if player is None:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-            return
+            raise errors.BotNotConnectedToVoice
 
         if player.is_playing() and not player.is_paused():
             await player.pause()
@@ -206,7 +208,7 @@ class Music(commands.Cog):
             logger.info('User: %s resumed the song.', interaction.user)
             await interaction.followup.send("Resumed song.")
         else:
-            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
+            raise errors.BotNotPlayingAudio
 
     @group.command(name="queue", description='Shows the song queue.')
     async def queue(self, interaction: discord.Interaction):
@@ -218,8 +220,7 @@ class Music(commands.Cog):
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
         if player is None:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-            return
+            raise errors.BotNotConnectedToVoice
 
         if player.queue.is_empty and not player.is_playing():
             await interaction.followup.send("The queue is empty.")
@@ -247,12 +248,10 @@ class Music(commands.Cog):
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
         if player is None:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-            return
+            raise errors.BotNotConnectedToVoice
 
         if not player.is_playing():
-            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
-            return
+            raise errors.BotNotPlayingAudio
 
         await interaction.followup.send(embed=discord.Embed(
             title='Now Playing',
@@ -274,12 +273,10 @@ class Music(commands.Cog):
         player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
 
         if player is None:
-            await interaction.followup.send(ERROR_MESSAGE_BOT_NOT_CONNECTED)
-            return
+            raise errors.BotNotConnectedToVoice
 
         if not player.is_playing():
-            await interaction.followup.send(ERROR_MESSAGE_NOTHING_PLAYING)
-            return
+            raise errors.BotNotPlayingAudio
 
         await player.seek(time * 1000)
         logger.info('User: %s seeked to %s seconds.', interaction.user, time)
@@ -306,13 +303,10 @@ class Music(commands.Cog):
         ))
 
     @play.error
-    async def play_error(self, interaction: discord.Interaction, error):
+    async def on_error(self, interaction: discord.Interaction, error):
         """ Handles errors for the play command. """
         if isinstance(error, commands.BadArgument):
             await interaction.followup.send("Could not find a track.")
-        else:
-            logger.error(error)
-            await interaction.followup.send("Please join a voice channel.")
 
 
 async def setup(bot):

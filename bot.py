@@ -11,6 +11,8 @@ from discord import app_commands
 from discord.ext import commands
 from pymongo import MongoClient
 
+import errors
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
 DB_CLIENT = MongoClient(os.getenv('MONGODB_URI'))
@@ -151,6 +153,7 @@ async def ping(interaction):
 @bot.tree.error
 async def on_command_error(interaction: discord.Interaction, error: discord.app_commands.AppCommandError) -> None:
     """ When a command has an error. """
+    logger.info("User %s tried to use %s but got %s.", interaction.user, interaction.command.name, error)
     if isinstance(error, app_commands.errors.MissingPermissions):
         logger.info('User %s tried to use %s without permissions.', interaction.user, interaction.command.name)
         await send_error_message(interaction, f'You cannot use `{interaction.command.name}`.', error)
@@ -167,7 +170,7 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
     if isinstance(error, app_commands.errors.CommandNotFound):
         logger.info('User %s tried to use an invalid command.', interaction.user)
         await send_error_message(interaction,
-                                 f':no_entry_sign: **{interaction.user.name}** this command does not exist.', error)
+                                 f'**{interaction.user.name}** this command does not exist.', error)
 
     if isinstance(error, app_commands.errors.CommandSignatureMismatch):
         logger.info('User %s tried to use %s with invalid arguments. [%s]', interaction.user, interaction.command.name,
@@ -181,17 +184,44 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
         await send_error_message(interaction,
                                  f'You cannot use `{interaction.command.name}` on cooldown.\n```{error}```', error)
 
+    if isinstance(error, errors.UserNotConnectedToVoice):
+        logger.info('User %s tried to use %s without being connected to a voice channel.', interaction.user,
+                    interaction.command.name)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` '
+                                 f'without being connected to a voice channel.',
+                                 error)
 
-async def send_error_message(interaction: discord.Interaction, description: str, error):
+    if isinstance(error, errors.BotNotConnectedToVoice):
+        logger.info('User %s tried to use %s without the bot being connected to a voice channel.', interaction.user,
+                    interaction.command.name)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` '
+                                 f'without the bot being connected to a voice channel.',
+                                 error)
+
+    if isinstance(error, errors.BotNotPlayingAudio):
+        logger.info('User %s tried to use %s without the bot playing audio.', interaction.user,
+                    interaction.command.name)
+        await send_error_message(interaction,
+                                 f'You cannot use `{interaction.command.name}` '
+                                 f'without the bot playing audio.',
+                                 error)
+
+
+async def send_error_message(interaction: discord.Interaction, description: str, error: app_commands.AppCommandError):
     """ Send an error message. """
-    await interaction.response.send_message(
-        embed=discord.Embed(
-            title=error.__class__.__name__,
-            description=
-            f':no_entry_sign: **{interaction.user}** {description}\n'
-            f'```{error}```',
-        )
+    embed = discord.Embed(
+        title=error.__class__.__name__,
+        description=f':no_entry_sign: **{interaction.user.mention}**'
     )
+
+    embed.add_field(name="Description", value=f"{description}")
+
+    if str(error) != "":
+        embed.add_field(name="Error", value=f"```{error}```")
+
+    await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 # Loading Cogs
