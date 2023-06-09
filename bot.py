@@ -211,7 +211,8 @@ async def on_command_error(interaction: discord.Interaction, error: discord.app_
                                  error)
 
     else:
-        logger.error("Undefined error caused by %s using %s. [%s]", interaction.user, interaction.command.name, error)
+        logger.error("Uncaught error caused by %s using %s. [%s]", interaction.user, interaction.data, error)
+        await send_error_message(interaction, f'An error occurred while using `{interaction.command.name}`.', error)
 
 
 async def send_error_message(interaction: discord.Interaction, description: str, error: app_commands.AppCommandError):
