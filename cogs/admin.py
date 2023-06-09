@@ -40,20 +40,18 @@ class Admin(commands.Cog):
 
     @group.command(name="command_channel", description="Set the command channel for the guild.")
     @app_commands.checks.has_permissions(administrator=True)
-    async def command_channel(self, interaction: discord.Interaction, arg: str):
+    async def command_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """
         Set the command channel for the guild.
+        :param channel: The channel to set as the command channel.
         :param interaction: The interaction of the slash command.
-        :param arg: The channel to set.
         """
         await interaction.response.defer()
 
         await db_check_if_guild_exists_else_initialize(interaction.guild)
 
-        # Get the channel id by the name provided as arg
-        channel = discord.utils.get(interaction.guild.channels, name=arg, type=discord.ChannelType.text)
         if channel is None:
-            return await interaction.followup.send(f"Channel {arg} not found.")
+            return await interaction.followup.send(f"Channel {channel} not found.")
 
         await set_setting(interaction.guild, "command_channel", channel.id)
         logger.info("Changed command channel for %s to %s.", interaction.guild.name, channel.name)
