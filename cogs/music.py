@@ -11,7 +11,7 @@ from discord import app_commands
 from discord.ext import commands
 
 import errors
-from bot import get_setting, set_setting
+import pibot
 from player import Player
 
 logger = logging.getLogger('discord.music')
@@ -26,7 +26,7 @@ class Music(commands.Cog):
 
     group = app_commands.Group(name="music", description="Music commands for the bot.")
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: pibot.PiBot):
         self.bot = bot
         bot.loop.create_task(self.start_nodes())
 
@@ -107,7 +107,8 @@ class Music(commands.Cog):
 
         if player is None or not player.is_connected:
             player: Player = await interaction.user.voice.channel.connect(cls=Player)
-            await player.set_volume(int(await get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
+            await player.set_volume(
+                int(await self.bot.database.get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
             await player.play(track)
             return
 
@@ -326,7 +327,7 @@ class Music(commands.Cog):
 
         if player:
             await player.set_volume(volume)
-        await set_setting(interaction.guild, 'volume', volume)
+        await self.bot.database.set_setting(interaction.guild, 'volume', volume)
         logger.info('User: %s set the volume to %s.', interaction.user, volume)
         await interaction.followup.send(embed=discord.Embed(
             title='Volume',
