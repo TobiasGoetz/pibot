@@ -33,29 +33,26 @@ class Music(commands.Cog):
     async def start_nodes(self):
         """ Start the nodes for the bot. """
         await self.bot.wait_until_ready()
-        await wavelink.NodePool.create_node(
-            bot=self.bot,
-            host=os.getenv("LAVALINK_HOST"),
-            port=int(os.getenv("LAVALINK_PORT")),
-            password=os.getenv("LAVALINK_PASS"),
-            identifier='MAIN',
-            region='europe',
-        )
+        node: wavelink.Node = wavelink.Node(
+            uri=os.getenv("LAVALINK_HOST") + ":" + os.getenv("LAVALINK_PORT"),
+            password=os.getenv("LAVALINK_PASS"))
+        await wavelink.NodePool.connect(client=self.bot, nodes=[node])
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, node: wavelink.Node):
         """ Node ready event. """
-        logger.info("Node %s is ready.", node.identifier)
+        logger.info("Node %s is ready.", node.id)
 
     @commands.Cog.listener()
-    async def on_wavelink_track_end(self, player: Player, track: wavelink.Track, reason):
+    async def on_wavelink_track_end(self, payload: wavelink.TrackEventPayload):
         """ Track end event. """
-        logger.info("Track %s ended for player %s with reason %s.", track.title, player.guild, reason)
-        if not player.queue.is_empty and reason == 'FINISHED':
-            next_track = player.queue.get()
-            return await player.play(next_track)
-        await player.disconnect()
-        logger.info("Queue is empty, disconnected from %s.", player.guild)
+        logger.info("Track %s ended for player %s with reason %s.",
+                    payload.track.title, payload.player.guild, payload.reason)
+        if not payload.player.queue.is_empty and payload.reason == 'FINISHED':
+            next_track = payload.player.queue.get()
+            return await payload.player.play(next_track)
+        await payload.player.disconnect()
+        logger.info("Queue is empty, disconnected from %s.", payload.player.guild)
 
     @group.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
     @app_commands.checks.has_role('DJ')
@@ -65,7 +62,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -88,7 +85,7 @@ class Music(commands.Cog):
         logger.info('User: %s requested: %s', interaction.user, track)
 
         await self.play_song(interaction, track)
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         logger.info('User: %s is now playing: %s', interaction.user, track)
         await interaction.followup.send(embed=discord.Embed(
@@ -103,7 +100,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         :param track: The track to play.
         """
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if interaction.user.voice is None:
             raise errors.UserNotConnectedToVoice
@@ -128,7 +125,7 @@ class Music(commands.Cog):
         """
         await interaction.response.defer()
         track: wavelink.YouTubeTrack = await wavelink.YouTubeTrack.search(search, return_first=True)
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if not player:
             await self.play_song(interaction, track)
@@ -136,7 +133,7 @@ class Music(commands.Cog):
             player.queue.put(item=track)
         logger.info('User: %s added: %s to the queue.', interaction.user, track.title)
 
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         await interaction.followup.send(embed=discord.Embed(
             title=track.title,
@@ -153,13 +150,13 @@ class Music(commands.Cog):
         :param search: The search query, must be a YouTube playlist.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         playlist: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(search)
 
         if not player:
             await self.play_song(interaction, playlist.tracks.pop(0))
-            player = wavelink.NodePool.get_node().get_player(interaction.guild)
+            player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         for track in playlist.tracks:
             player.queue.put(item=track)
@@ -187,17 +184,17 @@ class Music(commands.Cog):
         """
         await interaction.response.defer()
 
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
 
-        song = player.source.title
+        song = player.current
 
         status: bool = await self.skip_song(player)
         if status is False:
             raise errors.BotNotConnectedToVoice
-        logger.info("User: %s skipped: %s", interaction.user, song)
+        logger.info("User: %s skipped: %s", interaction.user, song.title)
         await interaction.followup.send("Skipped song.")
 
     @staticmethod
@@ -214,8 +211,8 @@ class Music(commands.Cog):
             await player.stop()
             return True
 
-        await player.seek(player.track.length * 1000)
-        logger.info("Skipped: %s", player.source.title)
+        await player.seek(player.current.length * 1000)
+        logger.info("Skipped: %s", player.current.title)
         if player.is_paused():
             await player.resume()
         return True
@@ -228,7 +225,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -251,7 +248,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -279,7 +276,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -304,7 +301,7 @@ class Music(commands.Cog):
         :param time: The time to seek to.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -325,7 +322,7 @@ class Music(commands.Cog):
         :param volume: The volume to set.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player:
             await player.set_volume(volume)
