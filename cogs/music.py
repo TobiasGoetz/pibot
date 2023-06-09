@@ -144,6 +144,40 @@ class Music(commands.Cog):
             description=f"Queued {track.title} in {player.channel}"
         ))
 
+    @group.command(name="add_playlist", description='Adds a playlist to the queue.')
+    @app_commands.checks.has_role('DJ')
+    async def add_playlist(self, interaction: discord.Interaction, *, search: str):
+        """
+        Adds a playlist to the queue.
+        :param interaction: The interaction of the slash command.
+        :param search: The search query, must be a YouTube playlist.
+        """
+        await interaction.response.defer()
+        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        playlist: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(search)
+
+        if not player:
+            await self.play_song(interaction, playlist.tracks.pop(0))
+            player = wavelink.NodePool.get_node().get_player(interaction.guild)
+
+        for track in playlist.tracks:
+            player.queue.put(item=track)
+
+        # log all the songs added and form which playlist
+        logger.info('User: %s added: %s from playlist: %s to the queue.', interaction.user, str(playlist.tracks),
+                    playlist.name)
+
+        embed: discord.Embed = discord.Embed(
+            title=f"Queued playlist: {playlist.name}",
+            url=search,
+            description="```" +
+                        "\n".join(f'[{index}] {track.title}' for index, track in enumerate(playlist.tracks)) +
+                        "```"
+        )
+
+        await interaction.followup.send(embed=embed)
+
     @group.command(name="skip", description='Skips the current song.')
     @app_commands.checks.has_role('DJ')
     async def skip(self, interaction: discord.Interaction):
