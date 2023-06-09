@@ -2,7 +2,7 @@
 name: "[Beta] Bug report"
 about: Create a bug report for the beta(develop branch) version
 title: ''
-labels: bug, develop
+labels: bug, development
 assignees: ''
 
 ---
