@@ -31,13 +31,13 @@ class PiBot(discord.ext.commands.Bot):
         Set up the hooks for the bot.
         """
         discord.utils.setup_logging()
-
-    # TODO: remove and do in async setup hook
-    async def on_ready(self) -> None:
-        """ When the bot is ready. """
         LOGGER.info('Logged in as %s', self.user)
         await self.load_cogs()
         await self.tree.sync()
+
+    async def on_ready(self) -> None:
+        """ When the bot is ready. """
+        LOGGER.info('Ready as %s', self.user)
 
     async def load_cogs(self) -> None:
         """ Load all cogs. """

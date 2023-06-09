@@ -20,6 +20,11 @@ class General(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @app_commands.command(name="ping", description="Displays the bots ping")
+    async def ping(self, interaction: discord.Interaction):
+        """ Displays the bots ping. """
+        await interaction.response.send_message(f"Ping: {self.bot.latency * 1000:.0f}ms", ephemeral=True)
+
     @app_commands.command(name="countdown", description="Start a countdown for a specified amount of time.")
     async def countdown(self, interaction: discord.Interaction, time_str: str):
         """
