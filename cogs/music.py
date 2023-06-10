@@ -11,7 +11,8 @@ from discord import app_commands
 from discord.ext import commands
 
 import errors
-from bot import get_setting, set_setting
+import pibot
+from cogs.error_handler import send_error_message
 from player import Player
 
 logger = logging.getLogger('discord.music')
@@ -26,7 +27,7 @@ class Music(commands.Cog):
 
     group = app_commands.Group(name="music", description="Music commands for the bot.")
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: pibot.PiBot):
         self.bot = bot
         bot.loop.create_task(self.start_nodes())
 
@@ -107,7 +108,8 @@ class Music(commands.Cog):
 
         if player is None or not player.is_connected:
             player: Player = await interaction.user.voice.channel.connect(cls=Player)
-            await player.set_volume(int(await get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
+            await player.set_volume(
+                int(await self.bot.database.get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
             await player.play(track)
             return
 
@@ -326,18 +328,41 @@ class Music(commands.Cog):
 
         if player:
             await player.set_volume(volume)
-        await set_setting(interaction.guild, 'volume', volume)
+        await self.bot.database.set_setting(interaction.guild, 'volume', volume)
         logger.info('User: %s set the volume to %s.', interaction.user, volume)
         await interaction.followup.send(embed=discord.Embed(
             title='Volume',
             description=f'Volume set to {volume}.'
         ))
 
-    @play.error
-    async def on_error(self, interaction: discord.Interaction, error):
-        """ Handles errors for the play command. """
-        if isinstance(error, commands.BadArgument):
-            await interaction.followup.send("Could not find a track.")
+    async def cog_app_command_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        """ Handles errors for the cog. """
+        if isinstance(error, errors.UserNotConnectedToVoice):
+            logger.info('User %s tried to use %s without being connected to a voice channel.', interaction.user,
+                        interaction.command.name)
+            await send_error_message(interaction,
+                                     f'You cannot use `{interaction.command.name}` '
+                                     f'without being connected to a voice channel.',
+                                     error)
+
+        elif isinstance(error, errors.BotNotConnectedToVoice):
+            logger.info('User %s tried to use %s without the bot being connected to a voice channel.', interaction.user,
+                        interaction.command.name)
+            await send_error_message(interaction,
+                                     f'You cannot use `{interaction.command.name}` '
+                                     f'without the bot being connected to a voice channel.',
+                                     error)
+
+        elif isinstance(error, errors.BotNotPlayingAudio):
+            logger.info('User %s tried to use %s without the bot playing audio.', interaction.user,
+                        interaction.command.name)
+            await send_error_message(interaction,
+                                     f'You cannot use `{interaction.command.name}` '
+                                     f'without the bot playing audio.',
+                                     error)
+
+        else:
+            self.bot.dispatch("app_command_error", interaction, error)
 
 
 async def setup(bot):

@@ -7,8 +7,6 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from bot import db_check_if_guild_exists_else_initialize, set_setting
-
 logger = logging.getLogger('discord.admin')
 
 
@@ -32,8 +30,8 @@ class Admin(commands.Cog):
         """
         await interaction.response.defer()
 
-        await db_check_if_guild_exists_else_initialize(interaction.guild)
-        await set_setting(interaction.guild, "prefix", arg)
+        await self.bot.database.check_if_guild_exists_else_initialize(interaction.guild)
+        await self.bot.database.set_setting(interaction.guild, "prefix", arg)
 
         logger.info("Changed prefix for %s to %s.", interaction.guild.name, arg)
         await interaction.followup.send(f"Prefix set to {arg}")
@@ -48,12 +46,12 @@ class Admin(commands.Cog):
         """
         await interaction.response.defer()
 
-        await db_check_if_guild_exists_else_initialize(interaction.guild)
+        await self.bot.database.check_if_guild_exists_else_initialize(interaction.guild)
 
         if channel is None:
             return await interaction.followup.send(f"Channel {channel} not found.")
 
-        await set_setting(interaction.guild, "command_channel", channel.id)
+        await self.bot.database.set_setting(interaction.guild, "command_channel", channel.id)
         logger.info("Changed command channel for %s to %s.", interaction.guild.name, channel.name)
         await interaction.followup.send(f"Command channel set to {channel.mention}")
 
