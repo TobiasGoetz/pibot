@@ -3,7 +3,7 @@ General cog
 """
 import asyncio
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 import discord
 import pytimeparse
@@ -17,6 +17,7 @@ class General(commands.Cog):
     """
     General commands
     """
+
     def __init__(self, bot):
         self.bot = bot
 
