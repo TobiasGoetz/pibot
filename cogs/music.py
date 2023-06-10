@@ -260,8 +260,8 @@ class Music(commands.Cog):
             return
 
         description = (
-            f'Currently playing: {player.source.title}'
-            f'[{round(player.position)}/{round(player.source.length)}sec]\n'
+            f'Currently playing: {player.current.title}'
+            f'[{round(player.position)}/{round(player.current.length)}sec]\n'
         )
         for i, track in enumerate(player.queue):
             description += f'[{i}] {track.title} [{round(track.length)}sec]\n'
@@ -289,9 +289,9 @@ class Music(commands.Cog):
         await interaction.followup.send(embed=discord.Embed(
             title='Now Playing',
             description=
-            f'{player.source.title}\n'
-            f'{progressBar.splitBar(total=round(player.source.length), current=round(player.position), size=20)[0]}'
-            f'[{round(player.position)} / {round(player.source.length)}sec]\n'
+            f'{player.current.title}\n'
+            f'{progressBar.splitBar(total=round(player.current.length), current=round(player.position), size=20)[0]}'
+            f'[{round(player.position)} / {round(player.current.length)}sec]\n'
         ))
 
     @group.command(name="seek", description='Seeks to a specific time in the current song.')
