@@ -14,7 +14,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
 DB_CLIENT = MongoClient(os.getenv('MONGODB_URI'))
 DB = DB_CLIENT['discord']
-logger = logging.getLogger('discord')
+LOGGER: logging.Logger = logging.getLogger('discord')
 
 
 async def main():
