@@ -6,7 +6,6 @@ import os
 
 import discord
 import wavelink
-from StringProgressBar import progressBar
 from discord import app_commands
 from discord.ext import commands
 
@@ -259,16 +258,9 @@ class Music(commands.Cog):
             await interaction.followup.send("The queue is empty.")
             return
 
-        description = (
-            f'Currently playing: {player.current.title}'
-            f'[{round(player.position / 1000)}/{round(player.current.length / 1000)}sec]\n'
-        )
-        for i, track in enumerate(player.queue):
-            description += f'[{i}] {track.title} [{round(track.length / 1000)}sec]\n'
-
         await interaction.followup.send(embed=discord.Embed(
             title='Queue',
-            description='`' + description + '`',
+            description='`' + await player.get_queue_string() + '`',
         ))
 
     @group.command(name="now", description='Shows the current song.')
@@ -288,10 +280,7 @@ class Music(commands.Cog):
 
         await interaction.followup.send(embed=discord.Embed(
             title='Now Playing',
-            description=
-            f'{player.current.title}\n'
-            f'{progressBar.splitBar(total=round(player.current.length), current=round(player.position), size=20)[0]}'
-            f'[{round(player.position / 1000)} / {round(player.current.length / 1000)}sec]\n'
+            description=await player.get_now_playing_string(),
         ))
 
     @group.command(name="seek", description='Seeks to a specific time in the current song.')
