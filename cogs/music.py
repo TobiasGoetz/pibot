@@ -6,14 +6,13 @@ import os
 
 import discord
 import wavelink
-from StringProgressBar import progressBar
 from discord import app_commands
 from discord.ext import commands
 
 import errors
 import pibot
 from cogs.error_handler import send_error_message
-from player import Player
+from pibotplayer import PibotPlayer
 
 logger = logging.getLogger('discord.music')
 
@@ -63,7 +62,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -86,7 +85,7 @@ class Music(commands.Cog):
         logger.info('User: %s requested: %s', interaction.user, track)
 
         await self.play_song(interaction, track)
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         logger.info('User: %s is now playing: %s', interaction.user, track)
         await interaction.followup.send(embed=discord.Embed(
@@ -101,13 +100,13 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         :param track: The track to play.
         """
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if interaction.user.voice is None:
             raise errors.UserNotConnectedToVoice
 
         if player is None or not player.is_connected:
-            player: Player = await interaction.user.voice.channel.connect(cls=Player)
+            player: PibotPlayer = await interaction.user.voice.channel.connect(cls=PibotPlayer)
             await player.set_volume(
                 int(await self.bot.database.get_setting(interaction.guild, "volume") or DEFAULT_VOLUME))
             await player.play(track)
@@ -127,7 +126,7 @@ class Music(commands.Cog):
         """
         await interaction.response.defer()
         track: wavelink.YouTubeTrack = await wavelink.YouTubeTrack.search(search, return_first=True)
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if not player:
             await self.play_song(interaction, track)
@@ -135,7 +134,7 @@ class Music(commands.Cog):
             player.queue.put(item=track)
         logger.info('User: %s added: %s to the queue.', interaction.user, track.title)
 
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         await interaction.followup.send(embed=discord.Embed(
             title=track.title,
@@ -152,13 +151,13 @@ class Music(commands.Cog):
         :param search: The search query, must be a YouTube playlist.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         playlist: wavelink.YouTubePlaylist = await wavelink.YouTubePlaylist.search(search)
 
         if not player:
             await self.play_song(interaction, playlist.tracks.pop(0))
-            player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+            player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         for track in playlist.tracks:
             player.queue.put(item=track)
@@ -186,7 +185,7 @@ class Music(commands.Cog):
         """
         await interaction.response.defer()
 
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -200,7 +199,7 @@ class Music(commands.Cog):
         await interaction.followup.send("Skipped song.")
 
     @staticmethod
-    async def skip_song(player: Player) -> bool:
+    async def skip_song(player: PibotPlayer) -> bool:
         """
         Skips the current song.
         :param player: The player.
@@ -227,7 +226,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -250,7 +249,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -259,16 +258,9 @@ class Music(commands.Cog):
             await interaction.followup.send("The queue is empty.")
             return
 
-        description = (
-            f'Currently playing: {player.current.title}'
-            f'[{round(player.position / 1000)}/{round(player.current.length / 1000)}sec]\n'
-        )
-        for i, track in enumerate(player.queue):
-            description += f'[{i}] {track.title} [{round(track.length / 1000)}sec]\n'
-
         await interaction.followup.send(embed=discord.Embed(
             title='Queue',
-            description='`' + description + '`',
+            description='`' + await player.get_queue_string() + '`',
         ))
 
     @group.command(name="now", description='Shows the current song.')
@@ -278,7 +270,7 @@ class Music(commands.Cog):
         :param interaction: The interaction of the slash command.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -288,10 +280,7 @@ class Music(commands.Cog):
 
         await interaction.followup.send(embed=discord.Embed(
             title='Now Playing',
-            description=
-            f'{player.current.title}\n'
-            f'{progressBar.splitBar(total=round(player.current.length), current=round(player.position), size=20)[0]}'
-            f'[{round(player.position / 1000)} / {round(player.current.length / 1000)}sec]\n'
+            description=await player.get_now_playing_string(),
         ))
 
     @group.command(name="seek", description='Seeks to a specific time in the current song.')
@@ -303,7 +292,7 @@ class Music(commands.Cog):
         :param time: The time to seek to.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player is None:
             raise errors.BotNotConnectedToVoice
@@ -324,7 +313,7 @@ class Music(commands.Cog):
         :param volume: The volume to set.
         """
         await interaction.response.defer()
-        player: Player = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
 
         if player:
             await player.set_volume(volume)
