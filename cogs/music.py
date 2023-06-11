@@ -13,6 +13,7 @@ import errors
 import pibot
 from cogs.error_handler import send_error_message
 from pibotplayer import PibotPlayer
+from playerview import PlayerView
 
 logger = logging.getLogger('discord.music')
 
@@ -53,6 +54,25 @@ class Music(commands.Cog):
             return await payload.player.play(next_track)
         await payload.player.disconnect()
         logger.info("Queue is empty, disconnected from %s.", payload.player.guild)
+
+    @group.command(name="player", description='Shows the player of the bot.')
+    @app_commands.checks.has_role('DJ')
+    async def player(self, interaction: discord.Interaction):
+        """
+        Shows the player of the bot.
+        :param interaction: The interaction of the slash command.
+        """
+        player: PibotPlayer = wavelink.NodePool.get_node().get_player(interaction.guild.id)
+
+        embed: discord.Embed = discord.Embed(
+            title='Queue',
+            description='`' + await player.get_queue_string() + '`',
+        )
+
+        view: PlayerView = PlayerView(player=player, interaction=interaction)
+
+        interaction = await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await view.wait()
 
     @group.command(name="stop", description='Stops the bot and disconnects it from your voice channel.')
     @app_commands.checks.has_role('DJ')
