@@ -10,9 +10,6 @@ from pymongo import MongoClient
 import pibot
 
 TOKEN = os.getenv('DISCORD_TOKEN')
-OVERWRITE_PREFIX = os.getenv('DISCORD_PREFIX')
-DB_CLIENT = MongoClient(os.getenv('MONGODB_URI'))
-DB = DB_CLIENT['discord']
 
 
 async def main():
