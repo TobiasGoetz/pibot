@@ -17,16 +17,22 @@ class Database:
 
     def __init__(self, client: pymongo.MongoClient):
         self.client = client
-        self.database = self.client["discord"]
-        self.guilds = self.database["guilds"]
+        self.db = self.client["discord"]
+        self.guilds = self.db["guilds"]
 
     async def initialize_guild(self, guild: discord.Guild):
         """
         Initialize a guild in the database.
         :param guild: The guild to initialize.
         """
-        self.guilds.insert_one({"id": guild.id, "name": guild.name})
-        LOGGER.info("Added %s to the database.", guild.name)
+        guild_data = {
+            "_id": guild.id,
+            "name": guild.name
+            # Additional initialization data can go here
+        }
+        # Use upsert to avoid duplicating entries
+        self.guilds.update_one({"_id": guild.id}, {"$set": guild_data}, upsert=True)
+        LOGGER.info("Added or updated %s in the database.", guild.name)
 
     async def remove_guild(self, guild: discord.Guild):
         """
