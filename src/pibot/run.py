@@ -5,7 +5,6 @@ import asyncio
 import os
 
 import discord
-from pymongo import MongoClient
 
 import pibot
 
