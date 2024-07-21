@@ -38,10 +38,7 @@ class PiBot(discord.ext.commands.Bot):
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
-        # await self.load_extension(name=".cogs.admin", package="pibot")
-
         cogs = [p.stem for p in pathlib.Path("pibot/cogs").glob("*.py") if p.stem != "__init__"]
-        print(cogs)
         for cog in cogs:
             await self.load_extension(name=f".cogs.{cog}", package="pibot")
             LOGGER.info("Loaded %s cog.", cog)
