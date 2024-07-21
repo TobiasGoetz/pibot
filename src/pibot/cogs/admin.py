@@ -1,6 +1,7 @@
 """
 Admin cog
 """
+
 import logging
 
 import discord
