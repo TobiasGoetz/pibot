@@ -20,9 +20,9 @@ class ExceptionHandler(commands.Cog):
         bot.tree.error(coro=self.__dispatch_to_app_command_handler)
 
     async def __dispatch_to_app_command_handler(
-            self,
-            interaction: discord.Interaction,
-            error: discord.app_commands.AppCommandError,
+        self,
+        interaction: discord.Interaction,
+        error: discord.app_commands.AppCommandError,
     ):
         # Avoid dispatching to the app command error handler if the command has its own error handler.
         # if hasattr(interaction.command, 'on_error'):
@@ -41,9 +41,9 @@ class ExceptionHandler(commands.Cog):
 
     @commands.Cog.listener("on_app_command_error")
     async def on_app_command_error(
-            self,
-            interaction: discord.Interaction,
-            error: discord.app_commands.AppCommandError,
+        self,
+        interaction: discord.Interaction,
+        error: discord.app_commands.AppCommandError,
     ) -> None:
         """
         Handles app command errors.
@@ -121,9 +121,9 @@ class ExceptionHandler(commands.Cog):
 
 
 async def send_error_message(
-        interaction: discord.Interaction,
-        description: str,
-        error: app_commands.AppCommandError,
+    interaction: discord.Interaction,
+    description: str,
+    error: app_commands.AppCommandError,
 ):
     """Send a final error message."""
     embed = discord.Embed(

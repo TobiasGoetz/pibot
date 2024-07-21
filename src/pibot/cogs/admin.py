@@ -80,11 +80,11 @@ class Admin(commands.Cog):
     @group.command(name="mute", description="Mute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def mute(
-            self,
-            interaction: discord.Interaction,
-            member: discord.Member,
-            *,
-            reason: str = None,
+        self,
+        interaction: discord.Interaction,
+        member: discord.Member,
+        *,
+        reason: str = None,
     ) -> None:
         """
         Mute a member.
