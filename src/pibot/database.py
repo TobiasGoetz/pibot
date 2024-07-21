@@ -13,6 +13,7 @@ class Database:
     """Custom database class for the application."""
 
     def __init__(self, client: pymongo.MongoClient):
+        """Initialize the database."""
         self.client = client
         self.db = self.client["discord"]
         self.guilds = self.db["guilds"]

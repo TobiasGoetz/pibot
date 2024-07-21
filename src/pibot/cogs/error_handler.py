@@ -14,6 +14,7 @@ class ExceptionHandler(commands.Cog):
     """Error handler."""
 
     def __init__(self, bot: pibot.PiBot) -> None:
+        """Initialize the cog."""
         self.bot = bot
         bot.tree.error(coro=self.__dispatch_to_app_command_handler)
 

@@ -1,5 +1,4 @@
-"""General cog
-"""
+"""General cog."""
 
 import asyncio
 import logging
@@ -17,11 +16,12 @@ class General(commands.Cog):
     """General commands."""
 
     def __init__(self, bot):
+        """Initialize the cog."""
         self.bot = bot
 
     @app_commands.command(name="ping", description="Displays the bots ping")
     async def ping(self, interaction: discord.Interaction):
-        """Displays the bots ping."""
+        """Display the bots ping."""
         await interaction.response.send_message(f"Ping: {self.bot.latency * 1000:.0f}ms", ephemeral=True)
 
     @app_commands.command(

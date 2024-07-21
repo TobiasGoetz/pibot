@@ -15,6 +15,7 @@ class Admin(commands.Cog):
     group = app_commands.Group(name="admin", description="Admin commands for the bot.")
 
     def __init__(self, bot):
+        """Initialize the cog."""
         self.bot = bot
 
     @group.command(name="prefix", description="Set the prefix for the guild.")

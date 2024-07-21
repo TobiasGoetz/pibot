@@ -17,6 +17,7 @@ class PiBot(discord.ext.commands.Bot):
     """The custom bot class for PiBot."""
 
     def __init__(self, *args, **kwargs) -> None:
+        """Initialize the bot."""
         self.database = database.Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
         super().__init__(
             *args,
