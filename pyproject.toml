@@ -30,6 +30,10 @@ pibot = "pibot:__main__"
 
 [tool.ruff]
 line-length = 120
+# exclude all __init__.py files
+exclude = [
+    "*/__init__.py",
+]
 
 [tool.ruff.lint]
 extend-select = [
