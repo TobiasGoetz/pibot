@@ -34,5 +34,6 @@ line-length = 120
 [tool.ruff.lint]
 extend-select = [
     "E501",
-    "UP",
+    "UP", # pyupgrade
+    "D", # pydocstyle
 ]

@@ -1,6 +1,4 @@
-"""
-Handles errors in the bot
-"""
+"""Handles errors in the bot."""
 
 import logging
 
@@ -13,7 +11,7 @@ LOGGER: logging.Logger = logging.getLogger("errors")
 
 
 class ExceptionHandler(commands.Cog):
-    """Error handler"""
+    """Error handler."""
 
     def __init__(self, bot: pibot.PiBot) -> None:
         self.bot = bot
@@ -45,12 +43,11 @@ class ExceptionHandler(commands.Cog):
         interaction: discord.Interaction,
         error: discord.app_commands.AppCommandError,
     ) -> None:
-        """
-        Handles app command errors.
+        """Handle app command errors.
+
         :param interaction: The interaction of the slash command.
         :param error: The error that occurred.
         """
-
         if isinstance(error, app_commands.MissingPermissions):
             LOGGER.info(
                 "User %s tried to use %s without permissions.",

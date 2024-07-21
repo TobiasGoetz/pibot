@@ -1,6 +1,4 @@
-"""
-Admin cog
-"""
+"""Admin cog."""
 
 import logging
 
@@ -12,9 +10,7 @@ logger = logging.getLogger("discord.admin")
 
 
 class Admin(commands.Cog):
-    """
-    Admin commands
-    """
+    """Admin commands."""
 
     group = app_commands.Group(name="admin", description="Admin commands for the bot.")
 
@@ -24,8 +20,8 @@ class Admin(commands.Cog):
     @group.command(name="prefix", description="Set the prefix for the guild.")
     @app_commands.checks.has_permissions(administrator=True)
     async def prefix(self, interaction: discord.Interaction, arg: str):
-        """
-        Set the prefix for the guild.
+        """Set the prefix for the guild.
+
         :param interaction: The interaction of the slash command.
         :param arg: The prefix to set.
         """
@@ -40,8 +36,8 @@ class Admin(commands.Cog):
     @group.command(name="command_channel", description="Set the command channel for the guild.")
     @app_commands.checks.has_permissions(administrator=True)
     async def command_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        """
-        Set the command channel for the guild.
+        """Set the command channel for the guild.
+
         :param channel: The channel to set as the command channel.
         :param interaction: The interaction of the slash command.
         """
@@ -63,8 +59,8 @@ class Admin(commands.Cog):
     @group.command(name="clear", description="Clear a specified amount of messages.")
     @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
-        """
-        Clear a specified amount of messages.
+        """Clear a specified amount of messages.
+
         :param interaction: The interaction of the slash command.
         :param amount: The amount of messages to clear.
         """
@@ -86,8 +82,8 @@ class Admin(commands.Cog):
         *,
         reason: str = None,
     ) -> None:
-        """
-        Mute a member.
+        """Mute a member.
+
         :param interaction: The interaction of the slash command.
         :param member: The member to mute.
         :param reason: The reason for the mute.
@@ -115,8 +111,8 @@ class Admin(commands.Cog):
     @group.command(name="unmute", description="Unmute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
-        """
-        Unmute a member.
+        """Unmute a member.
+
         :param interaction: The interaction of the slash command.
         :param member: The member to unmute.
         """
@@ -128,5 +124,5 @@ class Admin(commands.Cog):
 
 
 async def setup(bot):
-    """Setup the cog."""
+    """Set up the cog."""
     await bot.add_cog(Admin(bot))

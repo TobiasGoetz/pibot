@@ -1,6 +1,4 @@
-"""
-Discord Bot
-"""
+"""Discord Bot."""
 
 import asyncio
 import os

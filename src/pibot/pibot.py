@@ -1,6 +1,4 @@
-"""
-The custom bot class for PiBot.
-"""
+"""The custom bot class for PiBot."""
 
 import asyncio
 import logging
@@ -16,9 +14,7 @@ LOGGER: logging.Logger = logging.getLogger("pibot")
 
 
 class PiBot(discord.ext.commands.Bot):
-    """
-    The custom bot class for PiBot.
-    """
+    """The custom bot class for PiBot."""
 
     def __init__(self, *args, **kwargs) -> None:
         self.database = database.Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
@@ -29,9 +25,7 @@ class PiBot(discord.ext.commands.Bot):
         )
 
     async def setup_hook(self) -> None:
-        """
-        Set up the hooks for the bot.
-        """
+        """Set up the hooks for the bot."""
         discord.utils.setup_logging()
         LOGGER.info("Logged in as %s", self.user)
         await self.load_cogs()

@@ -1,6 +1,4 @@
-"""
-Custom errors for the bot.
-"""
+"""Custom errors for the bot."""
 
 import discord
 

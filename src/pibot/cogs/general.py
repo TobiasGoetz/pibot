@@ -1,5 +1,4 @@
-"""
-General cog
+"""General cog
 """
 
 import asyncio
@@ -15,9 +14,7 @@ logger = logging.getLogger("discord.general")
 
 
 class General(commands.Cog):
-    """
-    General commands
-    """
+    """General commands."""
 
     def __init__(self, bot):
         self.bot = bot
@@ -32,8 +29,8 @@ class General(commands.Cog):
         description="Start a countdown for a specified amount of time.",
     )
     async def countdown(self, interaction: discord.Interaction, time_str: str):
-        """
-        Start a countdown for a specified amount of time.
+        """Start a countdown for a specified amount of time.
+
         :param interaction: The interaction of the slash command.
         :param time_str: The time to count down from.
         """
@@ -78,5 +75,5 @@ class General(commands.Cog):
 
 
 async def setup(bot):
-    """Setup the cog."""
+    """Set up the cog."""
     await bot.add_cog(General(bot))
