@@ -26,4 +26,18 @@ Homepage = "https://github.com/TobiasGoetz/pibot"
 Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [project.scripts]
-run = "pibot:run"
+pibot = "pibot:__main__"
+
+[tool.ruff]
+line-length = 120
+# exclude all __init__.py files
+exclude = [
+    "*/__init__.py",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    "E501",
+    "UP", # pyupgrade
+    "D", # pydocstyle
+]
