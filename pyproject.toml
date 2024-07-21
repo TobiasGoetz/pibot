@@ -27,3 +27,12 @@ Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [project.scripts]
 run = "pibot:run"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-select = [
+    "E501",
+    "UP",
+]

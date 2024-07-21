@@ -1,12 +1,13 @@
 """
 Custom database class for the application.
 """
+
 import logging
 
 import discord
 import pymongo
 
-LOGGER: logging.Logger = logging.getLogger('db')
+LOGGER: logging.Logger = logging.getLogger("db")
 DEFAULT_PREFIX = "."
 
 
@@ -27,7 +28,7 @@ class Database:
         """
         guild_data = {
             "_id": guild.id,
-            "name": guild.name
+            "name": guild.name,
             # Additional initialization data can go here
         }
         # Use upsert to avoid duplicating entries

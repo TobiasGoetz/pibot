@@ -7,7 +7,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-logger = logging.getLogger('discord.admin')
+logger = logging.getLogger("discord.admin")
 
 
 class Admin(commands.Cog):
@@ -52,7 +52,11 @@ class Admin(commands.Cog):
             return await interaction.followup.send(f"Channel {channel} not found.")
 
         await self.bot.database.set_setting(interaction.guild, "command_channel", channel.id)
-        logger.info("Changed command channel for %s to %s.", interaction.guild.name, channel.name)
+        logger.info(
+            "Changed command channel for %s to %s.",
+            interaction.guild.name,
+            channel.name,
+        )
         await interaction.followup.send(f"Command channel set to {channel.mention}")
 
     @group.command(name="clear", description="Clear a specified amount of messages.")
@@ -65,11 +69,22 @@ class Admin(commands.Cog):
         """
         await interaction.response.defer()
         await interaction.channel.purge(limit=amount + 1)
-        logging.info('User %s cleared %s messages in %s.', interaction.user, amount, interaction.channel)
+        logging.info(
+            "User %s cleared %s messages in %s.",
+            interaction.user,
+            amount,
+            interaction.channel,
+        )
 
     @group.command(name="mute", description="Mute a member.")
     @app_commands.checks.has_permissions(administrator=True)
-    async def mute(self, interaction: discord.Interaction, member: discord.Member, *, reason: str=None) -> None:
+    async def mute(
+            self,
+            interaction: discord.Interaction,
+            member: discord.Member,
+            *,
+            reason: str = None,
+    ) -> None:
         """
         Mute a member.
         :param interaction: The interaction of the slash command.
@@ -77,28 +92,24 @@ class Admin(commands.Cog):
         :param reason: The reason for the mute.
         """
         await interaction.response.defer()
-        role = discord.utils.get(interaction.guild.roles, name='Muted')
+        role = discord.utils.get(interaction.guild.roles, name="Muted")
 
         if role is None:
-            logger.info('Muted role not found, creating one.')
-            await interaction.guild.create_role(name='Muted')
-            role = discord.utils.get(interaction.guild.roles, name='Muted')
+            logger.info("Muted role not found, creating one.")
+            await interaction.guild.create_role(name="Muted")
+            role = discord.utils.get(interaction.guild.roles, name="Muted")
 
         for channel in interaction.guild.channels:
-            await channel.set_permissions(
-                role,
-                speak=False,
-                send_messages=False
-            )
-        logger.info('Muted role created.')
+            await channel.set_permissions(role, speak=False, send_messages=False)
+        logger.info("Muted role created.")
 
         await member.add_roles(role)
 
         if reason is None:
-            await interaction.followup.send(f'{member.mention} has been muted.')
+            await interaction.followup.send(f"{member.mention} has been muted.")
         else:
-            await interaction.followup.send(f'{member.mention} has been muted for {reason}')
-        logging.info('User %s muted %s for %s.', interaction.user, member, reason)
+            await interaction.followup.send(f"{member.mention} has been muted for {reason}")
+        logging.info("User %s muted %s for %s.", interaction.user, member, reason)
 
     @group.command(name="unmute", description="Unmute a member.")
     @app_commands.checks.has_permissions(administrator=True)
@@ -109,12 +120,12 @@ class Admin(commands.Cog):
         :param member: The member to unmute.
         """
         await interaction.response.defer()
-        role = discord.utils.get(interaction.guild.roles, name='Muted')
+        role = discord.utils.get(interaction.guild.roles, name="Muted")
         await member.remove_roles(role)
-        await interaction.followup.send(f'{member.mention} has been unmuted.')
-        logging.info('User %s unmuted %s.', interaction.user, member)
+        await interaction.followup.send(f"{member.mention} has been unmuted.")
+        logging.info("User %s unmuted %s.", interaction.user, member)
 
 
 async def setup(bot):
-    """ Setup the cog. """
+    """Setup the cog."""
     await bot.add_cog(Admin(bot))
