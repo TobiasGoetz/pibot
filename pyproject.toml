@@ -26,7 +26,7 @@ Homepage = "https://github.com/TobiasGoetz/pibot"
 Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [project.scripts]
-run = "pibot:run"
+pibot = "pibot:__main__"
 
 [tool.ruff]
 line-length = 120
