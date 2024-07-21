@@ -8,7 +8,7 @@ import pathlib
 import discord.ext.commands
 import pymongo
 
-import database
+from pibot.database import Database
 
 LOGGER: logging.Logger = logging.getLogger("pibot")
 
@@ -18,7 +18,7 @@ class PiBot(discord.ext.commands.Bot):
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
-        self.database = database.Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
+        self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
         super().__init__(
             *args,
             # command_prefix=self.database.get_prefix,
@@ -38,9 +38,12 @@ class PiBot(discord.ext.commands.Bot):
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
-        cogs = [p.stem for p in pathlib.Path("cogs").glob("*.py") if p.stem != "__init__"]
+        # await self.load_extension(name=".cogs.admin", package="pibot")
+
+        cogs = [p.stem for p in pathlib.Path("pibot/cogs").glob("*.py") if p.stem != "__init__"]
+        print(cogs)
         for cog in cogs:
-            await self.load_extension(f"cogs.{cog}")
+            await self.load_extension(name=f".cogs.{cog}", package="pibot")
             LOGGER.info("Loaded %s cog.", cog)
 
     async def on_guild_join(self, guild: discord.Guild) -> None:

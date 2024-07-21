@@ -4,8 +4,11 @@ COPY ../requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY src/pibot pibot
+COPY src/ .
 
-WORKDIR /pibot
+# make sure all messages always reach console
+ENV PYTHONUNBUFFERED=1
 
-ENTRYPOINT ["python", "run.py"]
+#WORKDIR pibot/
+CMD ["python", "-m", "pibot"]
+#ENTRYPOINT ["python", "pibot"]

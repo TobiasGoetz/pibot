@@ -5,14 +5,14 @@ import os
 
 import discord
 
-import pibot
+from pibot.pibot import PiBot
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 
 async def main():
     """Run the bot."""
-    bot = pibot.PiBot(command_prefix=".", case_insensitive=True, intents=discord.Intents.all())
+    bot = PiBot(command_prefix=".", case_insensitive=True, intents=discord.Intents.all())
     await bot.start(TOKEN)
 
 
