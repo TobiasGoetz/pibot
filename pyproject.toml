@@ -10,23 +10,31 @@ authors = [
 description = "Multi-purpose Discord Bot"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
+    "audioop-lts>=0.2.1",
     "discord.py == 2.4.0",
     "pymongo == 4.8.0",
-    "pytimeparse == 1.1.8"
+    "pytimeparse == 1.1.8",
 ]
 keywords = ['python', 'discord', 'bot', 'moderation', 'fun', 'utility']
 
 [tool.setuptools_scm]
+#fallback_version = "0.1.0"
 #version_file = "src/pibot/_version.py" # Uncomment if you want to use a _version.py file
 
 [project.urls]
 Homepage = "https://github.com/TobiasGoetz/pibot"
 Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
+[dependency-groups]
+dev = [
+    "build",
+    "ruff",
+]
+
 [project.scripts]
-pibot = "pibot:__main__"
+pibot = "pibot.__main__:run"
 
 [tool.ruff]
 line-length = 120

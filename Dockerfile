@@ -1,14 +1,18 @@
-FROM python:3.12
+FROM python:3.13
 
-COPY ../requirements.txt .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+WORKDIR /pibot
 
-RUN pip install -r requirements.txt
+# Copy the project into the image
+COPY . /pibot
 
-COPY src/ .
+# Install the project
+RUN #uv sync --frozen
 
-# make sure all messages always reach console
+# Set environment variables
+#make sure all messages always reach console
 ENV PYTHONUNBUFFERED=1
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PIBOT=0.1.0
 
-#WORKDIR pibot/
-CMD ["python", "-m", "pibot"]
-#ENTRYPOINT ["python", "pibot"]
+CMD ["uv", "run", "pibot"]
