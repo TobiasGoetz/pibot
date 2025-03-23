@@ -1,6 +1,7 @@
 """The custom bot class for PiBot."""
 
 import asyncio
+import importlib
 import logging
 import os
 import pathlib
@@ -38,10 +39,13 @@ class PiBot(discord.ext.commands.Bot):
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
-        cogs = [p.stem for p in pathlib.Path("pibot/cogs").glob("*.py") if p.stem != "__init__"]
+        package_dir = pathlib.Path(importlib.resources.files("pibot"))
+        cogs = [p.stem for p in (package_dir / "cogs").glob("*.py") if p.stem != "__init__"]
         for cog in cogs:
             await self.load_extension(name=f".cogs.{cog}", package="pibot")
             LOGGER.info("Loaded %s cog.", cog)
+        else:
+            LOGGER.info("All cogs loaded.")
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """When the bot joins a guild."""
