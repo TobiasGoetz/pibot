@@ -11,16 +11,14 @@ from pibot.pibot import PiBot
 logger = logging.getLogger("discord.admin")
 
 
-class Admin(commands.Cog):
+class Admin(commands.GroupCog):
     """Admin commands."""
-
-    group = app_commands.Group(name="admin", description="Admin commands for the bot.")
 
     def __init__(self, bot):
         """Initialize the cog."""
         self.bot = bot
 
-    @group.command(name="prefix", description="Set the prefix for the guild.")
+    @app_commands.command(name="prefix", description="Set the prefix for the guild.")
     @app_commands.checks.has_permissions(administrator=True)
     async def prefix(self, interaction: discord.Interaction, arg: str):
         """Set the prefix for the guild.
@@ -36,7 +34,7 @@ class Admin(commands.Cog):
         logger.info("Changed prefix for %s to %s.", interaction.guild.name, arg)
         await interaction.followup.send(f"Prefix set to {arg}")
 
-    @group.command(name="command_channel", description="Set the command channel for the guild.")
+    @app_commands.command(name="command_channel", description="Set the command channel for the guild.")
     @app_commands.checks.has_permissions(administrator=True)
     async def command_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """Set the command channel for the guild.
@@ -59,7 +57,7 @@ class Admin(commands.Cog):
         )
         await interaction.followup.send(f"Command channel set to {channel.mention}")
 
-    @group.command(name="clear", description="Clear a specified amount of messages.")
+    @app_commands.command(name="clear", description="Clear a specified amount of messages.")
     @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """Clear a specified amount of messages.
@@ -76,7 +74,7 @@ class Admin(commands.Cog):
             interaction.channel,
         )
 
-    @group.command(name="mute", description="Mute a member.")
+    @app_commands.command(name="mute", description="Mute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def mute(
         self,
@@ -111,7 +109,7 @@ class Admin(commands.Cog):
             await interaction.followup.send(f"{member.mention} has been muted for {reason}")
         logging.info("User %s muted %s for %s.", interaction.user, member, reason)
 
-    @group.command(name="unmute", description="Unmute a member.")
+    @app_commands.command(name="unmute", description="Unmute a member.")
     @app_commands.checks.has_permissions(administrator=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Unmute a member.
