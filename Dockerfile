@@ -1,4 +1,5 @@
 FROM python:3-slim
+LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
