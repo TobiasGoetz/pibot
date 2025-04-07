@@ -11,8 +11,7 @@ import pymongo
 
 from pibot.database import Database
 
-LOGGER: logging.Logger = logging.getLogger("pibot")
-
+logger = logging.getLogger("pibot")
 
 class PiBot(discord.ext.commands.Bot):
     """The custom bot class for PiBot."""
@@ -29,13 +28,13 @@ class PiBot(discord.ext.commands.Bot):
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
         discord.utils.setup_logging()
-        LOGGER.info("Logged in as %s", self.user)
+        logger.info("Logged in as %s", self.user)
         await self.load_cogs()
         await self.tree.sync()
 
     async def on_ready(self) -> None:
         """When the bot is ready."""
-        LOGGER.info("Ready as %s", self.user)
+        logger.info("Ready as %s", self.user)
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
@@ -43,20 +42,23 @@ class PiBot(discord.ext.commands.Bot):
         cogs = [p.stem for p in (package_dir / "cogs").glob("*.py") if p.stem != "__init__"]
         for cog in cogs:
             await self.load_extension(name=f".cogs.{cog}", package="pibot")
-            LOGGER.info("Loaded %s cog.", cog)
+            logger.info("Loaded %s cog.", cog)
         else:
-            LOGGER.info("All cogs loaded.")
+            logger.info("All cogs loaded.")
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """When the bot joins a guild."""
+        logger.debug("Joined guild %s", guild.name)
         await self.database.initialize_guild(guild)
 
     async def on_guild_remove(self, guild: discord.Guild) -> None:
         """When the bot leaves a guild."""
+        logger.debug("Left guild %s", guild.name)
         await self.database.remove_guild(guild)
 
     async def on_guild_available(self, guild: discord.Guild) -> None:
         """When a guild becomes available."""
+        logger.debug("Guild %s is available", guild.name)
         await self.database.check_if_guild_exists_else_initialize(guild)
 
     async def on_message(self, message: discord.Message, /) -> None:

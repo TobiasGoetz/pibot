@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from pibot.pibot import PiBot
 
-logger = logging.getLogger("discord.admin")
+logger = logging.getLogger("cog.admin")
 
 
 class Admin(commands.GroupCog):
