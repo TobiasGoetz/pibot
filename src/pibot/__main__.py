@@ -7,13 +7,12 @@ import discord
 
 from pibot.pibot import PiBot
 
-TOKEN = os.getenv("DISCORD_TOKEN")
-
 
 async def main():
     """Run the bot."""
     bot = PiBot(command_prefix=".", case_insensitive=True, intents=discord.Intents.all())
-    await bot.start(TOKEN)
+    await bot.start(os.getenv("DISCORD_TOKEN"))
+
 
 def run():
     """Entry point for the CLI."""
