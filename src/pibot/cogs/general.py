@@ -61,8 +61,8 @@ class General(commands.Cog):
                 embed=discord.Embed(
                     title=f"Countdown - {seconds}s",
                     description=f"{seconds - round((datetime.now(UTC) - start_time).total_seconds())}"
-                    f"seconds remaining.\n"
-                    f"Ends at {end_time} UTC.",
+                                f"seconds remaining.\n"
+                                f"Ends at {end_time} UTC.",
                 )
             )
             await asyncio.sleep(1)
