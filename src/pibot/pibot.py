@@ -13,6 +13,7 @@ from pibot.database import Database
 
 logger = logging.getLogger("pibot")
 
+
 class PiBot(discord.ext.commands.Bot):
     """The custom bot class for PiBot."""
 
@@ -30,11 +31,11 @@ class PiBot(discord.ext.commands.Bot):
         discord.utils.setup_logging()
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()
-        await self.tree.sync()
 
     async def on_ready(self) -> None:
         """When the bot is ready."""
         logger.info("Ready as %s", self.user)
+        await self.sync_commands()
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
@@ -75,8 +76,8 @@ class PiBot(discord.ext.commands.Bot):
                     name="botspam",
                 )
                 command_channel = (
-                    message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
-                    or default_command_channel
+                        message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
+                        or default_command_channel
                 )
 
                 if message.channel.id == command_channel.id:
@@ -86,8 +87,16 @@ class PiBot(discord.ext.commands.Bot):
                 response = await message.channel.send(
                     embed=discord.Embed(
                         description=f":no_entry_sign: **{message.author.name}** "
-                        f"you can only use commands in {command_channel.mention}."
+                                    f"you can only use commands in {command_channel.mention}."
                     )
                 )
                 await asyncio.sleep(5)
                 await response.delete()
+
+    async def sync_commands(self) -> None:
+        logger.debug("Syncing commands.")
+        if os.getenv("ENVIRONMENT") == "production":
+            logger.debug("Detected production environment. Syncing commands globally.")
+            await self.tree.sync()
+        else:
+            logger.debug("No production environment detected. Not syncing commands globally.")
