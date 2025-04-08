@@ -39,10 +39,10 @@ pibot = "pibot.__main__:run"
 
 [tool.ruff]
 line-length = 120
-# exclude all __init__.py files
 exclude = [
     "*/__init__.py",
 ]
+include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = [
