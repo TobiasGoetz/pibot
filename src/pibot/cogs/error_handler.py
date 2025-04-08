@@ -44,7 +44,8 @@ class ExceptionHandler(commands.Cog):
         interaction: discord.Interaction,
         error: discord.app_commands.AppCommandError,
     ) -> None:
-        """Handle app command errors.
+        """
+        Handle app command errors.
 
         :param interaction: The interaction of the slash command.
         :param error: The error that occurred.

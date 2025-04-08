@@ -1,3 +1,4 @@
+"""Translations cog for PiBot."""
 import logging
 import os
 
@@ -22,7 +23,8 @@ class Translations(commands.Cog):
 
     @app_commands.command(name="translate", description="Translate a text to a target language.")
     async def translate(self, interaction: discord.Interaction, text: str, target_lang: str):
-        """Translate a text to a target language.
+        """
+        Translate a text to a target language.
 
         :param interaction: The interaction of the slash command.
         :param text: The text to translate.

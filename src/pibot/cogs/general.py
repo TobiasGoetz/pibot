@@ -31,7 +31,8 @@ class General(commands.Cog):
         description="Start a countdown for a specified amount of time.",
     )
     async def countdown(self, interaction: discord.Interaction, time_str: str):
-        """Start a countdown for a specified amount of time.
+        """
+        Start a countdown for a specified amount of time.
 
         :param interaction: The interaction of the slash command.
         :param time_str: The time to count down from.

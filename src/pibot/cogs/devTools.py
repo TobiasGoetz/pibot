@@ -17,7 +17,7 @@ class DevTools(commands.Cog):
     @commands.command(name="getcommands")
     @commands.is_owner()
     async def get_commands(self, ctx):
-        """Remove all application commands"""
+        """Get all application commands."""
         await ctx.defer()
 
         embed = discord.Embed(
@@ -83,7 +83,7 @@ class DevTools(commands.Cog):
     @commands.command(name="clearglobal")
     @commands.is_owner()
     async def clear_global_commands(self, ctx):
-        """Remove all application commands"""
+        """Remove all application commands."""
         await ctx.defer()
 
         # Save the global commands to a variable

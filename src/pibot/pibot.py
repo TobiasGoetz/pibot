@@ -94,6 +94,7 @@ class PiBot(discord.ext.commands.Bot):
                 await response.delete()
 
     async def sync_commands(self) -> None:
+        """Sync the app commands with Discord."""
         logger.debug("Syncing commands.")
         if os.getenv("ENVIRONMENT") == "production":
             logger.debug("Detected production environment. Syncing commands globally.")
