@@ -33,6 +33,10 @@ dev = [
     "build",
     "ruff",
 ]
+docs = [
+    "sphinx>=8.2.3",
+    "sphinx-rtd-theme>=3.0.2",
+]
 
 [project.scripts]
 pibot = "pibot.__main__:run"
