@@ -31,4 +31,8 @@ class DeepLTranslator(Translator):
         :param target_lang: The target language to translate to.
         :return: The translated text.
         """
-        return self.client.translate_text(text, target_lang=target_lang).text
+        return self.client.translate_text(
+            text=text,
+            target_lang=target_lang,
+            context="A user sent this message on Discord.",
+        ).text
