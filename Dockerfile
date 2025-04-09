@@ -9,11 +9,11 @@ WORKDIR /pibot
 COPY . /pibot
 
 # Install the project
-RUN #uv sync --frozen
+ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PIBOT=0.1.0
+RUN uv sync --frozen
 
 # Set environment variables
 #make sure all messages always reach console
 ENV PYTHONUNBUFFERED=1
-ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PIBOT=0.1.0
 
 CMD ["uv", "run", "pibot"]
