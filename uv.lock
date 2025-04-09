@@ -354,7 +354,6 @@ wheels = [
 name = "pibot"
 source = { editable = "." }
 dependencies = [
-    { name = "audioop-lts" },
     { name = "deepl" },
     { name = "discord-py" },
     { name = "pymongo" },
@@ -373,7 +372,6 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "audioop-lts", specifier = ">=0.2.1" },
     { name = "deepl", specifier = ">=1.21.1" },
     { name = "discord-py", specifier = "==2.5.2" },
     { name = "pymongo", specifier = "==4.11.3" },
