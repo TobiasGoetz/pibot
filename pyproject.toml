@@ -20,8 +20,9 @@ dependencies = [
 keywords = ['python', 'discord', 'bot', 'moderation', 'fun', 'utility']
 
 [tool.setuptools_scm]
-#fallback_version = "0.1.0"
-#version_file = "src/pibot/_version.py" # Uncomment if you want to use a _version.py file
+write_to = "src/_version.py"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
 
 [project.urls]
 Homepage = "https://github.com/TobiasGoetz/pibot"

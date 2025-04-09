@@ -133,3 +133,6 @@ dmypy.json
 
 #Local setup file
 setup.cfg
+
+# Versioning
+_version.py
