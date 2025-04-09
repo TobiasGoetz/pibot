@@ -15,8 +15,12 @@ Coming soon
 * `DISCORD_TOKEN` - The token for the discord bot
 * `MONGODB_URI` - The URI for the MongoDB database
 
-# Development
+# Local Development
 
 ## Documentation
 
 Update docs using `uv run sphinx-apidoc -f -o docs/source src/pibot`
+
+## Building multi-architecture docker images
+1. `docker buildx create --use --name pibot`
+2. `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .`
