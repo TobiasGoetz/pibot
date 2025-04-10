@@ -27,7 +27,7 @@ Dockerfile
 env/
 build/
 develop-eggs/
-dist/
+#dist/ #ignore because we use this to build the docker image
 downloads/
 eggs/
 lib/
