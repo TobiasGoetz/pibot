@@ -9,6 +9,7 @@ import pathlib
 import discord.ext.commands
 import pymongo
 
+from _version import __version__
 from pibot.database import Database
 
 logger = logging.getLogger("pibot")
@@ -19,6 +20,7 @@ class PiBot(discord.ext.commands.Bot):
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
+        self.version = __version__
         self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
         super().__init__(
             *args,
