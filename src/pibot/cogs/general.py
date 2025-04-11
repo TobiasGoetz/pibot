@@ -11,7 +11,7 @@ from discord.ext import commands
 
 from pibot.pibot import PiBot
 
-logger = logging.getLogger("discord.general")
+logger = logging.getLogger("cog.general")
 
 
 class General(commands.Cog):
@@ -21,17 +21,29 @@ class General(commands.Cog):
         """Initialize the cog."""
         self.bot = bot
 
-    @app_commands.command(name="ping", description="Displays the bots ping")
+    @app_commands.command(name="ping", description="Displays the bots ping.")
     async def ping(self, interaction: discord.Interaction):
         """Display the bots ping."""
         await interaction.response.send_message(f"Ping: {self.bot.latency * 1000:.0f}ms", ephemeral=True)
+
+    @app_commands.command(name="version", description="Displays the bot version.")
+    async def version(self, interaction: discord.Interaction):
+        """Display the bot's version."""
+        await interaction.response.send_message(
+            embed=discord.Embed(
+                title="PiBot Version",
+                description=self.bot.version,
+            ),
+            ephemeral=True,
+        )
 
     @app_commands.command(
         name="countdown",
         description="Start a countdown for a specified amount of time.",
     )
     async def countdown(self, interaction: discord.Interaction, time_str: str):
-        """Start a countdown for a specified amount of time.
+        """
+        Start a countdown for a specified amount of time.
 
         :param interaction: The interaction of the slash command.
         :param time_str: The time to count down from.
@@ -61,8 +73,8 @@ class General(commands.Cog):
                 embed=discord.Embed(
                     title=f"Countdown - {seconds}s",
                     description=f"{seconds - round((datetime.now(UTC) - start_time).total_seconds())}"
-                    f"seconds remaining.\n"
-                    f"Ends at {end_time} UTC.",
+                                f"seconds remaining.\n"
+                                f"Ends at {end_time} UTC.",
                 )
             )
             await asyncio.sleep(1)

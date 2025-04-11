@@ -17,29 +17,29 @@ pibot.database module
 
 .. automodule:: pibot.database
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 pibot.errors module
 -------------------
 
 .. automodule:: pibot.errors
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 pibot.pibot module
 ------------------
 
 .. automodule:: pibot.pibot
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: pibot
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

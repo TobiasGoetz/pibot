@@ -133,3 +133,9 @@ dmypy.json
 
 #Local setup file
 setup.cfg
+
+# Versioning
+_version.py
+
+# Release tool files
+node_modules

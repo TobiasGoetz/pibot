@@ -1,6 +1,0 @@
-sphinx
-sphinx-rtd-theme
-
-discord.py==2.4.0
-pymongo==4.10.0
-pytimeparse==1.1.8
