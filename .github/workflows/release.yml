@@ -16,6 +16,8 @@ jobs:
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
       id-token: write # to enable use of OIDC for npm provenance
+    outputs:
+        version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,3 +32,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
+      - name: Read version from file
+        id: version
+        run: |
+          source version.env
+          echo "version=$version" >> $GITHUB_OUTPUT
+  docker-publish:
+    needs: release
+    uses: ./.github/workflows/docker-publish.yml
+    with:
+      version: ${{ needs.release.outputs.version }}

@@ -1,9 +1,12 @@
 name: "Docker Publish"
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to tag the Docker image with"
+        type: string
+        required: true
 
 jobs:
   build-and-publish:
@@ -32,4 +35,4 @@ jobs:
           push: true
           tags: |
             "${{ github.repository }}:latest"
-            "${{ github.repository }}:${{ github.ref_name }}"
+            "${{ github.repository }}:${{ inputs.version }}"
