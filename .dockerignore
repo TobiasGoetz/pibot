@@ -27,7 +27,7 @@ Dockerfile
 env/
 build/
 develop-eggs/
-#dist/ #ignore because we use this to build the docker image
+dist/
 downloads/
 eggs/
 lib/
@@ -90,3 +90,4 @@ venv/
 
 # Release tool files
 node_modules
+_version.py
