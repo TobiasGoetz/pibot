@@ -106,5 +106,5 @@ class DevTools(commands.Cog):
 
 async def setup(bot: PiBot) -> None:
     """Set up the cog only in non-production environments."""
-    if os.getenv("ENVIRONMENT") != "production":
+    if os.getenv("ENVIRONMENT") != "production" and os.getenv("ENVIRONMENT") != "testing":
         await bot.add_cog(DevTools(bot))
