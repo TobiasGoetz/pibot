@@ -87,3 +87,6 @@ venv/
 
 # VS Code
 .vscode/
+
+# Release tool files
+node_modules
