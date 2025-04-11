@@ -4,8 +4,25 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-    time: "05:00"
-  groups:
-    python-packages:
-      patterns:
-        - "*"
+  target-branch: "develop"
+  labels:
+    - "dependencies"
+    - "pip"
+
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+  target-branch: "develop"
+  labels:
+    - "dependencies"
+    - "docker"
+
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: daily
+  target-branch: "main"
+  labels:
+    - "dependencies"
+    - "github-actions"
