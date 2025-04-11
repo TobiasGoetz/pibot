@@ -27,15 +27,6 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set tag name
-        id: tag-name
-        run: |
-          if [ "${{ inputs.version }}" != "" ]; then
-            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -44,4 +35,4 @@ jobs:
           push: true
           tags: |
             "${{ github.repository }}:latest"
-            "${{ github.repository }}:${{ github.ref_name }}"
+            "${{ github.repository }}:${{ inputs.version }}"
