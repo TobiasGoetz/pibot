@@ -1,33 +1,39 @@
-# Stage 1: Builder
-FROM python:3.13.2-alpine as builder
+FROM python:3.13.2-alpine AS builder
 LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
+
+RUN apk update
+RUN apk add git
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+WORKDIR /pibot-build
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-editable
+
+
+COPY . .
+
+RUN uv build
+
 WORKDIR /pibot
 
-# Copy the built wheel file (make sure to have run `uv build` before)
-COPY dist/*.whl .
-
-# Create a virtual environment using uv
 RUN uv venv
 
 # Install the wheel file inside the virtual environment
-RUN uv pip install *.whl
+RUN uv pip install /pibot-build/dist/*.whl
 
-# Stage 2: Final Runtime Image
-FROM python:3.13.2-alpine as runtime
+FROM python:3.13.2-alpine AS runtime
 
-# Set the working directory
 WORKDIR /pibot
 
 # Copy only the virtual environment from the builder stage
 COPY --from=builder /pibot/.venv /pibot/.venv
 
-# Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/pibot/.venv/bin:$PATH"
 
-# Run the package with Python
 CMD ["python", "-m", "pibot"]
