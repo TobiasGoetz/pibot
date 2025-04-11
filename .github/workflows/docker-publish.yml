@@ -1,9 +1,12 @@
 name: "Docker Publish"
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to tag the Docker image with"
+        type: string
+        required: true
 
 jobs:
   build-and-publish:
@@ -23,6 +26,15 @@ jobs:
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set tag name
+        id: tag-name
+        run: |
+          if [ "${{ inputs.version }}" != "" ]; then
+            echo "tag=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
