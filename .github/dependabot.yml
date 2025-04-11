@@ -4,7 +4,6 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-  target-branch: "develop"
   labels:
     - "dependencies"
     - "pip"
@@ -13,7 +12,6 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-  target-branch: "develop"
   labels:
     - "dependencies"
     - "docker"
@@ -22,7 +20,6 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-  target-branch: "main"
   labels:
     - "dependencies"
     - "github-actions"
