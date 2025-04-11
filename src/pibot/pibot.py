@@ -69,22 +69,25 @@ class PiBot(discord.ext.commands.Bot):
         if message.guild is None:
             return
 
+        if message.author.bot:
+            return
+
         prefixes = await self.database.get_prefix(message)
         for pref in prefixes:
-            if message.content.lower().startswith(pref):
-                default_command_channel = discord.utils.get(
-                    self.get_all_channels(),
-                    guild__name=message.guild.name,
-                    name="botspam",
-                )
-                command_channel = (
-                        message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
-                        or default_command_channel
-                )
+            if not message.content.lower().startswith(pref):
+                continue
 
-                if message.channel.id == command_channel.id:
-                    return await self.process_commands(message)
+            default_command_channel = discord.utils.get(
+                self.get_all_channels(),
+                guild__name=message.guild.name,
+                name="botspam",
+            )
+            command_channel = (
+                    message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
+                    or default_command_channel
+            )
 
+            if message.channel.id != command_channel.id:
                 await message.delete()
                 response = await message.channel.send(
                     embed=discord.Embed(
@@ -95,11 +98,13 @@ class PiBot(discord.ext.commands.Bot):
                 await asyncio.sleep(5)
                 await response.delete()
 
+            return await self.process_commands(message)
+
     async def sync_commands(self) -> None:
         """Sync the app commands with Discord."""
         logger.debug("Syncing commands.")
-        if os.getenv("ENVIRONMENT") == "production":
-            logger.debug("Detected production environment. Syncing commands globally.")
+        if os.getenv("ENVIRONMENT") == "production" or os.getenv("ENVIRONMENT") == "testing":
+            logger.debug("Detected non-development environment. Syncing commands globally.")
             await self.tree.sync()
         else:
-            logger.debug("No production environment detected. Not syncing commands globally.")
+            logger.debug("Non-production environment detected.")
