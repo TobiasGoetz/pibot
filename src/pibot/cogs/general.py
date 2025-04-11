@@ -21,19 +21,20 @@ class General(commands.Cog):
         """Initialize the cog."""
         self.bot = bot
 
-    @app_commands.command(name="ping", description="Displays the bots ping")
+    @app_commands.command(name="ping", description="Displays the bots ping.")
     async def ping(self, interaction: discord.Interaction):
         """Display the bots ping."""
         await interaction.response.send_message(f"Ping: {self.bot.latency * 1000:.0f}ms", ephemeral=True)
 
-    @app_commands.command(name="version", description="Displays the bot version")
+    @app_commands.command(name="version", description="Displays the bot version.")
     async def version(self, interaction: discord.Interaction):
         """Display the bot's version."""
         await interaction.response.send_message(
             embed=discord.Embed(
                 title="PiBot Version",
-                description={self.bot.version},
-            )
+                description=self.bot.version,
+            ),
+            ephemeral=True,
         )
 
     @app_commands.command(
