@@ -7,6 +7,10 @@ on:
         description: "Version to tag the Docker image with"
         type: string
         required: true
+    secrets:
+      DOCKERHUB_TOKEN:
+        description: "Docker Hub token for authentication"
+        required: true
 
 jobs:
   build-and-publish:
