@@ -81,7 +81,14 @@ class Translations(commands.Cog):
             target_lang_emoji=payload.emoji.name,
         )
 
-    async def send_translation(self, channel_id: int, message_author_id: int, message_id: int, target_lang: str, target_lang_emoji: str = None):
+    async def send_translation(
+            self,
+            channel_id: int,
+            message_author_id: int,
+            message_id: int,
+            target_lang: str,
+            target_lang_emoji: str = None
+    ):
         """
         Send the translation to the channel.
 
