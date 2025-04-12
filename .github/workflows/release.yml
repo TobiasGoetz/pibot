@@ -37,10 +37,15 @@ jobs:
       - name: Read version from file
         id: version
         run: |
-          source version.env
-          echo "version=$version" >> $GITHUB_OUTPUT
+          if [ -f version.env ]; then
+            source version.env
+            echo "version=$version" >> $GITHUB_OUTPUT
+          else
+            echo "version=none" >> $GITHUB_OUTPUT
+          fi
   docker-publish:
     needs: release
+    if: needs.release.outputs.version != 'none'
     uses: ./.github/workflows/docker-publish.yml
     with:
       version: ${{ needs.release.outputs.version }}
