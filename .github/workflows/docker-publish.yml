@@ -38,5 +38,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            "${{ github.repository }}:latest"
-            "${{ github.repository }}:${{ inputs.version }}"
+            "${{ vars.DOCKERHUB_REPOSITORY }}:latest"
+            "${{ vars.DOCKERHUB_REPOSITORY }}:${{ inputs.version }}"
