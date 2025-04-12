@@ -78,9 +78,17 @@ class Translations(commands.Cog):
             message_author_id=payload.message_author_id,
             message_id=payload.message_id,
             target_lang=self.language_dict[payload.emoji.name],
+            target_lang_emoji=payload.emoji.name,
         )
 
-    async def send_translation(self, channel_id: int, message_author_id: int, message_id: int, target_lang: str):
+    async def send_translation(
+            self,
+            channel_id: int,
+            message_author_id: int,
+            message_id: int,
+            target_lang: str,
+            target_lang_emoji: str = None
+    ):
         """
         Send the translation to the channel.
 
@@ -88,6 +96,7 @@ class Translations(commands.Cog):
         :param message_author_id: The ID of the message author.
         :param message_id: The ID of the message.
         :param target_lang: The target language to translate to.
+        :param target_lang_emoji: The emoji of the target language.
         """
         channel = self.bot.get_channel(channel_id)
         if not channel:
@@ -103,8 +112,10 @@ class Translations(commands.Cog):
             logger.warning(f"Author {message_author_id} not found.")
             return
 
+        translation: str = self.translator.translate(message.content, target_lang)
+
         await message.reply(
-            content=self.translator.translate(message.content, target_lang),
+            content=f"{target_lang_emoji}\n{translation}",
             mention_author=False,
             silent=True
         )
