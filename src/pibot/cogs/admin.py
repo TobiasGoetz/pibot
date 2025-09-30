@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from pibot.pibot import PiBot
+from pibot.bot import Bot
 
 logger = logging.getLogger("cog.admin")
 
@@ -129,6 +129,6 @@ class Admin(commands.GroupCog):
         logging.info("User %s unmuted %s.", interaction.user, member)
 
 
-async def setup(bot: PiBot) -> None:
+async def setup(bot: Bot) -> None:
     """Set up the cog."""
     await bot.add_cog(Admin(bot))

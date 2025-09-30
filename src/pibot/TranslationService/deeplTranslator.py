@@ -1,7 +1,7 @@
 """DeepL translator service."""
 import deepl
 
-from TranslationService.translator import Translator
+from pibot.TranslationService.translator import Translator
 
 
 class DeepLTranslator(Translator):

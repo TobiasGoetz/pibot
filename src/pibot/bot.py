@@ -9,18 +9,17 @@ import pathlib
 import discord.ext.commands
 import pymongo
 
-from _version import __version__
 from pibot.database import Database
 
 logger = logging.getLogger("pibot")
 
 
-class PiBot(discord.ext.commands.Bot):
+class Bot(discord.ext.commands.Bot):
     """The custom bot class for PiBot."""
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
-        self.version = __version__
+        self.version = "3.0.0" # TODO: CHANGE THIS FOR RELEASE
         self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
         super().__init__(
             *args,

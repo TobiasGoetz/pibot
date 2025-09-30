@@ -6,9 +6,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from TranslationService.deeplTranslator import DeepLTranslator
-from TranslationService.translator import Translator
-from pibot.pibot import PiBot
+from pibot.TranslationService.deeplTranslator import DeepLTranslator
+from pibot.TranslationService.translator import Translator
+from pibot.bot import Bot
 
 logger = logging.getLogger("cog.translations")
 
@@ -135,7 +135,7 @@ class Translations(commands.Cog):
         )
 
 
-async def setup(bot: PiBot) -> None:
+async def setup(bot: Bot) -> None:
     """Set up the cog."""
     await bot.add_cog(Translations(bot))
 
