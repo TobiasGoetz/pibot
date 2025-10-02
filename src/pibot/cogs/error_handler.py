@@ -3,7 +3,7 @@
 import logging
 
 import discord
-from pibot.pibot import PiBot
+from pibot.bot import Bot
 from discord import app_commands
 from discord.ext import commands
 
@@ -13,7 +13,7 @@ LOGGER: logging.Logger = logging.getLogger("errors")
 class ExceptionHandler(commands.Cog):
     """Error handler."""
 
-    def __init__(self, bot: PiBot) -> None:
+    def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
         bot.tree.error(coro=self.__dispatch_to_app_command_handler)
@@ -143,6 +143,6 @@ async def send_error_message(
         await interaction.followup.send(embed=embed)
 
 
-async def setup(bot: PiBot) -> None:
+async def setup(bot: Bot) -> None:
     """Load the cog."""
     await bot.add_cog(ExceptionHandler(bot))

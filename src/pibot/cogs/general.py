@@ -9,7 +9,7 @@ import pytimeparse
 from discord import app_commands
 from discord.ext import commands
 
-from pibot.pibot import PiBot
+from pibot.bot import Bot
 
 logger = logging.getLogger("cog.general")
 
@@ -88,6 +88,6 @@ class General(commands.Cog):
         logger.info("Finished %s's countdown for %s seconds.", interaction.user, seconds)
 
 
-async def setup(bot: PiBot) -> None:
+async def setup(bot: Bot) -> None:
     """Set up the cog."""
     await bot.add_cog(General(bot))

@@ -1,8 +1,6 @@
 FROM python:3.13.5-alpine AS builder
 LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
 
-ARG VERSION=0.0.0
-
 RUN apk update
 RUN apk add git
 
@@ -19,7 +17,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
-ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PIBOT=${VERSION}
 RUN uv build --wheel
 
 WORKDIR /pibot
