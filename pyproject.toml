@@ -11,7 +11,7 @@ requires-python = ">=3.13"
 dependencies = [
     "deepl==1.22.0",
     "discord-py==2.6.3",
-    "pymongo==4.15.1",
+    "pymongo==4.15.2",
     "pytimeparse == 1.1.8",
 ]
 
