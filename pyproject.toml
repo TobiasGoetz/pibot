@@ -12,6 +12,7 @@ dependencies = [
     "deepl==1.22.0",
     "discord-py==2.6.3",
     "pymongo==4.15.2",
+    "python-dotenv==1.2.1",
     "pytimeparse == 1.1.8",
 ]
 
@@ -34,7 +35,7 @@ docs = [
 ]
 
 [project.scripts]
-pibot = "pibot:main"
+pibot = "pibot:run"
 
 [tool.ruff]
 line-length = 120

@@ -36,4 +36,4 @@ COPY --from=builder /pibot/.venv /pibot/.venv
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/pibot/.venv/bin:$PATH"
 
-CMD ["python", "-m", "pibot"]
+CMD ["pibot"]

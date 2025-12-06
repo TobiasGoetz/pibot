@@ -1,7 +1,6 @@
 """The custom bot class for PiBot."""
 
 import asyncio
-import importlib
 import logging
 import os
 import pathlib
@@ -41,7 +40,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def load_cogs(self) -> None:
         """Load all cogs."""
-        package_dir = pathlib.Path(importlib.resources.files("pibot"))
+        package_dir = pathlib.Path(__file__).parent
         cogs = [p.stem for p in (package_dir / "cogs").glob("*.py") if p.stem != "__init__"]
         for cog in cogs:
             await self.load_extension(name=f".cogs.{cog}", package="pibot")
