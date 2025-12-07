@@ -1,7 +1,5 @@
-FROM python:3.13.5-alpine AS builder
+FROM python:3.14.1-alpine AS builder
 LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
-
-ARG VERSION=0.0.0
 
 RUN apk update
 RUN apk add git
@@ -19,7 +17,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
-ENV SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PIBOT=${VERSION}
 RUN uv build --wheel
 
 WORKDIR /pibot
@@ -29,7 +26,7 @@ RUN uv venv
 # Install the wheel file inside the virtual environment
 RUN uv pip install /pibot-build/dist/*.whl
 
-FROM python:3.13.5-alpine AS runtime
+FROM python:3.14.1-alpine AS runtime
 
 WORKDIR /pibot
 
@@ -39,4 +36,4 @@ COPY --from=builder /pibot/.venv /pibot/.venv
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/pibot/.venv/bin:$PATH"
 
-CMD ["python", "-m", "pibot"]
+CMD ["pibot"]

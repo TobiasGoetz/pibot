@@ -4,7 +4,7 @@ import os
 import discord
 from discord.ext import commands
 
-from pibot.pibot import PiBot
+from pibot.bot import Bot
 
 
 class DevTools(commands.Cog):
@@ -104,7 +104,7 @@ class DevTools(commands.Cog):
         )
 
 
-async def setup(bot: PiBot) -> None:
+async def setup(bot: Bot) -> None:
     """Set up the cog only in non-production environments."""
     if os.getenv("ENVIRONMENT") != "production" and os.getenv("ENVIRONMENT") != "testing":
         await bot.add_cog(DevTools(bot))
