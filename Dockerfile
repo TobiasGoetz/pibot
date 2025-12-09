@@ -1,4 +1,4 @@
-FROM python:3.14.1-alpine AS builder
+FROM python:3.15.0a2-alpine AS builder
 LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
 
 RUN apk update
@@ -26,7 +26,7 @@ RUN uv venv
 # Install the wheel file inside the virtual environment
 RUN uv pip install /pibot-build/dist/*.whl
 
-FROM python:3.14.1-alpine AS runtime
+FROM python:3.15.0a2-alpine AS runtime
 
 WORKDIR /pibot
 
