@@ -9,7 +9,7 @@ version = "3.0.0"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "deepl==1.22.0",
+    "deepl==1.27.0",
     "discord-py==2.6.4",
     "pymongo==4.15.5",
     "python-dotenv==1.2.1",
