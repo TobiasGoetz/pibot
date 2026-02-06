@@ -27,19 +27,22 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: "lts/*"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
       - name: Install semantic-release plugins
-        run: npm install @semantic-release/exec
+        run: npm install @semantic-release/exec @semantic-release/git
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
-      - name: Read version from file
+      - name: Read version
         id: version
         run: |
-          if [ -f version.env ]; then
-            source version.env
-            echo "version=$version" >> $GITHUB_OUTPUT
+          if [ -f .release-happened ]; then
+            echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
           else
             echo "version=none" >> $GITHUB_OUTPUT
           fi
@@ -51,3 +54,10 @@ jobs:
       version: ${{ needs.release.outputs.version }}
     secrets:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  pypi-publish:
+    needs: release
+    if: needs.release.outputs.version != 'none'
+    uses: ./.github/workflows/pypi-publish.yml
+    secrets:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
