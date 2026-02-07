@@ -17,7 +17,8 @@ jobs:
       pull-requests: write # to be able to comment on released pull requests
       id-token: write # to enable use of OIDC for npm provenance
     outputs:
-        version: ${{ steps.version.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
+      ref: ${{ steps.ref.outputs.ref }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,17 +47,28 @@ jobs:
           else
             echo "version=none" >> $GITHUB_OUTPUT
           fi
+      - name: Set release ref
+        id: ref
+        run: |
+          if [ -f .release-happened ]; then
+            echo "ref=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          else
+            echo "ref=" >> $GITHUB_OUTPUT
+          fi
   docker-publish:
     needs: release
     if: needs.release.outputs.version != 'none'
     uses: ./.github/workflows/docker-publish.yml
     with:
       version: ${{ needs.release.outputs.version }}
+      ref: ${{ needs.release.outputs.ref }}
     secrets:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   pypi-publish:
     needs: release
     if: needs.release.outputs.version != 'none'
     uses: ./.github/workflows/pypi-publish.yml
+    with:
+      ref: ${{ needs.release.outputs.ref }}
     secrets:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
