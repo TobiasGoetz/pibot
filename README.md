@@ -1,6 +1,6 @@
 # PiBot
 
-A discord bot providing administration and music features!
+A discord bot providing administration and utility features!
 
 ## Features
 
@@ -12,7 +12,10 @@ A discord bot providing administration and music features!
 
 ## Installation
 
-Coming soon
+You can run PiBot in two ways:
+
+* **From PyPI** (after publishing): `pip install pibot` or `uv add pibot`, then run `pibot`.
+* **From Docker**: use the image `tobiasgoetz/pibot` from Docker Hub (see [Docker](#docker) below).
 
 # Local Development
 
@@ -47,7 +50,7 @@ Coming soon
 
 4. **Run the bot**
    ```bash
-   uv run python -m pibot
+   uv run pibot
    ```
 
 ## Development Workflow
@@ -57,27 +60,13 @@ Coming soon
 The recommended way to run the bot during development is using `uv` directly:
 
 ```bash
-uv run python -m pibot
+uv run pibot
 ```
 
 This provides:
 * Fast iteration (no Docker rebuilds needed)
 * Easy debugging with IDE integration
 * Direct access to logs and file system
-
-### Project Structure
-
-```
-src/pibot/
-├── __main__.py      # Entry point
-├── bot.py           # Main Bot class with cog loading
-├── database.py      # MongoDB wrapper
-└── cogs/            # Modular command groups
-    ├── admin.py
-    ├── general.py
-    ├── translations.py
-    └── devTools.py  # Only loads in development mode
-```
 
 ### Development Features
 

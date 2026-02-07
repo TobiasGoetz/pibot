@@ -4,6 +4,7 @@ import asyncio
 import logging
 import os
 import pathlib
+from importlib.metadata import PackageNotFoundError, version
 
 import discord.ext.commands
 import pymongo
@@ -13,12 +14,24 @@ from pibot.database import Database
 logger = logging.getLogger("pibot")
 
 
+def getVersion() -> str:
+    """Return the bot version from package metadata (pyproject.toml)."""
+    try:
+        return version("pibot-discord")
+    except PackageNotFoundError:
+        return "dev"
+
+
 class Bot(discord.ext.commands.Bot):
     """The custom bot class for PiBot."""
 
+    @property
+    def version(self) -> str:
+        """Return the bot version from package metadata."""
+        return getVersion()
+
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
-        self.version = "3.0.0" # TODO: CHANGE THIS FOR RELEASE
         self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
         super().__init__(
             *args,

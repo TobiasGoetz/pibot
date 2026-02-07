@@ -139,3 +139,4 @@ _version.py
 
 # Release tool files
 node_modules
+.release-happened

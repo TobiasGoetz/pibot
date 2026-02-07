@@ -536,7 +536,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pibot"
+name = "pibot-discord"
 version = "3.0.0"
 source = { editable = "." }
 dependencies = [
