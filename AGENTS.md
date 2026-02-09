@@ -28,9 +28,14 @@ The project is built and published in two ways:
    - Publish: `uv publish` (requires PyPI credentials/token).
    - Consumers install with `pip install pibot` or `uv add pibot` and run with `pibot`.
 
-Do not conflate the two: Docker publish is independent of PyPI; PyPI is for the package only.
+3. **Helm chart → GHCR**
+   - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
+   - On release, the chart is packaged and pushed to `oci://ghcr.io/<owner>/helm-charts` (artifact `helm-charts/pibot:<version>`).
+   - Install: `helm install pibot oci://ghcr.io/<owner>/helm-charts/pibot --version <version>` (set env from Secret or values).
 
-Releases are automated with **Release Please**: conventional commits on `main` produce a Release PR (version bump in `pyproject.toml` only; no CHANGELOG.md). Merging that PR creates the tag, GitHub Release (with release notes), and triggers Docker Hub and PyPI publish. No direct push to `main` is required.
+Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
+
+Releases are automated with **Release Please**: conventional commits on `main` produce a Release PR (version bump in `pyproject.toml` only; no CHANGELOG.md). Merging that PR creates the tag, GitHub Release (with release notes), and triggers Docker Hub, PyPI, and Helm chart (GHCR) publish. No direct push to `main` is required.
 
 ## Commands
 
@@ -46,6 +51,7 @@ Releases are automated with **Release Please**: conventional commits on `main` p
 | Docker build (local) | `docker build -t pibot:local .` |
 | Docker run | `docker run --env-file .env pibot:local` |
 | Docker publish (multi-arch to Docker Hub) | `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .` |
+| Helm install (from GHCR) | `helm install pibot oci://ghcr.io/<owner>/helm-charts/pibot --version <version>` |
 
 ## Environment
 
