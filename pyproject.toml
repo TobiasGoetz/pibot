@@ -5,7 +5,7 @@ keywords = ['python', 'discord', 'bot', 'moderation', 'fun', 'utility']
 authors = [
     { name = "Tobias Goetz", email = "contact@tobiasgoetz.com" }
 ]
-version = "3.0.0"
+version = "3.1.0"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
