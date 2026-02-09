@@ -2,15 +2,7 @@ name: "Docker Publish"
 
 on:
   workflow_call:
-    inputs:
-      version:
-        description: "Version to tag the Docker image with"
-        type: string
-        required: true
-      ref:
-        description: "Commit ref to checkout (release commit from caller)"
-        required: false
-        type: string
+    inputs: {}
     secrets:
       DOCKERHUB_TOKEN:
         description: "Docker Hub token for authentication"
@@ -20,10 +12,17 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          ref: ${{ inputs.ref }}
+          version: "latest"
+
+      - name: Set version
+        id: version
+        run: echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -44,7 +43,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            VERSION=${{ inputs.version }}
+            VERSION=${{ steps.version.outputs.version }}
           tags: |
             "${{ vars.DOCKERHUB_REPOSITORY }}:latest"
-            "${{ vars.DOCKERHUB_REPOSITORY }}:${{ inputs.version }}"
+            "${{ vars.DOCKERHUB_REPOSITORY }}:${{ steps.version.outputs.version }}"

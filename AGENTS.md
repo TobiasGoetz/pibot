@@ -30,6 +30,8 @@ The project is built and published in two ways:
 
 Do not conflate the two: Docker publish is independent of PyPI; PyPI is for the package only.
 
+Releases are automated with **Release Please**: conventional commits on `main` produce a Release PR (version bump in `pyproject.toml` only; no CHANGELOG.md). Merging that PR creates the tag, GitHub Release (with release notes), and triggers Docker Hub and PyPI publish. No direct push to `main` is required.
+
 ## Commands
 
 | Task | Command |

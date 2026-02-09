@@ -5,70 +5,33 @@ on:
       - main
 
 permissions:
-  contents: read # for checkout
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
-  release:
-    name: Release
+  release-please:
+    name: Release Please
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # to be able to publish a GitHub release
-      issues: write # to be able to comment on released issues
-      pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
     outputs:
-      version: ${{ steps.version.outputs.version }}
-      ref: ${{ steps.ref.outputs.ref }}
+      release_created: ${{ steps.release.outputs.release_created }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: googleapis/release-please-action@v4
+        id: release
         with:
-          fetch-depth: 0
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "lts/*"
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "latest"
-      - name: Install semantic-release plugins
-        run: npm install @semantic-release/exec @semantic-release/git
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx semantic-release
-      - name: Read version
-        id: version
-        run: |
-          if [ -f .release-happened ]; then
-            echo "version=$(uv version --short)" >> $GITHUB_OUTPUT
-          else
-            echo "version=none" >> $GITHUB_OUTPUT
-          fi
-      - name: Set release ref
-        id: ref
-        run: |
-          if [ -f .release-happened ]; then
-            echo "ref=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
-          else
-            echo "ref=" >> $GITHUB_OUTPUT
-          fi
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+
   docker-publish:
-    needs: release
-    if: needs.release.outputs.version != 'none'
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
     uses: ./.github/workflows/docker-publish.yml
-    with:
-      version: ${{ needs.release.outputs.version }}
-      ref: ${{ needs.release.outputs.ref }}
     secrets:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
   pypi-publish:
-    needs: release
-    if: needs.release.outputs.version != 'none'
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
     uses: ./.github/workflows/pypi-publish.yml
-    with:
-      ref: ${{ needs.release.outputs.ref }}
     secrets:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
