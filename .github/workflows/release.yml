@@ -46,4 +46,3 @@ jobs:
     needs: release-please
     if: needs.release-please.outputs.release_created == 'true'
     uses: ./.github/workflows/helm-publish.yml
-    secrets: inherit
