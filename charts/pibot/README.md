@@ -7,7 +7,7 @@ Deploys [PiBot](https://github.com/TobiasGoetz/pibot) (Discord bot) on Kubernete
 Pass secrets as arguments at install:
 
 ```bash
-helm install pibot oci://ghcr.io/TobiasGoetz/pibot --version <version> \
+helm install pibot oci://ghcr.io/tobiasgoetz/pibot --version <version> \
   --set discord.token="..." \
   --set mongodb.uri="mongodb://..." \
   --set deepl.apiKey="..."

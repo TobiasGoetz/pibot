@@ -30,7 +30,7 @@ The project is built and published in two ways:
 
 3. **Helm chart → GHCR**
    - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
-   - On release, the chart is packaged and pushed to `oci://ghcr.io/<owner>/pibot`.
+   - On release, the chart is packaged and pushed to `oci://ghcr.io/<owner>` (chart name/tag inferred by Helm).
    - Install: `helm install pibot oci://ghcr.io/<owner>/pibot --version <version>` (set env from Secret or values).
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
