@@ -18,10 +18,10 @@ Instructions and context for AI agents working on this project.
 
 The project is built and published in two ways:
 
-1. **Docker image → Docker Hub**
+1. **Docker image → Docker Hub and GHCR**
    - Build: `docker build -t pibot:local .` (local test) or use buildx for multi-arch.
-   - Publish: `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .` (after `docker login`).
-   - Consumers run the bot via the image (e.g. `docker run --env-file .env tobiasgoetz/pibot`).
+   - Publish: `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .` (Docker Hub; after `docker login`). On release, the same image is also pushed to `ghcr.io/<owner>/pibot`.
+   - Consumers run the bot via the image (e.g. `docker run --env-file .env tobiasgoetz/pibot` or `ghcr.io/<owner>/pibot`).
 
 2. **Python package → PyPI**
    - Build: `uv build` (uses `uv_build` backend per `pyproject.toml`).
@@ -35,7 +35,7 @@ The project is built and published in two ways:
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
 
-Releases are automated with **Release Please**: conventional commits on `main` produce a Release PR (version bump in `pyproject.toml` only; no CHANGELOG.md). Merging that PR creates the tag, GitHub Release (with release notes), and triggers Docker Hub, PyPI, and Helm chart (GHCR) publish. No direct push to `main` is required.
+Releases are automated with **Release Please**: conventional commits on `main` produce a Release PR (version bump in `pyproject.toml` only; no CHANGELOG.md). Merging that PR creates the tag, GitHub Release (with release notes), and triggers Docker Hub + GHCR (image), PyPI, and Helm chart (GHCR) publish. No direct push to `main` is required.
 
 ## Commands
 
@@ -50,7 +50,7 @@ Releases are automated with **Release Please**: conventional commits on `main` p
 | Publish to PyPI | `uv publish` |
 | Docker build (local) | `docker build -t pibot:local .` |
 | Docker run | `docker run --env-file .env pibot:local` |
-| Docker publish (multi-arch to Docker Hub) | `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .` |
+| Docker publish (multi-arch to Docker Hub / GHCR) | Via release; local: `docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .` |
 | Helm install (from GHCR) | `helm install pibot oci://ghcr.io/<owner>/pibot --version <version>` |
 
 ## Environment
