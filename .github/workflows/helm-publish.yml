@@ -7,10 +7,6 @@ permissions:
 on:
   workflow_call:
     inputs: {}
-    secrets:
-      GITHUB_TOKEN:
-        description: "Token for GHCR (use secrets: inherit in caller)"
-        required: true
 
 jobs:
   publish:
