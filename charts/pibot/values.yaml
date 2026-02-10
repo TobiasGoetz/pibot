@@ -9,4 +9,4 @@ mongodb:
   uri: ""
 deepl:
   apiKey: ""
-environment: ""
+environment: "production"
