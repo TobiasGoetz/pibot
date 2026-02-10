@@ -1,0 +1,15 @@
+apiVersion: v2
+name: pibot
+description: Multi-purpose Discord Bot (PiBot)
+type: application
+version: 3.1.1
+appVersion: "3.1.1"
+keywords:
+  - discord
+  - bot
+home: https://github.com/TobiasGoetz/pibot
+sources:
+  - https://github.com/TobiasGoetz/pibot
+maintainers:
+  - name: Tobias Goetz
+    email: contact@tobiasgoetz.com

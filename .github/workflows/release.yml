@@ -41,3 +41,8 @@ jobs:
     uses: ./.github/workflows/pypi-publish.yml
     secrets:
       PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+
+  helm-publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/helm-publish.yml

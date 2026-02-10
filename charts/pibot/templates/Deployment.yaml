@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pibot.name" . }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pibot
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: pibot
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: pibot
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          envFrom:
+            - secretRef:
+                name: {{ include "pibot.name" . }}
