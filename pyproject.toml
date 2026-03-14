@@ -30,8 +30,6 @@ Issues = "https://github.com/TobiasGoetz/pibot/issues"
 [dependency-groups]
 dev = [
     "build",
-    "ruff",
-    "ty",
 ]
 docs = [
     "sphinx>=8.2.3",
