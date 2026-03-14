@@ -22,8 +22,10 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
+      - name: Install dependencies
+        run: uv sync
       - name: Run Ruff
-        run: uvx ruff check --output-format=github
+        run: uv run ruff check --output-format=github
 
   ty:
     name: Type check (ty)
@@ -34,5 +36,7 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
+      - name: Install dependencies
+        run: uv sync
       - name: Run ty check
-        run: uvx ty check --output-format=github
+        run: uv run ty check --output-format=github
