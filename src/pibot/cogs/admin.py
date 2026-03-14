@@ -27,12 +27,15 @@ class Admin(commands.GroupCog):
         :param interaction: The interaction of the slash command.
         :param arg: The prefix to set.
         """
+        if interaction.guild is None:
+            return
+        guild = interaction.guild
         await interaction.response.defer()
 
-        await self.bot.database.check_if_guild_exists_else_initialize(interaction.guild)
-        await self.bot.database.set_setting(interaction.guild, "prefix", arg)
+        await self.bot.database.check_if_guild_exists_else_initialize(guild)
+        await self.bot.database.set_setting(guild, "prefix", arg)
 
-        logger.info("Changed prefix for %s to %s.", interaction.guild.name, arg)
+        logger.info("Changed prefix for %s to %s.", guild.name, arg)
         await interaction.followup.send(f"Prefix set to {arg}")
 
     @app_commands.command(name="command_channel", description="Set the command channel for the guild.")
@@ -44,17 +47,20 @@ class Admin(commands.GroupCog):
         :param channel: The channel to set as the command channel.
         :param interaction: The interaction of the slash command.
         """
+        if interaction.guild is None:
+            return
+        guild = interaction.guild
         await interaction.response.defer()
 
-        await self.bot.database.check_if_guild_exists_else_initialize(interaction.guild)
+        await self.bot.database.check_if_guild_exists_else_initialize(guild)
 
         if channel is None:
             return await interaction.followup.send(f"Channel {channel} not found.")
 
-        await self.bot.database.set_setting(interaction.guild, "command_channel", channel.id)
+        await self.bot.database.set_setting(guild, "command_channel", channel.id)
         logger.info(
             "Changed command channel for %s to %s.",
-            interaction.guild.name,
+            guild.name,
             channel.name,
         )
         await interaction.followup.send(f"Command channel set to {channel.mention}")
@@ -69,7 +75,8 @@ class Admin(commands.GroupCog):
         :param amount: The amount of messages to clear.
         """
         await interaction.response.defer()
-        await interaction.channel.purge(limit=amount + 1)
+        if isinstance(interaction.channel, discord.TextChannel):
+            await interaction.channel.purge(limit=amount + 1)
         logging.info(
             "User %s cleared %s messages in %s.",
             interaction.user,
@@ -84,7 +91,7 @@ class Admin(commands.GroupCog):
         interaction: discord.Interaction,
         member: discord.Member,
         *,
-        reason: str = None,
+        reason: str | None = None,
     ) -> None:
         """
         Mute a member.
@@ -93,21 +100,26 @@ class Admin(commands.GroupCog):
         :param member: The member to mute.
         :param reason: The reason for the mute.
         """
+        if interaction.guild is None:
+            return
+        guild = interaction.guild
         await interaction.response.defer()
-        role = discord.utils.get(interaction.guild.roles, name="Muted")
+        role = discord.utils.get(guild.roles, name="Muted")
 
         if role is None:
             logger.info("Muted role not found, creating one.")
-            await interaction.guild.create_role(name="Muted")
-            role = discord.utils.get(interaction.guild.roles, name="Muted")
+            await guild.create_role(name="Muted")
+            role = discord.utils.get(guild.roles, name="Muted")
 
-        for channel in interaction.guild.channels:
-            await channel.set_permissions(role, speak=False, send_messages=False)
-        logger.info("Muted role created.")
+        if role is not None:
+            for channel in guild.channels:
+                await channel.set_permissions(role, speak=False, send_messages=False)
+            logger.info("Muted role created.")
+            await member.add_roles(role)
 
-        await member.add_roles(role)
-
-        if reason is None:
+        if role is None:
+            await interaction.followup.send("Could not find or create the Muted role.")
+        elif reason is None:
             await interaction.followup.send(f"{member.mention} has been muted.")
         else:
             await interaction.followup.send(f"{member.mention} has been muted for {reason}")
@@ -122,9 +134,13 @@ class Admin(commands.GroupCog):
         :param interaction: The interaction of the slash command.
         :param member: The member to unmute.
         """
+        if interaction.guild is None:
+            return
+        guild = interaction.guild
         await interaction.response.defer()
-        role = discord.utils.get(interaction.guild.roles, name="Muted")
-        await member.remove_roles(role)
+        role = discord.utils.get(guild.roles, name="Muted")
+        if role is not None:
+            await member.remove_roles(role)
         await interaction.followup.send(f"{member.mention} has been unmuted.")
         logging.info("User %s unmuted %s.", interaction.user, member)
 
