@@ -29,7 +29,7 @@ class ExceptionHandler(commands.Cog):
         #     return
 
         # Avoid dispatching to the app command error handler if the cog has its own error handler.
-        cog: commands.Cog = interaction.command.binding
+        cog = getattr(interaction.command, "binding", None) if interaction.command else None
         if cog is not None:
             LOGGER.info("Cog is not None")
             if cog.has_app_command_error_handler():
@@ -50,24 +50,25 @@ class ExceptionHandler(commands.Cog):
         :param interaction: The interaction of the slash command.
         :param error: The error that occurred.
         """
+        commandName = interaction.command.name if interaction.command else "unknown"
         if isinstance(error, app_commands.MissingPermissions):
             LOGGER.info(
                 "User %s tried to use %s without permissions.",
                 interaction.user,
-                interaction.command.name,
+                commandName,
             )
-            await send_error_message(interaction, f"You cannot use `{interaction.command.name}`.", error)
+            await send_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
         elif isinstance(error, app_commands.MissingRole):
             LOGGER.info(
                 "User %s tried to use %s without the %s role.",
                 interaction.user,
-                interaction.command.name,
+                commandName,
                 error.missing_role,
             )
             await send_error_message(
                 interaction,
-                f"You cannot use `{interaction.command.name}` " f"without the {error.missing_role} role.",
+                f"You cannot use `{commandName}` without the {error.missing_role} role.",
                 error,
             )
 
@@ -83,12 +84,12 @@ class ExceptionHandler(commands.Cog):
             LOGGER.info(
                 "User %s tried to use %s with invalid arguments. [%s]",
                 interaction.user,
-                interaction.command.name,
+                commandName,
                 error,
             )
             await send_error_message(
                 interaction,
-                f"You cannot use `{interaction.command.name}` " f"with those arguments.\n```{error}```",
+                f"You cannot use `{commandName}` with those arguments.\n```{error}```",
                 error,
             )
 
@@ -96,12 +97,12 @@ class ExceptionHandler(commands.Cog):
             LOGGER.info(
                 "User %s tried to use %s on cooldown. [%s]",
                 interaction.user,
-                interaction.command.name,
+                commandName,
                 error,
             )
             await send_error_message(
                 interaction,
-                f"You cannot use `{interaction.command.name}` " f"on cooldown.\n```{error}```",
+                f"You cannot use `{commandName}` on cooldown.\n```{error}```",
                 error,
             )
 
@@ -114,7 +115,7 @@ class ExceptionHandler(commands.Cog):
             )
             await send_error_message(
                 interaction,
-                f"An error occurred while using `{interaction.command.name}`.",
+                f"An error occurred while using `{commandName}`.",
                 error,
             )
 

@@ -6,7 +6,7 @@ Instructions and context for AI agents working on this project.
 
 - **Indentation**: 2 spaces
 - **Naming**: camelCase for variables/functions, PascalCase for classes
-- **Linting/formatting**: Ruff (line length 120). Run: `uv run ruff check .` and `uv run ruff format .`
+- **Linting/formatting**: Ruff (line length 120). Run: `uvx ruff check .` and `uvx ruff format .`
 - **Docstrings**: Pydocstyle (D) is enabled; exclude `*/__init__.py` from ruff
 
 ## Project Structure
@@ -43,8 +43,9 @@ Releases are automated with **Release Please**: conventional commits on `main` p
 |------|---------|
 | Install deps | `uv sync` |
 | Run bot | `uv run pibot` |
-| Lint | `uv run ruff check .` |
-| Format | `uv run ruff format .` |
+| Lint | `uvx ruff check .` |
+| Format | `uvx ruff format .` |
+| Type check | `uvx ty check` |
 | Rebuild API docs | `uv run sphinx-apidoc -f -o docs/source src/pibot` |
 | Build package (sdist/wheel) | `uv build` |
 | Publish to PyPI | `uv publish` |

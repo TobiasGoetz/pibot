@@ -7,13 +7,13 @@ authors = [
 ]
 version = "3.3.1"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = "~=3.13.0"
 dependencies = [
-    "deepl==1.28.0",
-    "discord-py==2.7.1",
-    "pymongo==4.16.0",
-    "python-dotenv==1.2.2",
-    "pytimeparse == 1.1.8",
+    "deepl~=1.28.0",
+    "discord-py~=2.7.1",
+    "pymongo~=4.16.0",
+    "python-dotenv~=1.2.2",
+    "pytimeparse~=1.1.8",
 ]
 
 [build-system]
@@ -31,6 +31,7 @@ Issues = "https://github.com/TobiasGoetz/pibot/issues"
 dev = [
     "build",
     "ruff",
+    "ty",
 ]
 docs = [
     "sphinx>=8.2.3",

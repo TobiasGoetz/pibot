@@ -1,4 +1,5 @@
 """Translations cog for PiBot."""
+
 import logging
 import os
 
@@ -55,7 +56,10 @@ class Translations(commands.Cog):
     def __init__(self, bot):
         """Initialize the cog."""
         self.bot = bot
-        self.translator: Translator = DeepLTranslator(api_key=os.getenv("DEEPL_API_KEY"))
+        apiKey = os.getenv("DEEPL_API_KEY")
+        if not apiKey:
+            raise ValueError("DEEPL_API_KEY environment variable is not set")
+        self.translator: Translator = DeepLTranslator(api_key=apiKey)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -72,6 +76,9 @@ class Translations(commands.Cog):
             logger.debug(f"Reaction {payload.emoji.name} not in supported languages.")
             return
 
+        if payload.message_author_id is None:
+            return
+
         logger.debug(f"Detected translation request: {payload.emoji.name} {self.language_dict[payload.emoji.name]}")
         await self.send_translation(
             channel_id=payload.channel_id,
@@ -82,13 +89,13 @@ class Translations(commands.Cog):
         )
 
     async def send_translation(
-            self,
-            channel_id: int,
-            message_author_id: int,
-            message_id: int,
-            target_lang: str,
-            target_lang_emoji: str = None
-    ):
+        self,
+        channel_id: int,
+        message_author_id: int,
+        message_id: int,
+        target_lang: str,
+        target_lang_emoji: str | None = None,
+    ) -> None:
         """
         Send the translation to the channel.
 
@@ -114,11 +121,7 @@ class Translations(commands.Cog):
 
         translation: str = self.translator.translate(message.content, target_lang)
 
-        await message.reply(
-            content=f"{target_lang_emoji}\n{translation}",
-            mention_author=False,
-            silent=True
-        )
+        await message.reply(content=f"{target_lang_emoji}\n{translation}", mention_author=False, silent=True)
 
     @app_commands.command(name="get_languages", description="Get the available languages for translation.")
     async def get_languages(self, interaction: discord.Interaction):
@@ -138,4 +141,3 @@ class Translations(commands.Cog):
 async def setup(bot: Bot) -> None:
     """Set up the cog."""
     await bot.add_cog(Translations(bot))
-

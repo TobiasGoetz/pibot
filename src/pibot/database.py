@@ -87,4 +87,6 @@ class Database:
         :return: The prefix.
         """
         LOGGER.info("Getting prefix for %s.", message.guild)
+        if message.guild is None:
+            return DEFAULT_PREFIX
         return await self.get_setting(message.guild, "prefix") or DEFAULT_PREFIX

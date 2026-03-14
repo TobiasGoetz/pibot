@@ -95,16 +95,16 @@ class Bot(discord.ext.commands.Bot):
                 name="botspam",
             )
             command_channel = (
-                    message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
-                    or default_command_channel
+                message.guild.get_channel(await self.database.get_setting(message.guild, "command_channel"))
+                or default_command_channel
             )
 
-            if message.channel.id != command_channel.id:
+            if command_channel is not None and message.channel.id != command_channel.id:
                 await message.delete()
                 response = await message.channel.send(
                     embed=discord.Embed(
                         description=f":no_entry_sign: **{message.author.name}** "
-                                    f"you can only use commands in {command_channel.mention}."
+                        f"you can only use commands in {command_channel.mention}."
                     )
                 )
                 await asyncio.sleep(5)

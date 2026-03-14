@@ -4,6 +4,17 @@
     ".": {
       "release-type": "python",
       "skip-changelog": true
+    },
+    "charts/pibot": {
+      "release-type": "helm",
+      "skip-changelog": true,
+      "extra-files": [
+        {
+          "type": "yaml",
+          "path": "charts/pibot/Chart.yaml",
+          "jsonpath": "$.appVersion"
+        }
+      ]
     }
   }
 }
