@@ -1,5 +1,5 @@
 image:
-  repository: tobiasgoetz/pibot
+  repository: ghcr.io/tobiasgoetz/pibot
   tag: ""
 
 # Pass at install: --set discord.token=... --set mongodb.uri=... --set deepl.apiKey=...
