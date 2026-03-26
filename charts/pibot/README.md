@@ -13,4 +13,4 @@ helm install pibot oci://ghcr.io/tobiasgoetz/pibot --version <version> \
   --set deepl.apiKey="..."
 ```
 
-Optional: `--set environment=production` or `environment=testing`. Image: `--set image.repository=` / `image.tag=` (default `tobiasgoetz/pibot`).
+Optional: `--set environment=production` or `environment=testing`.
