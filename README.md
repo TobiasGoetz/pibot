@@ -21,7 +21,7 @@ You can run PiBot in two ways:
 
 ## Prerequisites
 
-* Python 3.13 or higher
+* Python 3.14 or higher
 * [uv](https://github.com/astral-sh/uv) package manager
 * MongoDB instance (local or remote)
 * Discord bot token from [Discord Developer Portal](https://discord.com/developers/applications)
