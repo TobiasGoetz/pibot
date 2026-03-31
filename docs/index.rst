@@ -5,7 +5,6 @@ Welcome to Getting Started with Sphinx's documentation!
    :caption: Contents:
 
    source/modules
-   source/pibot.cogs
 
 Indices and tables
 ==================
