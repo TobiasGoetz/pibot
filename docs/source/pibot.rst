@@ -1,6 +1,14 @@
 pibot package
 =============
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pibot.cogs
+
 Submodules
 ----------
 
