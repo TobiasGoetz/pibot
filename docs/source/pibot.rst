@@ -1,16 +1,16 @@
 pibot package
 =============
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   pibot.cogs
-
 Submodules
 ----------
+
+pibot.bot module
+----------------
+
+.. automodule:: pibot.bot
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 pibot.database module
 ---------------------
@@ -24,14 +24,6 @@ pibot.errors module
 -------------------
 
 .. automodule:: pibot.errors
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pibot.pibot module
-------------------
-
-.. automodule:: pibot.pibot
    :members:
    :show-inheritance:
    :undoc-members:
