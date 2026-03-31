@@ -25,7 +25,6 @@ build:
       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
     build:
       html:
-        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run sphinx-apidoc -f -o docs/source src/pibot
         - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run sphinx-build -T -b html docs $READTHEDOCS_OUTPUT/html
 
 # Build documentation in the "docs/" directory with Sphinx
