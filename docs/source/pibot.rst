@@ -7,7 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   pibot.cogs
+   pibot.translation_service
 
 Submodules
 ----------
