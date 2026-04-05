@@ -1,0 +1,1 @@
+"""PiBot cogs package."""

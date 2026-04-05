@@ -4,7 +4,7 @@ from typing import cast
 
 import deepl
 
-from pibot.TranslationService.translator import Translator
+from pibot.translation_service.translator import Translator
 
 
 class DeepLTranslator(Translator):
