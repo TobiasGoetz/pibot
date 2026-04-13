@@ -86,9 +86,14 @@ uv run ruff format .
 
 ## Documentation
 
-Update docs using:
+Update generated API docs using:
 ```bash
-uv run sphinx-apidoc -f -o docs/source src/pibot
+uv run --group docs sphinx-apidoc -f -o docs/source src/pibot
+```
+
+Verify docs compile cleanly (warnings as errors) using:
+```bash
+uv run --group docs sphinx-build -T -n -W -b html docs docs/_build/html
 ```
 
 ## Docker

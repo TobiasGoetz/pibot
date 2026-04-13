@@ -1,5 +1,7 @@
 import os
 import sys
+from pathlib import Path
+import tomllib
 
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 # Configuration file for the Sphinx documentation builder.
@@ -10,10 +12,20 @@ sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'PiBot'
-copyright = '2024, Tobias Goetz'
-author = 'Tobias Goetz'
-release = '2.0.0'
+_repo_root = Path(__file__).resolve().parent.parent
+with (_repo_root / 'pyproject.toml').open('rb') as pyprojectFile:
+    _pyproject = tomllib.load(pyprojectFile)
+_project = _pyproject['project']
+
+# Distribution name -> short title (e.g. pibot-discord -> Pibot Discord)
+_projectName = _project['name']
+project = ' '.join(part.capitalize() for part in _projectName.replace('_', '-').split('-'))
+
+_authorList = _project.get('authors') or []
+author = ', '.join(entry['name'] for entry in _authorList)
+
+_version = _project['version']
+version = release = _version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -21,11 +33,19 @@ release = '2.0.0'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.coverage',
+    'sphinx.ext.intersphinx',
     # 'sphinx.ext.napoleon'
 ]
 
-templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'discord': ('https://discordpy.readthedocs.io/en/stable', None),
+    'pymongo': ('https://pymongo.readthedocs.io/en/stable', None),
+}
+
+# templates_path = ['_templates']
+exclude_patterns = ['_build']
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

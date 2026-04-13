@@ -20,12 +20,12 @@ build:
       - asdf install uv latest
       - asdf global uv latest
     create_environment:
-      - uv venv
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
-      - uv sync --group docs
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
     build:
       html:
-        - uv run sphinx-build -T -b html docs $READTHEDOCS_OUTPUT/html
+        - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv run sphinx-build -T -b html docs $READTHEDOCS_OUTPUT/html
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:

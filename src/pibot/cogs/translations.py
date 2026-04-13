@@ -7,9 +7,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from pibot.TranslationService.deeplTranslator import DeepLTranslator
-from pibot.TranslationService.translator import Translator
 from pibot.bot import Bot
+from pibot.translation_service.deepl_translator import DeepLTranslator
+from pibot.translation_service.translator import Translator
 
 logger = logging.getLogger("cog.translations")
 
