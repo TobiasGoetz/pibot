@@ -1,8 +1,7 @@
 FROM python:3.14-alpine AS builder
 LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
 
-RUN apk update
-RUN apk add git
+RUN apk add --no-cache git
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
