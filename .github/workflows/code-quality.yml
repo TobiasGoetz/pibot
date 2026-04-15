@@ -15,7 +15,7 @@ permissions:
 jobs:
   ruff:
     name: Lint (Ruff)
-    runs-on: ubuntu-latest
+    runs-on: rpi-cluster
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
@@ -29,7 +29,7 @@ jobs:
 
   ty:
     name: Type check (ty)
-    runs-on: ubuntu-latest
+    runs-on: rpi-cluster
     steps:
       - uses: actions/checkout@v6
       - name: Install uv
