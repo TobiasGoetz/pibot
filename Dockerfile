@@ -6,7 +6,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /pibot-build
 
-COPY . .
+# Copy only build inputs to avoid invalidating cache on unrelated changes
+COPY pyproject.toml uv.lock README.md ./
+COPY src ./src
 
 RUN uv build --wheel
 
@@ -14,7 +16,7 @@ WORKDIR /pibot
 
 RUN uv venv
 
-# Install the wheel file inside the virtual environment
+# Install the built wheel file inside the virtual environment
 RUN uv pip install /pibot-build/dist/*.whl
 
 FROM python:3.14-alpine AS runtime
