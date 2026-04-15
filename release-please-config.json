@@ -5,6 +5,11 @@
       "skip-changelog": true,
       "extra-files": [
         {
+          "path": "uv.lock",
+          "type": "toml",
+          "jsonpath": "$.package[?(@.name.value=='pibot-discord')].version"
+        },
+        {
           "type": "yaml",
           "path": "charts/pibot/Chart.yaml",
           "jsonpath": "$.version"
