@@ -13,7 +13,7 @@ permissions:
 jobs:
   release-please:
     name: Release Please
-    runs-on: ubuntu-latest
+    runs-on: rpi-cluster
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
     steps:
