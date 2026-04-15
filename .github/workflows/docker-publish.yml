@@ -54,8 +54,6 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            VERSION=${{ steps.version.outputs.version }}
           tags: |
             "${{ vars.DOCKERHUB_REPOSITORY }}:latest"
             "${{ vars.DOCKERHUB_REPOSITORY }}:${{ steps.version.outputs.version }}"
