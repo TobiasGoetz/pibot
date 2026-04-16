@@ -2,14 +2,12 @@
 name = "pibot-discord"
 description = "Multi-purpose Discord Bot"
 keywords = ['python', 'discord', 'bot', 'moderation', 'fun', 'utility']
-authors = [
-    { name = "Tobias Goetz", email = "contact@tobiasgoetz.com" }
-]
+authors = [{ name = "Tobias Goetz", email = "contact@tobiasgoetz.com" }]
 version = "3.4.7"
 readme = "README.md"
 requires-python = "~=3.14.0"
 dependencies = [
-    "deepl>=1.28,<1.31",
+    "deepl~=1.28",
     "discord-py~=2.7.1",
     "pymongo~=4.16.0",
     "python-dotenv~=1.2.2",
@@ -17,7 +15,7 @@ dependencies = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.10,<0.12"]
+requires = ["uv_build~=0.11"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -28,31 +26,22 @@ Homepage = "https://github.com/TobiasGoetz/pibot"
 Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [dependency-groups]
-dev = [
-    "build",
-    "ruff",
-    "ty",
-]
-docs = [
-    "sphinx>=8.2.3",
-    "sphinx-rtd-theme>=3.0.2",
-]
+dev = ["build", "ruff", "ty"]
+docs = ["sphinx~=9.1", "sphinx-rtd-theme~=3.1"]
 
 [project.scripts]
 pibot = "pibot:run"
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    "*/__init__.py",
-]
+exclude = ["*/__init__.py"]
 include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = [
     "E501",
-    "UP", # pyupgrade
-    "D", # pydocstyle
+    "UP",   # pyupgrade
+    "D",    # pydocstyle
 ]
 ignore = [
     "D203", # 1 blank line required before class docstring

@@ -437,7 +437,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "deepl", specifier = ">=1.28,<1.31" },
+    { name = "deepl", specifier = "~=1.28" },
     { name = "discord-py", specifier = "~=2.7.1" },
     { name = "pymongo", specifier = "~=4.16.0" },
     { name = "python-dotenv", specifier = "~=1.2.2" },
@@ -451,8 +451,8 @@ dev = [
     { name = "ty" },
 ]
 docs = [
-    { name = "sphinx", specifier = ">=8.2.3" },
-    { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+    { name = "sphinx", specifier = "~=9.1" },
+    { name = "sphinx-rtd-theme", specifier = "~=3.1" },
 ]
 
 [[package]]
