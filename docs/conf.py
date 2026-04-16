@@ -1,9 +1,7 @@
-import os
 import sys
 from pathlib import Path
 import tomllib
 
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -13,6 +11,7 @@ sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 _repo_root = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str((_repo_root / 'src').resolve()))
 with (_repo_root / 'pyproject.toml').open('rb') as pyprojectFile:
     _pyproject = tomllib.load(pyprojectFile)
 _project = _pyproject['project']
@@ -32,9 +31,7 @@ version = release = _version
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
     'sphinx.ext.intersphinx',
-    # 'sphinx.ext.napoleon'
 ]
 
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
@@ -44,7 +41,6 @@ intersphinx_mapping = {
     'pymongo': ('https://pymongo.readthedocs.io/en/stable', None),
 }
 
-# templates_path = ['_templates']
 exclude_patterns = ['_build']
 
 # -- Options for HTML output -------------------------------------------------
