@@ -77,11 +77,12 @@ When `ENVIRONMENT` is not set to `production` or `testing`:
 
 ### Code Quality
 
-The project uses `ruff` for linting and formatting. Run it with:
+The project uses `ruff` for linting/formatting and `ty` for type checking. Run:
 
 ```bash
-uv run ruff check .
-uv run ruff format .
+uv run ruff check --fix
+uv run ruff format
+uv run ty check --fix
 ```
 
 ## Documentation
