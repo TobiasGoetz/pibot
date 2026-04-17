@@ -1,6 +1,5 @@
 """Development tools cog."""
 
-import os
 import discord
 from discord.ext import commands
 
@@ -8,7 +7,7 @@ from pibot.bot import Bot
 
 
 class DevTools(commands.Cog):
-    """Development tools only available in non-production environments."""
+    """Development tools."""
 
     def __init__(self, bot):
         """Initialize the cog."""
@@ -105,6 +104,6 @@ class DevTools(commands.Cog):
 
 
 async def setup(bot: Bot) -> None:
-    """Set up the cog only in non-production environments."""
-    if os.getenv("ENVIRONMENT") != "production" and os.getenv("ENVIRONMENT") != "testing":
+    """Set up the cog when ``ENABLE_DEV_TOOLS`` is enabled."""
+    if bot.isDevTools:
         await bot.add_cog(DevTools(bot))

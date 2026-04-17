@@ -10,8 +10,15 @@ import discord.ext.commands
 import pymongo
 
 from pibot.database import Database
+from pibot.settings import COMMAND_SYNC_BEHAVIOR, command_sync_behavior, is_dev_tools
 
 logger = logging.getLogger("pibot")
+
+
+def _log_level() -> int:
+    """``LOG_LEVEL`` (default ``INFO``). Accepts standard ``logging`` level names."""
+    raw = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+    return getattr(logging, raw, logging.INFO)
 
 
 def getVersion() -> str:
@@ -33,6 +40,8 @@ class Bot(discord.ext.commands.Bot):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
         self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
+        self.commandSyncBehavior = command_sync_behavior()
+        self.isDevTools = is_dev_tools()
         super().__init__(
             *args,
             # command_prefix=self.database.get_prefix,
@@ -41,7 +50,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
-        discord.utils.setup_logging()
+        discord.utils.setup_logging(level=_log_level())
         logger.info("Starting PiBot version %s", self.version)
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()
@@ -113,10 +122,8 @@ class Bot(discord.ext.commands.Bot):
             return await self.process_commands(message)
 
     async def sync_commands(self) -> None:
-        """Sync the app commands with Discord."""
-        logger.debug("Syncing commands.")
-        if os.getenv("ENVIRONMENT") == "production" or os.getenv("ENVIRONMENT") == "testing":
-            logger.debug("Detected non-development environment. Syncing commands globally.")
+        """Sync the app commands with Discord (see ``commandSyncBehavior``)."""
+        logger.debug("Command sync behavior: %s.", self.commandSyncBehavior.value)
+        if self.commandSyncBehavior is COMMAND_SYNC_BEHAVIOR.GLOBAL:
+            logger.debug("Syncing application commands globally.")
             await self.tree.sync()
-        else:
-            logger.debug("Non-production environment detected.")

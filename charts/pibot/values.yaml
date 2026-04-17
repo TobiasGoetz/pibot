@@ -9,4 +9,11 @@ mongodb:
   uri: ""
 deepl:
   apiKey: ""
-environment: "production"
+
+logging:
+  level: INFO
+
+bot:
+  settings:
+    commandSyncBehavior: global
+    enableDevTools: false
