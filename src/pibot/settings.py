@@ -1,35 +1,28 @@
-"""Runtime settings for PiBot (env-backed enums)."""
+"""Runtime settings for PiBot."""
 
 import os
-from enum import Enum
+from enum import StrEnum
 
 
-class COMMAND_SYNC_BEHAVIOR(str, Enum):
+class COMMAND_SYNC_BEHAVIOR(StrEnum):
     """Env ``COMMAND_SYNC_BEHAVIOR``. Unset or invalid → ``GLOBAL``."""
 
     GLOBAL = "global"
     LOCAL = "local"
 
-    @classmethod
-    def from_env(cls) -> "COMMAND_SYNC_BEHAVIOR":
-        raw = os.getenv("COMMAND_SYNC_BEHAVIOR", "").strip().lower()
-        if raw:
-            try:
-                return cls(raw)
-            except ValueError:
-                pass
-        return cls.GLOBAL
+
+def command_sync_behavior() -> COMMAND_SYNC_BEHAVIOR:
+    """Current slash-command sync mode from ``COMMAND_SYNC_BEHAVIOR``."""
+    raw = os.getenv("COMMAND_SYNC_BEHAVIOR", "").strip().lower()
+    if raw:
+        try:
+            return COMMAND_SYNC_BEHAVIOR(raw)
+        except ValueError:
+            pass
+    return COMMAND_SYNC_BEHAVIOR.GLOBAL
 
 
-class ENABLE_DEV_TOOLS(str, Enum):
-    """Env ``ENABLE_DEV_TOOLS``. Default ``FALSE``."""
-
-    TRUE = "true"
-    FALSE = "false"
-
-    @classmethod
-    def from_env(cls) -> "ENABLE_DEV_TOOLS":
-        raw = os.getenv("ENABLE_DEV_TOOLS", "false").strip().lower()
-        if raw in ("true", "1"):
-            return cls.TRUE
-        return cls.FALSE
+def is_dev_tools() -> bool:
+    """Whether DevTools is on per ``ENABLE_DEV_TOOLS`` (default off). ``true`` / ``1`` → ``True``."""
+    raw = os.getenv("ENABLE_DEV_TOOLS", "false").strip().lower()
+    return raw in ("true", "1")

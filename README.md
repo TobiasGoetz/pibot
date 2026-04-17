@@ -56,8 +56,8 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 | `DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
 | `DEEPL_API_KEY` | Required | —             | —                                                             | [DeepL](https://www.deepl.com/pro-api) API key; required because the translation cog loads at startup.                                      |
-| `COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync: `global` runs a global Discord sync; `local` skips it (use DevTools guild sync). Invalid or unset → `global`. See ``COMMAND_SYNC_BEHAVIOR`` in ``pibot/settings.py``. |
-| `ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when ``TRUE``. Unset → ``FALSE``. See ``ENABLE_DEV_TOOLS`` in ``pibot/settings.py``. |
+| `COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync: `global` runs a global Discord sync; `local` skips it (use DevTools guild sync). Invalid or unset → `global`. See ``command_sync_behavior()`` and ``COMMAND_SYNC_BEHAVIOR`` in ``pibot/settings.py``. |
+| `ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when true. Unset → false. See ``is_dev_tools()`` in ``pibot/settings.py``. |
 | `LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging`` (and thus the root logger). Use **`DEBUG`** to see ``logger.debug`` output from PiBot and discord. Unknown values fall back to ``INFO``. |
 
 ## Local development

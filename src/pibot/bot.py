@@ -10,13 +10,13 @@ import discord.ext.commands
 import pymongo
 
 from pibot.database import Database
-from pibot.settings import COMMAND_SYNC_BEHAVIOR, ENABLE_DEV_TOOLS
+from pibot.settings import COMMAND_SYNC_BEHAVIOR, command_sync_behavior, is_dev_tools
 
 logger = logging.getLogger("pibot")
 
 
-def _log_level_from_env() -> int:
-    """Parse ``LOG_LEVEL`` (default ``INFO``). Accepts standard ``logging`` level names."""
+def _log_level() -> int:
+    """``LOG_LEVEL`` (default ``INFO``). Accepts standard ``logging`` level names."""
     raw = os.getenv("LOG_LEVEL", "INFO").strip().upper()
     return getattr(logging, raw, logging.INFO)
 
@@ -40,8 +40,8 @@ class Bot(discord.ext.commands.Bot):
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
         self.database = Database(pymongo.MongoClient(os.getenv("MONGODB_URI")))
-        self.commandSyncBehavior = COMMAND_SYNC_BEHAVIOR.from_env()
-        self.enableDevTools = ENABLE_DEV_TOOLS.from_env()
+        self.commandSyncBehavior = command_sync_behavior()
+        self.isDevTools = is_dev_tools()
         super().__init__(
             *args,
             # command_prefix=self.database.get_prefix,
@@ -50,7 +50,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
-        discord.utils.setup_logging(level=_log_level_from_env())
+        discord.utils.setup_logging(level=_log_level())
         logger.info("Starting PiBot version %s", self.version)
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()

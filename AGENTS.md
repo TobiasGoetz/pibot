@@ -12,7 +12,8 @@ Instructions and context for AI agents working on this project.
 ## Project structure
 
 - Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `database.py`, `errors.py`.
-- **Cogs**: Add new features as cogs under `cogs/`; they are loaded in `bot.py`. Env-backed enums live in `pibot/settings.py` (``COMMAND_SYNC_BEHAVIOR``, ``ENABLE_DEV_TOOLS``); the bot stores ``commandSyncBehavior`` and ``enableDevTools`` from ``.from_env()`` at startup.
+- **Cogs**: Add new features as cogs under `cogs/`; they are loaded in `bot.py`.
+- **Settings**: Environment-driven options and helpers are in `pibot/settings.py`; `Bot` reads them in `__init__`.
 
 ## Build & publish
 

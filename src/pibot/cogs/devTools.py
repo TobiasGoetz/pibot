@@ -4,7 +4,6 @@ import discord
 from discord.ext import commands
 
 from pibot.bot import Bot
-from pibot.settings import ENABLE_DEV_TOOLS
 
 
 class DevTools(commands.Cog):
@@ -105,6 +104,6 @@ class DevTools(commands.Cog):
 
 
 async def setup(bot: Bot) -> None:
-    """Set up the cog when ``ENABLE_DEV_TOOLS`` is ``TRUE``."""
-    if bot.enableDevTools is ENABLE_DEV_TOOLS.TRUE:
+    """Set up the cog when ``ENABLE_DEV_TOOLS`` is enabled."""
+    if bot.isDevTools:
         await bot.add_cog(DevTools(bot))
