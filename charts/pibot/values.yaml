@@ -9,4 +9,5 @@ mongodb:
   uri: ""
 deepl:
   apiKey: ""
-environment: "production"
+COMMAND_SYNC_BEHAVIOR: global
+ENABLE_DEV_TOOLS: false

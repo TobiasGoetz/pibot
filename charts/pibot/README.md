@@ -13,4 +13,4 @@ helm install pibot oci://ghcr.io/tobiasgoetz/pibot --version <version> \
   --set deepl.apiKey="..."
 ```
 
-Optional: `--set environment=production` or `environment=testing`.
+Optional: `--set COMMAND_SYNC_BEHAVIOR=global` (default) or `local`, and `--set ENABLE_DEV_TOOLS=false` (default) or `true`.

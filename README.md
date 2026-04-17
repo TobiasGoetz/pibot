@@ -56,7 +56,8 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 | `DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
 | `DEEPL_API_KEY` | Required | —             | —                                                             | [DeepL](https://www.deepl.com/pro-api) API key; required because the translation cog loads at startup.                                      |
-| `ENVIRONMENT`   | Optional | `development` | `development`, `production`, `testing` | `development` (or omit): DevTools cog, local command sync. `production` or `testing`: global command sync, no DevTools. |
+| `COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync: `global` runs a global Discord sync; `local` skips it (use DevTools guild sync). Invalid or unset → `global`. See ``COMMAND_SYNC_BEHAVIOR`` in ``pibot/settings.py``. |
+| `ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when ``TRUE``. Unset → ``FALSE``. See ``ENABLE_DEV_TOOLS`` in ``pibot/settings.py``. |
 
 ## Local development
 
@@ -65,7 +66,7 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 * Python 3.14 or higher
 * [uv](https://github.com/astral-sh/uv) package manager
 * MongoDB instance (local or remote)
-* Discord bot token from [Discord Developer Portal](https://discord.com/developers/app\lications)
+* Discord bot token from [Discord Developer Portal](https://discord.com/developers/applications)
 
 ### Setup
 
@@ -96,7 +97,7 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 
 ### Behaviour in development
 
-When `ENVIRONMENT` is not set to `production` or `testing`, the **DevTools** cog loads, commands sync locally (not globally), and extra debugging aids are available. For where that is wired in code, see [AGENTS.md](AGENTS.md).
+Defaults are **`COMMAND_SYNC_BEHAVIOR=global`** and **`ENABLE_DEV_TOOLS=false`**. For local development without global sync at startup, set **`COMMAND_SYNC_BEHAVIOR=local`**; enable DevTools with **`ENABLE_DEV_TOOLS=true`** and use DevTools `sync` for guild-scoped command testing. See [AGENTS.md](AGENTS.md).
 
 ### Linting, types, docs, and releases
 
