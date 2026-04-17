@@ -1,6 +1,6 @@
 ---
 name: tester
-model: fast
+model: inherit
 description: Runs unit tests and reports or fixes failures. Use when code changes or when asked to run the test suite.
 ---
 
