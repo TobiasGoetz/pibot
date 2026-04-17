@@ -9,5 +9,11 @@ mongodb:
   uri: ""
 deepl:
   apiKey: ""
-COMMAND_SYNC_BEHAVIOR: global
-ENABLE_DEV_TOOLS: false
+
+logging:
+  level: INFO
+
+bot:
+  settings:
+    commandSyncBehavior: global
+    enableDevTools: false

@@ -43,7 +43,7 @@ Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/hel
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
 ```
 
-Configure Discord, MongoDB, DeepL, and other settings via chart values or Secrets.
+You can configure the deployment via the chart [values file](charts/pibot/values.yaml) (and overrides); see [charts/pibot/README.md](charts/pibot/README.md).
 
 Further release and command details: [AGENTS.md](AGENTS.md).
 
@@ -58,6 +58,7 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 | `DEEPL_API_KEY` | Required | —             | —                                                             | [DeepL](https://www.deepl.com/pro-api) API key; required because the translation cog loads at startup.                                      |
 | `COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync: `global` runs a global Discord sync; `local` skips it (use DevTools guild sync). Invalid or unset → `global`. See ``COMMAND_SYNC_BEHAVIOR`` in ``pibot/settings.py``. |
 | `ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when ``TRUE``. Unset → ``FALSE``. See ``ENABLE_DEV_TOOLS`` in ``pibot/settings.py``. |
+| `LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging`` (and thus the root logger). Use **`DEBUG`** to see ``logger.debug`` output from PiBot and discord. Unknown values fall back to ``INFO``. |
 
 ## Local development
 

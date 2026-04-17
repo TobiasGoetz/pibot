@@ -15,6 +15,12 @@ from pibot.settings import COMMAND_SYNC_BEHAVIOR, ENABLE_DEV_TOOLS
 logger = logging.getLogger("pibot")
 
 
+def _log_level_from_env() -> int:
+    """Parse ``LOG_LEVEL`` (default ``INFO``). Accepts standard ``logging`` level names."""
+    raw = os.getenv("LOG_LEVEL", "INFO").strip().upper()
+    return getattr(logging, raw, logging.INFO)
+
+
 def getVersion() -> str:
     """Return the bot version from package metadata (pyproject.toml)."""
     try:
@@ -44,7 +50,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
-        discord.utils.setup_logging()
+        discord.utils.setup_logging(level=_log_level_from_env())
         logger.info("Starting PiBot version %s", self.version)
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()
