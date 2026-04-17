@@ -12,7 +12,7 @@ class COMMAND_SYNC_BEHAVIOR(StrEnum):
 
 
 def command_sync_behavior() -> COMMAND_SYNC_BEHAVIOR:
-    """Current slash-command sync mode from ``COMMAND_SYNC_BEHAVIOR``."""
+    """Return the slash-command sync mode from ``COMMAND_SYNC_BEHAVIOR``."""
     raw = os.getenv("COMMAND_SYNC_BEHAVIOR", "").strip().lower()
     if raw:
         try:
