@@ -12,21 +12,62 @@ A discord bot providing administration and utility features!
 
 ## Installation
 
-You can run PiBot in two ways:
+How to run a **released** build depends on where you want it to run.
 
-* **From PyPI** (after publishing): `pip install pibot` or `uv add pibot`, then run `pibot`.
-* **From Docker**: use the image `tobiasgoetz/pibot` from Docker Hub (see [Docker](#docker) below).
+### As a Python package
 
-# Local Development
+Install from PyPI and run the `pibot` console script:
 
-## Prerequisites
+```bash
+pip install pibot
+# or: uv add pibot
+pibot
+```
+
+### As a container image
+
+Each release publishes the **same** image to Docker Hub and to GitHub Container Registry ([workflow](.github/workflows/docker-publish.yml)).
+
+| Registry   | Image reference (example)                                                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker Hub | [`tobiasgoetz/pibot`](https://hub.docker.com/r/tobiasgoetz/pibot): `docker run --env-file .env tobiasgoetz/pibot:latest`                                               |
+| GHCR       | `ghcr.io/tobiasgoetz/pibot:latest` (and version tags; path uses a lowercased GitHub `owner/repo`) — e.g. `docker run --env-file .env ghcr.io/tobiasgoetz/pibot:latest` |
+
+To build an image from this repository locally, see [Docker](#docker-local-builds) below.
+
+### On Kubernetes
+
+Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/helm-publish.yml)). Use an app version that matches `pyproject.toml` / the GitHub release:
+
+```bash
+helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
+```
+
+Configure Discord, MongoDB, DeepL, and other settings via chart values or Secrets.
+
+Further release and command details: [AGENTS.md](AGENTS.md).
+
+## Environment variables
+
+Configure these for `docker run`, Helm values, or a `.env` file (see `.env.example`). Names match what the process reads via the environment.
+
+| Variable        | Required | Default       | Options                                                       | Description                                                                                                                                 |
+| --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
+| `MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
+| `DEEPL_API_KEY` | Required | —             | —                                                             | [DeepL](https://www.deepl.com/pro-api) API key; required because the translation cog loads at startup.                                      |
+| `ENVIRONMENT`   | Optional | `development` | `development`, `production`, `testing` | `development` (or omit): DevTools cog, local command sync. `production` or `testing`: global command sync, no DevTools. |
+
+## Local development
+
+### Prerequisites
 
 * Python 3.14 or higher
 * [uv](https://github.com/astral-sh/uv) package manager
 * MongoDB instance (local or remote)
-* Discord bot token from [Discord Developer Portal](https://discord.com/developers/applications)
+* Discord bot token from [Discord Developer Portal](https://discord.com/developers/app\lications)
 
-## Setup
+### Setup
 
 1. **Clone the repository**
    ```bash
@@ -40,90 +81,34 @@ You can run PiBot in two ways:
    ```
 
 3. **Set up environment variables**
-   
+
    Copy the example environment file and create your `.env` file with your values:
    ```bash
    cp .env.example .env
    ```
-   
-   Edit `.env` with your actual values. The `.env.example` file contains all required and optional environment variables with descriptions.
+
+   Edit `.env` with your actual values. See [Environment variables](#environment-variables) for the full list.
 
 4. **Run the bot**
    ```bash
    uv run pibot
    ```
 
-## Development Workflow
+### Behaviour in development
 
-### Running the Bot
+When `ENVIRONMENT` is not set to `production` or `testing`, the **DevTools** cog loads, commands sync locally (not globally), and extra debugging aids are available. For where that is wired in code, see [AGENTS.md](AGENTS.md).
 
-The recommended way to run the bot during development is using `uv` directly:
+### Linting, types, docs, and releases
 
-```bash
-uv run pibot
-```
+See [AGENTS.md](AGENTS.md) for Ruff/`ty` commands, Sphinx doc regeneration, Docker/Helm/PyPI flows, and Release Please.
 
-This provides:
-* Fast iteration (no Docker rebuilds needed)
-* Easy debugging with IDE integration
-* Direct access to logs and file system
+## Docker (local builds)
 
-### Development Features
-
-When `ENVIRONMENT` is not set to `production` or `testing`:
-* **DevTools cog** is automatically loaded with development commands
-* Commands sync locally (not globally) for faster testing
-* Additional debugging features are available
-
-### Code Quality
-
-The project uses `ruff` for linting/formatting and `ty` for type checking. Run:
-
-```bash
-uv run ruff check --fix
-uv run ruff format
-uv run ty check --fix
-```
-
-## Documentation
-
-Update generated API docs using:
-```bash
-uv run --group docs sphinx-apidoc -f -o docs/source src/pibot
-```
-
-Verify docs compile cleanly (warnings as errors) using:
-```bash
-uv run --group docs sphinx-build -T -n -W -b html docs docs/_build/html
-```
-
-## Docker
-
-### Testing Docker Build Locally
-
-To test the Docker build locally without publishing:
+To build and run the image on your machine (no registry push):
 
 ```bash
 docker build -t pibot:local .
 docker run --env-file .env pibot:local
 ```
 
-### Building and Publishing Multi-Architecture Images
-
-**⚠️ This will publish to Docker Hub.** Make sure you're logged in with `docker login` before running.
-
-To build and publish multi-architecture images from your local machine:
-
-1. Create buildx builder (one-time setup):
-   ```bash
-   docker buildx create --use --name pibot
-   ```
-
-2. Build and push multi-arch image to Docker Hub:
-   ```bash
-   docker buildx build --platform linux/amd64,linux/arm64 --push -t tobiasgoetz/pibot .
-   ```
-   
-   This command will build the image for both AMD64 and ARM64 architectures and **push it to Docker Hub**.
-
-**Note:** For active development, using `uv` directly is recommended over Docker for faster iteration.
+For day-to-day development, `uv run pibot` is usually faster than rebuilding images.
