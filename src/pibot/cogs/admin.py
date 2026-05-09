@@ -11,6 +11,7 @@ from pibot.bot import Bot
 logger = logging.getLogger("cog.admin")
 
 
+@app_commands.default_permissions(administrator=True)
 class Admin(commands.GroupCog):
     """Admin commands."""
 
@@ -19,7 +20,6 @@ class Admin(commands.GroupCog):
         self.bot = bot
 
     @app_commands.command(name="prefix", description="Set the prefix for the guild.")
-    @app_commands.checks.has_permissions(administrator=True)
     async def prefix(self, interaction: discord.Interaction, arg: str):
         """
         Set the prefix for the guild.
@@ -39,7 +39,6 @@ class Admin(commands.GroupCog):
         await interaction.followup.send(f"Prefix set to {arg}")
 
     @app_commands.command(name="command_channel", description="Set the command channel for the guild.")
-    @app_commands.checks.has_permissions(administrator=True)
     async def command_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """
         Set the command channel for the guild.
@@ -66,7 +65,6 @@ class Admin(commands.GroupCog):
         await interaction.followup.send(f"Command channel set to {channel.mention}")
 
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
-    @app_commands.checks.has_permissions(administrator=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """
         Clear a specified amount of messages.
@@ -85,7 +83,6 @@ class Admin(commands.GroupCog):
         )
 
     @app_commands.command(name="mute", description="Mute a member.")
-    @app_commands.checks.has_permissions(administrator=True)
     async def mute(
         self,
         interaction: discord.Interaction,
@@ -126,7 +123,6 @@ class Admin(commands.GroupCog):
         logging.info("User %s muted %s for %s.", interaction.user, member, reason)
 
     @app_commands.command(name="unmute", description="Unmute a member.")
-    @app_commands.checks.has_permissions(administrator=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """
         Unmute a member.

@@ -13,10 +13,13 @@ class DevTools(commands.Cog):
         """Initialize the cog."""
         self.bot = bot
 
-    @commands.command(name="getcommands")
-    @commands.is_owner()
-    async def get_commands(self, ctx):
-        """Get all application commands."""
+    async def cog_check(self, ctx):
+        """Allow only the bot owner to use dev tools commands."""
+        return await self.bot.is_owner(ctx.author)
+
+    @commands.command(name="listcommands")
+    async def list_commands(self, ctx):
+        """List all application commands."""
         await ctx.defer()
 
         embed = discord.Embed(
@@ -48,7 +51,6 @@ class DevTools(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="sync")
-    @commands.is_owner()
     async def sync_commands(self, ctx):
         """Sync all application commands for the guild."""
         await ctx.defer()
@@ -64,7 +66,6 @@ class DevTools(commands.Cog):
         )
 
     @commands.command(name="clear")
-    @commands.is_owner()
     async def clear_commands(self, ctx):
         """Remove all application commands for the guild."""
         await ctx.defer()
@@ -80,7 +81,6 @@ class DevTools(commands.Cog):
         )
 
     @commands.command(name="clearglobal")
-    @commands.is_owner()
     async def clear_global_commands(self, ctx):
         """Remove all application commands."""
         await ctx.defer()

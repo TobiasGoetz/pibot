@@ -57,7 +57,7 @@ class ExceptionHandler(commands.Cog):
                 interaction.user,
                 commandName,
             )
-            await send_error_message(interaction, f"You cannot use `{commandName}`.", error)
+            await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
         elif isinstance(error, app_commands.MissingRole):
             LOGGER.info(
@@ -66,7 +66,7 @@ class ExceptionHandler(commands.Cog):
                 commandName,
                 error.missing_role,
             )
-            await send_error_message(
+            await send_app_command_error_message(
                 interaction,
                 f"You cannot use `{commandName}` without the {error.missing_role} role.",
                 error,
@@ -74,7 +74,7 @@ class ExceptionHandler(commands.Cog):
 
         elif isinstance(error, app_commands.CommandNotFound):
             LOGGER.info("User %s tried to use an invalid command.", interaction.user)
-            await send_error_message(
+            await send_app_command_error_message(
                 interaction,
                 f"**{interaction.user.name}** this command does not exist.",
                 error,
@@ -87,7 +87,7 @@ class ExceptionHandler(commands.Cog):
                 commandName,
                 error,
             )
-            await send_error_message(
+            await send_app_command_error_message(
                 interaction,
                 f"You cannot use `{commandName}` with those arguments.\n```{error}```",
                 error,
@@ -100,7 +100,7 @@ class ExceptionHandler(commands.Cog):
                 commandName,
                 error,
             )
-            await send_error_message(
+            await send_app_command_error_message(
                 interaction,
                 f"You cannot use `{commandName}` on cooldown.\n```{error}```",
                 error,
@@ -113,14 +113,88 @@ class ExceptionHandler(commands.Cog):
                 interaction.data,
                 error,
             )
-            await send_error_message(
+            await send_app_command_error_message(
                 interaction,
                 f"An error occurred while using `{commandName}`.",
                 error,
             )
 
+    @commands.Cog.listener("on_command_error")
+    async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
+        """Handle prefix command errors."""
+        if ctx.command and ctx.command.has_error_handler():
+            return
 
-async def send_error_message(
+        cog = ctx.cog
+        if cog and cog.has_error_handler():
+            return
+
+        commandName = ctx.command.qualified_name if ctx.command else "unknown"
+        originalError = getattr(error, "original", error)
+
+        if isinstance(originalError, commands.CheckFailure):
+            LOGGER.info(
+                "User %s failed check for prefix command %s.",
+                ctx.author,
+                commandName,
+            )
+            await send_command_error_message(
+                ctx,
+                f"You cannot use `{commandName}`.",
+                originalError,
+            )
+        elif isinstance(originalError, commands.MissingRequiredArgument):
+            LOGGER.info(
+                "User %s used %s with missing arguments. [%s]",
+                ctx.author,
+                commandName,
+                originalError,
+            )
+            await send_command_error_message(
+                ctx,
+                f"You cannot use `{commandName}` with missing arguments.\n```{originalError}```",
+                originalError,
+            )
+        elif isinstance(originalError, commands.BadArgument):
+            LOGGER.info(
+                "User %s used %s with invalid arguments. [%s]",
+                ctx.author,
+                commandName,
+                originalError,
+            )
+            await send_command_error_message(
+                ctx,
+                f"You cannot use `{commandName}` with those arguments.\n```{originalError}```",
+                originalError,
+            )
+        elif isinstance(originalError, commands.CommandOnCooldown):
+            LOGGER.info(
+                "User %s used %s on cooldown. [%s]",
+                ctx.author,
+                commandName,
+                originalError,
+            )
+            await send_command_error_message(
+                ctx,
+                f"You cannot use `{commandName}` on cooldown.\n```{originalError}```",
+                originalError,
+            )
+        else:
+            LOGGER.error(
+                "Uncaught prefix command error caused by %s using %s. [%s]",
+                ctx.author,
+                commandName,
+                originalError,
+                exc_info=originalError,
+            )
+            await send_command_error_message(
+                ctx,
+                f"An error occurred while using `{commandName}`.",
+                originalError,
+            )
+
+
+async def send_app_command_error_message(
     interaction: discord.Interaction,
     description: str,
     error: app_commands.AppCommandError,
@@ -142,6 +216,25 @@ async def send_error_message(
         await interaction.edit_original_response(content=None, embed=embed)
     else:
         await interaction.followup.send(embed=embed)
+
+
+async def send_command_error_message(
+    ctx: commands.Context,
+    description: str,
+    error: commands.CommandError,
+):
+    """Send a final prefix command error message."""
+    embed = discord.Embed(
+        title=error.__class__.__name__,
+        description=f":no_entry_sign: **{ctx.author.mention}**",
+    )
+
+    embed.add_field(name="Description", value=f"{description}")
+
+    if str(error) != "":
+        embed.add_field(name="Error", value=f"```{error}```")
+
+    await ctx.send(embed=embed)
 
 
 async def setup(bot: Bot) -> None:
