@@ -7,6 +7,8 @@ updates:
       interval: daily
     labels:
       - "dependencies"
+    commit-message:
+      prefix: deps
 
   - package-ecosystem: docker
     directory: "/"
@@ -14,6 +16,8 @@ updates:
       interval: daily
     labels:
       - "dependencies"
+    commit-message:
+      prefix: deps
 
   - package-ecosystem: github-actions
     directory: "/"
@@ -21,6 +25,8 @@ updates:
       interval: daily
     labels:
       - "dependencies"
+    commit-message:
+      prefix: deps
 
   - package-ecosystem: helm
     directory: "/charts/pibot"
@@ -28,3 +34,5 @@ updates:
       interval: daily
     labels:
       - "dependencies"
+    commit-message:
+      prefix: deps
