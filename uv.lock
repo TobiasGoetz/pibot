@@ -424,6 +424,7 @@ name = "pibot-discord"
 version = "3.5.2"
 source = { editable = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "deepl" },
     { name = "discord-py" },
     { name = "pymongo" },
@@ -444,6 +445,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.14,<4" },
     { name = "deepl", specifier = "~=1.28" },
     { name = "discord-py", specifier = "~=2.7.1" },
     { name = "pymongo", specifier = ">=4.16,<4.18" },
