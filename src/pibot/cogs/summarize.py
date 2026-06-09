@@ -38,6 +38,7 @@ SUMMARY_SYSTEM_PROMPT = (
 
 async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Cooldown | None:
     """Apply summarize cooldown; bot owner is exempt."""
+    assert isinstance(interaction.client, Bot)
     if await interaction.client.is_owner(interaction.user):
         return None
     return app_commands.Cooldown(1, SUMMARIZE_COOLDOWN_SECONDS)
