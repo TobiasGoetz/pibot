@@ -1,6 +1,7 @@
 """Summarize cog for PiBot."""
 
 import logging
+import os
 from datetime import UTC, datetime, timedelta
 
 import discord
@@ -8,8 +9,8 @@ import pytimeparse
 from discord import app_commands
 from discord.ext import commands
 
-from pibot.ai_service import create_ai_service
-from pibot.ai_service.ai_service import AIService, ChatMessage
+from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
+from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
 
 logger = logging.getLogger("cog.summarize")
@@ -33,7 +34,24 @@ class Summarize(commands.Cog):
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        self.aiService: AIService = create_ai_service()
+        accountId = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+        if not accountId:
+            raise ValueError("CLOUDFLARE_ACCOUNT_ID environment variable is not set")
+        gateway = os.getenv("CLOUDFLARE_AI_GATEWAY")
+        if not gateway:
+            raise ValueError("CLOUDFLARE_AI_GATEWAY environment variable is not set")
+        token = os.getenv("CLOUDFLARE_AI_GATEWAY_TOKEN")
+        if not token:
+            raise ValueError("CLOUDFLARE_AI_GATEWAY_TOKEN environment variable is not set")
+        gatewayKwargs = {
+            "account_id": accountId,
+            "gateway": gateway,
+            "token": token,
+        }
+        envModel = os.getenv("CLOUDFLARE_AI_MODEL")
+        if envModel:
+            gatewayKwargs["model"] = envModel
+        self.aiGateway: AIGateway = CloudflareAIGateway(**gatewayKwargs)
 
     @staticmethod
     def _parse_duration(duration: str) -> int:
@@ -127,7 +145,7 @@ class Summarize(commands.Cog):
         )
         logger.debug("Summary input preview: %r", formatted[:500])
 
-        summary = await self.aiService.chat(
+        summary = await self.aiGateway.chat(
             [
                 ChatMessage(role="system", content=SUMMARY_SYSTEM_PROMPT),
                 ChatMessage(
