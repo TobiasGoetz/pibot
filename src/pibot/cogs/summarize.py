@@ -15,7 +15,8 @@ from pibot.bot import Bot
 
 logger = logging.getLogger("cog.summarize")
 
-MAX_DURATION_SECONDS = 7 * 24 * 60 * 60
+MAX_DURATION_SECONDS = 7 * 24 * 60 * 60  # 1 week
+SUMMARIZE_COOLDOWN_SECONDS = 60 * 60  # 1 hour
 MAX_MESSAGES = 1000
 CHARS_PER_MESSAGE = 100
 MAX_INPUT_CHARS = MAX_MESSAGES * CHARS_PER_MESSAGE
@@ -35,6 +36,13 @@ SUMMARY_SYSTEM_PROMPT = (
 )
 
 
+async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Cooldown | None:
+    """Apply summarize cooldown; bot owner is exempt."""
+    if await interaction.client.is_owner(interaction.user):
+        return None
+    return app_commands.Cooldown(1, SUMMARIZE_COOLDOWN_SECONDS)
+
+
 class Summarize(commands.Cog):
     """Channel summarization commands."""
 
@@ -50,12 +58,6 @@ class Summarize(commands.Cog):
         if envModel:
             gatewayKwargs["model"] = envModel
         self.aiGateway: AIGateway = CloudflareAIGateway(**gatewayKwargs)
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        """Allow only the bot owner to use summarize commands."""
-        if not await self.bot.is_owner(interaction.user):
-            raise app_commands.CheckFailure("You do not own this bot.")
-        return True
 
     @staticmethod
     def _parse_duration(duration: str) -> int:
@@ -111,6 +113,7 @@ class Summarize(commands.Cog):
         description="Summarize recent messages in this channel using AI.",
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
+    @app_commands.checks.dynamic_cooldown(summarizeCooldown)
     async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
