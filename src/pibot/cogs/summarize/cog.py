@@ -1,7 +1,6 @@
 """Summarize cog for PiBot."""
 
 import logging
-import os
 from datetime import UTC, datetime, timedelta
 
 import discord
@@ -12,14 +11,12 @@ from discord.ext import commands
 from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
 from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
+from pibot.cogs.summarize.config import CloudflareConfig, SummarizeConfig, SummarizeFeature
+from pibot.guild_settings.decorators import requiresFeature
 
 logger = logging.getLogger("cog.summarize")
 
-MAX_DURATION_SECONDS = 7 * 24 * 60 * 60  # 1 week
-SUMMARIZE_COOLDOWN_SECONDS = 60 * 60  # 1 hour
-MAX_MESSAGES = 1000
 CHARS_PER_MESSAGE = 100
-MAX_INPUT_CHARS = MAX_MESSAGES * CHARS_PER_MESSAGE
 DISCORD_MESSAGE_LIMIT = 2000
 
 SUMMARY_SYSTEM_PROMPT = (
@@ -35,44 +32,70 @@ SUMMARY_SYSTEM_PROMPT = (
     "Do not quote long message chains or list every participant."
 )
 
+NOT_CONFIGURED_MESSAGE = (
+    "Summarize is not configured for this server. "
+    "Use `/settings set summarize.cloudflare.token …` or configure global env defaults."
+)
+
 
 async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Cooldown | None:
-    """Apply summarize cooldown; bot owner is exempt."""
+    """Apply per-guild summarize cooldown; bot owner is exempt."""
     assert isinstance(interaction.client, Bot)
+    if interaction.guild is None:
+        return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    return app_commands.Cooldown(1, SUMMARIZE_COOLDOWN_SECONDS)
+    config = await interaction.client.guildSettings.resolveFeature(interaction.guild.id, SummarizeFeature.name)
+    return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
 class Summarize(commands.Cog):
     """Channel summarization commands."""
 
+    featureName = SummarizeFeature.name
+
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        gatewayKwargs = {
-            "account_id": os.environ["CLOUDFLARE_ACCOUNT_ID"],
-            "gateway": os.environ["CLOUDFLARE_AI_GATEWAY"],
-            "token": os.environ["CLOUDFLARE_AI_GATEWAY_TOKEN"],
-        }
-        envModel = os.getenv("CLOUDFLARE_AI_MODEL")
-        if envModel:
-            gatewayKwargs["model"] = envModel
-        self.aiGateway: AIGateway = CloudflareAIGateway(**gatewayKwargs)
+        self._gatewayCache: dict[tuple[int, str, str, str, str], AIGateway] = {}
 
-    @staticmethod
-    def _parse_duration(duration: str) -> int:
+    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str, str]:
+        return (guildId, cloudflare.accountId, cloudflare.gateway, cloudflare.token, cloudflare.model)
+
+    async def _getGateway(self, guildId: int) -> AIGateway | None:
+        """Return a cached Cloudflare gateway for the guild, if configured."""
+        config = await self.bot.guildSettings.resolveFeature(guildId, SummarizeFeature.name)
+        if not config.cloudflare.isConfigured:
+            return None
+        cacheKey = self._cacheKey(guildId, config.cloudflare)
+        cached = self._gatewayCache.get(cacheKey)
+        if cached is not None:
+            return cached
+        gateway = CloudflareAIGateway(
+            account_id=config.cloudflare.accountId,
+            gateway=config.cloudflare.gateway,
+            token=config.cloudflare.token,
+            model=config.cloudflare.model,
+        )
+        self._gatewayCache[cacheKey] = gateway
+        return gateway
+
+    def _parseDuration(self, duration: str, config: SummarizeConfig) -> int:
         seconds = pytimeparse.parse(duration)
         if seconds is None:
             raise commands.BadArgument(f"Could not parse `{duration}` as a duration (e.g. `1h`, `1d`, `10min`).")
         if seconds <= 0:
             raise commands.BadArgument("Duration must be greater than zero.")
-        if seconds > MAX_DURATION_SECONDS:
-            raise commands.BadArgument("Duration cannot be longer than 7 days.")
+        if seconds > config.maxDurationSeconds:
+            raise commands.BadArgument(f"Duration cannot be longer than {config.maxDurationSeconds // 86400} days.")
         return seconds
 
     @staticmethod
-    async def _fetch_channel_messages(channel: discord.TextChannel, after: datetime) -> list[discord.Message]:
+    async def _fetchChannelMessages(
+        channel: discord.TextChannel,
+        after: datetime,
+        maxMessages: int,
+    ) -> list[discord.Message]:
         messages: list[discord.Message] = []
         async for message in channel.history(after=after, oldest_first=True, limit=None):
             if message.author.bot:
@@ -80,26 +103,26 @@ class Summarize(commands.Cog):
             if not message.content.strip():
                 continue
             messages.append(message)
-            if len(messages) >= MAX_MESSAGES:
-                logger.debug("Reached message cap (%s) in #%s.", MAX_MESSAGES, channel.name)
+            if len(messages) >= maxMessages:
+                logger.debug("Reached message cap (%s) in #%s.", maxMessages, channel.name)
                 break
         return messages
 
     @staticmethod
-    def _format_messages(messages: list[discord.Message]) -> str:
+    def _formatMessages(messages: list[discord.Message], maxInputChars: int) -> str:
         lines = [
             f"[{message.created_at.strftime('%Y-%m-%d %H:%M')}] {message.author.display_name}: {message.content}"
             for message in messages
         ]
         text = "\n".join(lines)
-        if len(text) > MAX_INPUT_CHARS:
-            logger.debug("Truncating input from %s to %s characters.", len(text), MAX_INPUT_CHARS)
-            text = text[-MAX_INPUT_CHARS:]
-            text = f"(truncated to last {MAX_INPUT_CHARS:,} characters)\n{text}"
+        if len(text) > maxInputChars:
+            logger.debug("Truncating input from %s to %s characters.", len(text), maxInputChars)
+            text = text[-maxInputChars:]
+            text = f"(truncated to last {maxInputChars:,} characters)\n{text}"
         return text
 
     @staticmethod
-    def _chunk_text(text: str, limit: int = DISCORD_MESSAGE_LIMIT) -> list[str]:
+    def _chunkText(text: str, limit: int = DISCORD_MESSAGE_LIMIT) -> list[str]:
         if len(text) <= limit:
             return [text]
 
@@ -115,6 +138,7 @@ class Summarize(commands.Cog):
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
+    @requiresFeature(SummarizeFeature.name)
     async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
@@ -122,16 +146,21 @@ class Summarize(commands.Cog):
         :param interaction: The interaction of the slash command.
         :param duration: How far back to look.
         """
-        if not isinstance(interaction.channel, discord.TextChannel):
+        if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        seconds = self._parse_duration(duration)
+        guildConfig = await self.bot.guildSettings.resolveFeature(interaction.guild.id, SummarizeFeature.name)
+        if not guildConfig.isAvailable:
+            await interaction.response.send_message(NOT_CONFIGURED_MESSAGE, ephemeral=True)
+            return
+
+        seconds = self._parseDuration(duration, guildConfig)
         cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
 
         await interaction.response.defer(thinking=True)
 
         channel = interaction.channel
-        messages = await self._fetch_channel_messages(channel, cutoff)
+        messages = await self._fetchChannelMessages(channel, cutoff, guildConfig.maxMessages)
         if not messages:
             logger.debug(
                 "%s requested a summary of #%s but no messages found in the last %s.",
@@ -142,7 +171,8 @@ class Summarize(commands.Cog):
             await interaction.followup.send(f"No messages found in the last `{duration}`.")
             return
 
-        formatted = self._format_messages(messages)
+        maxInputChars = guildConfig.maxMessages * CHARS_PER_MESSAGE
+        formatted = self._formatMessages(messages, maxInputChars)
         logger.info(
             "%s requested a summary of #%s (%s discord messages, %s seconds, %s formatted chars).",
             interaction.user,
@@ -153,7 +183,12 @@ class Summarize(commands.Cog):
         )
         logger.debug("Summary input preview: %r", formatted[:500])
 
-        summary = await self.aiGateway.chat(
+        aiGateway = await self._getGateway(interaction.guild.id)
+        if aiGateway is None:
+            await interaction.followup.send(NOT_CONFIGURED_MESSAGE)
+            return
+
+        summary = await aiGateway.chat(
             [
                 ChatMessage(role="system", content=SUMMARY_SYSTEM_PROMPT),
                 ChatMessage(
@@ -179,7 +214,7 @@ class Summarize(commands.Cog):
 
         embed = discord.Embed(
             title=f"Summary — #{channel.name}",
-            description=self._chunk_text(summary)[0],
+            description=self._chunkText(summary)[0],
             color=discord.Color.blurple(),
         )
         embed.set_footer(text=f"Last {duration} · {len(messages)} messages")
@@ -192,20 +227,5 @@ class Summarize(commands.Cog):
             len(summary),
         )
 
-        for chunk in self._chunk_text(summary)[1:]:
+        for chunk in self._chunkText(summary)[1:]:
             await interaction.followup.send(chunk)
-
-
-async def setup(bot: Bot) -> None:
-    """Set up the cog when Cloudflare AI Gateway is configured."""
-    if not all(
-        os.getenv(key)
-        for key in (
-            "CLOUDFLARE_ACCOUNT_ID",
-            "CLOUDFLARE_AI_GATEWAY",
-            "CLOUDFLARE_AI_GATEWAY_TOKEN",
-        )
-    ):
-        logger.info("Skipping summarize cog: Cloudflare AI Gateway not configured.")
-        return
-    await bot.add_cog(Summarize(bot))

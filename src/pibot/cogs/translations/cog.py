@@ -1,13 +1,14 @@
 """Translations cog for PiBot."""
 
 import logging
-import os
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 from pibot.bot import Bot
+from pibot.cogs.translations.config import TranslationsFeature
+from pibot.guild_settings.decorators import requiresFeature
 from pibot.translation_service.deepl_translator import DeepLTranslator
 from pibot.translation_service.translator import Translator
 
@@ -16,6 +17,8 @@ logger = logging.getLogger("cog.translations")
 
 class Translations(commands.Cog):
     """Translation commands."""
+
+    featureName = TranslationsFeature.name
 
     language_dict: dict[str, str] = {
         "🇦🇪": "AR",  # Arabic
@@ -53,31 +56,58 @@ class Translations(commands.Cog):
         "🇹🇼": "ZH-HANT",  # Chinese (Traditional)
     }
 
-    def __init__(self, bot):
+    def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        self.translator: Translator = DeepLTranslator(api_key=os.environ["DEEPL_API_KEY"])
+        self._translatorCache: dict[tuple[int, str], Translator] = {}
+
+    async def _getTranslator(self, guildId: int) -> Translator | None:
+        """Return a cached DeepL translator for the guild, if configured."""
+        config = await self.bot.guildSettings.resolveFeature(guildId, TranslationsFeature.name)
+        if not config.deeplApiKey:
+            return None
+        cacheKey = (guildId, config.deeplApiKey)
+        cached = self._translatorCache.get(cacheKey)
+        if cached is not None:
+            return cached
+        translator = DeepLTranslator(api_key=config.deeplApiKey)
+        self._translatorCache[cacheKey] = translator
+        return translator
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         """
         Handle reaction add events.
 
         :param payload: The payload of the reaction.
         """
+        if payload.guild_id is None:
+            return
+
+        if not await self.bot.guildSettings.isFeatureEnabled(payload.guild_id, self.featureName):
+            return
+
+        if not await self.bot.guildSettings.isFeatureAvailable(payload.guild_id, self.featureName):
+            return
+
         if not payload.emoji.is_unicode_emoji():
             logger.debug("Reaction is not a unicode emoji.")
             return
 
         if payload.emoji.name not in self.language_dict:
-            logger.debug(f"Reaction {payload.emoji.name} not in supported languages.")
+            logger.debug("Reaction %s not in supported languages.", payload.emoji.name)
             return
 
         if payload.message_author_id is None:
             return
 
-        logger.debug(f"Detected translation request: {payload.emoji.name} {self.language_dict[payload.emoji.name]}")
-        await self.send_translation(
+        logger.debug(
+            "Detected translation request: %s %s",
+            payload.emoji.name,
+            self.language_dict[payload.emoji.name],
+        )
+        await self.sendTranslation(
+            guild_id=payload.guild_id,
             channel_id=payload.channel_id,
             message_author_id=payload.message_author_id,
             message_id=payload.message_id,
@@ -85,8 +115,9 @@ class Translations(commands.Cog):
             target_lang_emoji=payload.emoji.name,
         )
 
-    async def send_translation(
+    async def sendTranslation(
         self,
+        guild_id: int,
         channel_id: int,
         message_author_id: int,
         message_id: int,
@@ -96,32 +127,39 @@ class Translations(commands.Cog):
         """
         Send the translation to the channel.
 
+        :param guild_id: The guild ID.
         :param channel_id: The ID of the channel.
         :param message_author_id: The ID of the message author.
         :param message_id: The ID of the message.
         :param target_lang: The target language to translate to.
         :param target_lang_emoji: The emoji of the target language.
         """
+        translator = await self._getTranslator(guild_id)
+        if translator is None:
+            logger.debug("No DeepL translator configured for guild %s.", guild_id)
+            return
+
         channel = self.bot.get_channel(channel_id)
-        if not channel:
-            logger.warning(f"Channel {channel_id} not found.")
+        if not isinstance(channel, (discord.TextChannel, discord.Thread)):
+            logger.warning("Channel %s not found or not messageable.", channel_id)
             return
 
         message = await channel.fetch_message(message_id)
         if not message:
-            logger.warning(f"Message {message_id} not found.")
+            logger.warning("Message %s not found.", message_id)
             return
         author = await self.bot.fetch_user(message_author_id)
         if not author:
-            logger.warning(f"Author {message_author_id} not found.")
+            logger.warning("Author %s not found.", message_author_id)
             return
 
-        translation: str = self.translator.translate(message.content, target_lang)
+        translation: str = translator.translate(message.content, target_lang)
 
         await message.reply(content=f"{target_lang_emoji}\n{translation}", mention_author=False, silent=True)
 
     @app_commands.command(name="get_languages", description="Get the available languages for translation.")
-    async def get_languages(self, interaction: discord.Interaction):
+    @requiresFeature(TranslationsFeature.name)
+    async def getLanguages(self, interaction: discord.Interaction) -> None:
         """
         Get the available languages for translation.
 
@@ -133,11 +171,3 @@ class Translations(commands.Cog):
                 description="\n".join([f"{emoji} {lang}" for emoji, lang in self.language_dict.items()]),
             )
         )
-
-
-async def setup(bot: Bot) -> None:
-    """Set up the cog when DeepL is configured."""
-    if not os.getenv("DEEPL_API_KEY"):
-        logger.info("Skipping translations cog: DEEPL_API_KEY not configured.")
-        return
-    await bot.add_cog(Translations(bot))

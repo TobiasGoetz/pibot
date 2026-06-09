@@ -19,51 +19,6 @@ class Admin(commands.GroupCog):
         """Initialize the cog."""
         self.bot = bot
 
-    @app_commands.command(name="prefix", description="Set the prefix for the guild.")
-    async def prefix(self, interaction: discord.Interaction, arg: str):
-        """
-        Set the prefix for the guild.
-
-        :param interaction: The interaction of the slash command.
-        :param arg: The prefix to set.
-        """
-        if interaction.guild is None:
-            return
-        guild = interaction.guild
-        await interaction.response.defer()
-
-        await self.bot.database.check_if_guild_exists_else_initialize(guild)
-        await self.bot.database.set_setting(guild, "prefix", arg)
-
-        logger.info("Changed prefix for %s to %s.", guild.name, arg)
-        await interaction.followup.send(f"Prefix set to {arg}")
-
-    @app_commands.command(name="command_channel", description="Set the command channel for the guild.")
-    async def command_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        """
-        Set the command channel for the guild.
-
-        :param channel: The channel to set as the command channel.
-        :param interaction: The interaction of the slash command.
-        """
-        if interaction.guild is None:
-            return
-        guild = interaction.guild
-        await interaction.response.defer()
-
-        await self.bot.database.check_if_guild_exists_else_initialize(guild)
-
-        if channel is None:
-            return await interaction.followup.send(f"Channel {channel} not found.")
-
-        await self.bot.database.set_setting(guild, "command_channel", channel.id)
-        logger.info(
-            "Changed command channel for %s to %s.",
-            guild.name,
-            channel.name,
-        )
-        await interaction.followup.send(f"Command channel set to {channel.mention}")
-
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """

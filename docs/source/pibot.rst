@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    pibot.cogs
+   pibot.guild_settings
    pibot.translation_service
 
 Submodules
@@ -17,14 +18,6 @@ pibot.bot module
 ----------------
 
 .. automodule:: pibot.bot
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pibot.database module
----------------------
-
-.. automodule:: pibot.database
    :members:
    :show-inheritance:
    :undoc-members:

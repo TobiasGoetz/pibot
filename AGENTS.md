@@ -11,7 +11,7 @@ Instructions and context for AI agents working on this project.
 
 ## Project structure
 
-- Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `database.py`, `errors.py`.
+- Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `guild_settings/`, `errors.py`.
 - **Cogs**: Add new features as cogs under `cogs/`; they are loaded in `bot.py`.
 - **Settings**: Environment-driven options and helpers are in `pibot/settings.py`; `Bot` reads them in `__init__`.
 

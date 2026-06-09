@@ -36,10 +36,18 @@ pibot.cogs.general module
    :show-inheritance:
    :undoc-members:
 
-pibot.cogs.translations module
-------------------------------
+pibot.cogs.summarize package
+----------------------------
 
-.. automodule:: pibot.cogs.translations
+.. automodule:: pibot.cogs.summarize.cog
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pibot.cogs.translations package
+-------------------------------
+
+.. automodule:: pibot.cogs.translations.cog
    :members:
    :show-inheritance:
    :undoc-members:
