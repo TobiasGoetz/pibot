@@ -110,8 +110,8 @@ class Summarize(commands.Cog):
         name="summarize",
         description="Summarize recent messages in this channel using AI.",
     )
-    @app_commands.describe(duration="How far back to look (e.g. 1h, 1d, 10min).")
-    async def summarize(self, interaction: discord.Interaction, duration: str) -> None:
+    @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
+    async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
 
