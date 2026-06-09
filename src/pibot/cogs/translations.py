@@ -56,10 +56,7 @@ class Translations(commands.Cog):
     def __init__(self, bot):
         """Initialize the cog."""
         self.bot = bot
-        apiKey = os.getenv("DEEPL_API_KEY")
-        if not apiKey:
-            raise ValueError("DEEPL_API_KEY environment variable is not set")
-        self.translator: Translator = DeepLTranslator(api_key=apiKey)
+        self.translator: Translator = DeepLTranslator(api_key=os.environ["DEEPL_API_KEY"])
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -139,5 +136,8 @@ class Translations(commands.Cog):
 
 
 async def setup(bot: Bot) -> None:
-    """Set up the cog."""
+    """Set up the cog when DeepL is configured."""
+    if not os.getenv("DEEPL_API_KEY"):
+        logger.info("Skipping translations cog: DEEPL_API_KEY not configured.")
+        return
     await bot.add_cog(Translations(bot))

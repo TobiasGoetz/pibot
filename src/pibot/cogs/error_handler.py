@@ -30,11 +30,8 @@ class ExceptionHandler(commands.Cog):
 
         # Avoid dispatching to the app command error handler if the cog has its own error handler.
         cog = getattr(interaction.command, "binding", None) if interaction.command else None
-        if cog is not None:
-            LOGGER.info("Cog is not None")
-            if cog.has_app_command_error_handler():
-                LOGGER.info("Cog has an app command error handler")
-                return
+        if cog is not None and cog.has_app_command_error_handler():
+            return
 
         self.bot.dispatch("app_command_error", interaction, error)
 
@@ -105,6 +102,14 @@ class ExceptionHandler(commands.Cog):
                 f"You cannot use `{commandName}` on cooldown.\n```{error}```",
                 error,
             )
+
+        elif isinstance(error, app_commands.CheckFailure):
+            LOGGER.info(
+                "User %s failed check for slash command %s.",
+                interaction.user,
+                commandName,
+            )
+            await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
         else:
             LOGGER.error(
