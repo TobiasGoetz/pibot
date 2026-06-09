@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
+from openai.types.chat import ChatCompletionMessageParam
+
 ChatRole = Literal["system", "user", "assistant"]
 
 
@@ -13,6 +15,16 @@ class ChatMessage:
 
     role: ChatRole
     content: str
+
+    def getOpenAiMessage(self) -> ChatCompletionMessageParam:
+        """Convert to an OpenAI SDK chat completion message."""
+        match self.role:
+            case "system":
+                return {"role": "system", "content": self.content}
+            case "assistant":
+                return {"role": "assistant", "content": self.content}
+            case "user":
+                return {"role": "user", "content": self.content}
 
 
 class AIGateway(ABC):
