@@ -2,13 +2,17 @@ image:
   repository: ghcr.io/tobiasgoetz/pibot
   tag: ""
 
-# Pass at install: --set discord.token=... --set mongodb.uri=... --set deepl.apiKey=...
 discord:
   token: ""
 mongodb:
   uri: ""
 deepl:
   apiKey: ""
+cloudflare:
+  accountId: ""
+  aiGateway: ""
+  aiGatewayToken: ""
+  aiModel: ""
 
 logging:
   level: INFO

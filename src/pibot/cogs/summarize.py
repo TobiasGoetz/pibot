@@ -41,19 +41,10 @@ class Summarize(commands.Cog):
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        accountId = os.getenv("CLOUDFLARE_ACCOUNT_ID")
-        if not accountId:
-            raise ValueError("CLOUDFLARE_ACCOUNT_ID environment variable is not set")
-        gateway = os.getenv("CLOUDFLARE_AI_GATEWAY")
-        if not gateway:
-            raise ValueError("CLOUDFLARE_AI_GATEWAY environment variable is not set")
-        token = os.getenv("CLOUDFLARE_AI_GATEWAY_TOKEN")
-        if not token:
-            raise ValueError("CLOUDFLARE_AI_GATEWAY_TOKEN environment variable is not set")
         gatewayKwargs = {
-            "account_id": accountId,
-            "gateway": gateway,
-            "token": token,
+            "account_id": os.environ["CLOUDFLARE_ACCOUNT_ID"],
+            "gateway": os.environ["CLOUDFLARE_AI_GATEWAY"],
+            "token": os.environ["CLOUDFLARE_AI_GATEWAY_TOKEN"],
         }
         envModel = os.getenv("CLOUDFLARE_AI_MODEL")
         if envModel:
@@ -202,5 +193,15 @@ class Summarize(commands.Cog):
 
 
 async def setup(bot: Bot) -> None:
-    """Set up the cog."""
+    """Set up the cog when Cloudflare AI Gateway is configured."""
+    if not all(
+        os.getenv(key)
+        for key in (
+            "CLOUDFLARE_ACCOUNT_ID",
+            "CLOUDFLARE_AI_GATEWAY",
+            "CLOUDFLARE_AI_GATEWAY_TOKEN",
+        )
+    ):
+        logger.info("Skipping summarize cog: Cloudflare AI Gateway not configured.")
+        return
     await bot.add_cog(Summarize(bot))
