@@ -13,7 +13,7 @@ class DevTools(commands.Cog):
         """Initialize the cog."""
         self.bot = bot
 
-    async def cog_check(self, ctx):
+    async def cog_check(self, ctx: commands.Context) -> bool:
         """Allow only the bot owner to use dev tools commands."""
         return await self.bot.is_owner(ctx.author)
 
