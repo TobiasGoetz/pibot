@@ -106,6 +106,14 @@ class ExceptionHandler(commands.Cog):
                 error,
             )
 
+        elif isinstance(error, app_commands.CheckFailure):
+            LOGGER.info(
+                "User %s failed check for slash command %s.",
+                interaction.user,
+                commandName,
+            )
+            await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
+
         else:
             LOGGER.error(
                 "Uncaught error caused by %s using %s. [%s]",

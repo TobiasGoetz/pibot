@@ -15,7 +15,9 @@ class DevTools(commands.Cog):
 
     async def cog_check(self, ctx: commands.Context) -> bool:
         """Allow only the bot owner to use dev tools commands."""
-        return await self.bot.is_owner(ctx.author)
+        if not await self.bot.is_owner(ctx.author):
+            raise commands.NotOwner("You do not own this bot.")
+        return True
 
     @commands.command(name="listcommands")
     async def list_commands(self, ctx):

@@ -62,7 +62,9 @@ class Summarize(commands.Cog):
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         """Allow only the bot owner to use summarize commands."""
-        return await self.bot.is_owner(interaction.user)
+        if not await self.bot.is_owner(interaction.user):
+            raise app_commands.CheckFailure("You do not own this bot.")
+        return True
 
     @staticmethod
     def _parse_duration(duration: str) -> int:
