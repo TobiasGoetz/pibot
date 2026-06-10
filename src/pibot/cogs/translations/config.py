@@ -1,36 +1,21 @@
 """Translations feature settings."""
 
-from dataclasses import dataclass
+from typing import Annotated
 
-from pibot.guild_settings.feature import FeatureConfig
-from pibot.guild_settings.setting import Setting, SettingValueType
+from pydantic import Field, SecretStr
+
+from pibot.guild_settings.model import FeatureSettings
 
 
-@dataclass(frozen=True)
-class TranslationsConfig:
-    """Resolved translation feature settings."""
+class TranslationsConfig(FeatureSettings):
+    """Translations feature settings."""
 
-    enabled: bool
-    deeplApiKey: str | None
+    name = "translations"
+    description = "Flag-reaction translations via DeepL"
+
+    deeplApiKey: Annotated[SecretStr | None, Field(description="DeepL API key for this server")] = None
 
     @property
     def isAvailable(self) -> bool:
         """Whether translations can run for this guild."""
         return self.enabled and bool(self.deeplApiKey)
-
-
-class TranslationsFeature(FeatureConfig):
-    """Translations feature registration and settings resolution."""
-
-    name = "translations"
-    description = "Flag-reaction translations via DeepL"
-    configClass = TranslationsConfig
-
-    class DeeplApiKey(Setting[str]):
-        """DeepL API key for this server."""
-
-        key = "deeplApiKey"
-        description = "DeepL API key for this server"
-        valueType = SettingValueType.STRING
-        secret = True
-        default = None

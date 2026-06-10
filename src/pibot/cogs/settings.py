@@ -7,10 +7,14 @@ from discord import app_commands
 from discord.ext import commands
 
 from pibot.bot import Bot
-from pibot.guild_settings.feature import getFeature, getFeatures
-from pibot.guild_settings.setting import getAllSettings, getSettingByKey
+from pibot.guild_settings.model import getFeature, getFeatures, getSettings, resolveSettingKey
 
 logger = logging.getLogger("cog.settings")
+
+
+def _autocompleteChoices(values: list[str], current: str) -> list[app_commands.Choice[str]]:
+    lowered = current.lower()
+    return [app_commands.Choice(name=value, value=value) for value in values if lowered in value.lower()][:25]
 
 
 async def featureNameAutocomplete(
@@ -18,9 +22,7 @@ async def featureNameAutocomplete(
     current: str,
 ) -> list[app_commands.Choice[str]]:
     """Autocomplete registered feature names."""
-    lowered = current.lower()
-    choices = [app_commands.Choice(name=name, value=name) for name in getFeatures() if lowered in name.lower()]
-    return choices[:25]
+    return _autocompleteChoices(list(getFeatures()), current)
 
 
 async def settingKeyAutocomplete(
@@ -28,11 +30,12 @@ async def settingKeyAutocomplete(
     current: str,
 ) -> list[app_commands.Choice[str]]:
     """Autocomplete registered setting keys."""
-    lowered = current.lower()
-    choices = [
-        app_commands.Choice(name=fullKey, value=fullKey) for fullKey in getAllSettings() if lowered in fullKey.lower()
+    keys = [
+        settingsClass.settingKey(path)
+        for settingsClass in getFeatures().values()
+        for path, _ in getSettings(settingsClass)
     ]
-    return choices[:25]
+    return _autocompleteChoices(keys, current)
 
 
 @app_commands.default_permissions(administrator=True)
@@ -48,33 +51,17 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """List toggleable features."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.ensure(interaction.guild)
         lines = []
-        for name, featureConfig in getFeatures().items():
-            enabled = await self.bot.guildSettings.isFeatureEnabled(interaction.guild.id, name)
+        for name, settingsClass in getFeatures().items():
+            resolved = await self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
+            enabled = resolved.enabled
             available = await self.bot.guildSettings.isFeatureAvailable(interaction.guild.id, name)
             status = "on" if enabled else "off"
             if enabled and not available:
                 status += " (not configured)"
-            lines.append(f"**{name}** — {status}\n{featureConfig.description}")
+            lines.append(f"**{name}** — {status}\n{settingsClass.description}")
         embed = discord.Embed(title="Features", description="\n\n".join(lines))
         await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @app_commands.command(name="feature", description="Enable or disable a feature for this server.")
-    @app_commands.describe(feature="Feature name", enabled="Whether the feature is enabled")
-    @app_commands.autocomplete(feature=featureNameAutocomplete)
-    async def feature(self, interaction: discord.Interaction, feature: str, enabled: bool) -> None:
-        """Toggle a feature on or off."""
-        if interaction.guild is None:
-            return
-        if feature not in getFeatures():
-            await interaction.response.send_message(f"Unknown feature `{feature}`.", ephemeral=True)
-            return
-        await self.bot.guildSettings.ensure(interaction.guild)
-        await self.bot.guildSettings.setFeatureEnabled(interaction.guild.id, feature, enabled)
-        state = "enabled" if enabled else "disabled"
-        logger.info("%s %s feature %s for %s.", interaction.user, state, feature, interaction.guild.name)
-        await interaction.response.send_message(f"Feature **{feature}** is now **{state}**.", ephemeral=True)
 
     @app_commands.command(name="view", description="View settings for this server.")
     @app_commands.describe(feature="Feature to view (omit for general settings)")
@@ -83,8 +70,6 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """View general or feature settings."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.ensure(interaction.guild)
-
         if feature is None:
             general = await self.bot.guildSettings.general(interaction.guild.id)
             channel = f"<#{general.commandChannelId}>" if general.commandChannelId else "(any channel)"
@@ -95,15 +80,15 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        featureConfig = getFeature(feature)
-        if featureConfig is None:
+        settingsClass = getFeature(feature)
+        if settingsClass is None:
             await interaction.response.send_message(f"Unknown feature `{feature}`.", ephemeral=True)
             return
 
-        resolved = await self.bot.guildSettings.resolveFeature(interaction.guild.id, feature)
+        resolved = await self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
         lines = [
-            f"**{setting.fullKey(feature)}**\n{setting.description}\n→ `{setting.formatResolved(resolved)}`"
-            for setting in featureConfig.getSettings()
+            f"**{settingsClass.settingKey(path)}**\n{description}\n→ `{settingsClass.formatSetting(path, resolved)}`"
+            for path, description in getSettings(settingsClass)
         ]
         embed = discord.Embed(
             title=f"Settings — {feature}",
@@ -118,18 +103,17 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set a feature setting by key."""
         if interaction.guild is None:
             return
-        entry = getSettingByKey(key)
-        if entry is None:
+        resolved = resolveSettingKey(key)
+        if resolved is None:
             await interaction.response.send_message(f"Unknown setting `{key}`.", ephemeral=True)
             return
-        featureName, settingCls = entry
-        await self.bot.guildSettings.ensure(interaction.guild)
+        settingsClass, path = resolved
         try:
-            parsed = settingCls.parse(value)
+            parsed = settingsClass.parseSetting(path, value)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
-        self.bot.guildSettings.setPath(interaction.guild.id, settingCls.mongoPath(featureName), parsed)
+        self.bot.guildSettings.setFeatureSetting(interaction.guild.id, settingsClass, path, parsed)
         logger.info("%s set %s for %s.", interaction.user, key, interaction.guild.name)
         await interaction.response.send_message(f"Set **{key}**.", ephemeral=True)
 
@@ -140,13 +124,12 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Reset a feature setting override."""
         if interaction.guild is None:
             return
-        entry = getSettingByKey(key)
-        if entry is None:
+        resolved = resolveSettingKey(key)
+        if resolved is None:
             await interaction.response.send_message(f"Unknown setting `{key}`.", ephemeral=True)
             return
-        featureName, settingCls = entry
-        await self.bot.guildSettings.ensure(interaction.guild)
-        self.bot.guildSettings.unsetPath(interaction.guild.id, settingCls.mongoPath(featureName))
+        settingsClass, path = resolved
+        self.bot.guildSettings.unsetFeatureSetting(interaction.guild.id, settingsClass, path)
         logger.info("%s reset %s for %s.", interaction.user, key, interaction.guild.name)
         await interaction.response.send_message(f"Reset **{key}** to default.", ephemeral=True)
 
@@ -155,7 +138,6 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set the command prefix."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.ensure(interaction.guild)
         await self.bot.guildSettings.setPrefix(interaction.guild.id, prefix)
         logger.info("%s set prefix to %s for %s.", interaction.user, prefix, interaction.guild.name)
         await interaction.response.send_message(f"Prefix set to `{prefix}`.", ephemeral=True)
@@ -165,7 +147,6 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set the command channel."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.ensure(interaction.guild)
         await self.bot.guildSettings.setCommandChannelId(interaction.guild.id, channel.id)
         logger.info("%s set command channel to %s for %s.", interaction.user, channel.name, interaction.guild.name)
         await interaction.response.send_message(f"Command channel set to {channel.mention}.", ephemeral=True)
@@ -175,7 +156,6 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Clear the command channel restriction."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.ensure(interaction.guild)
         await self.bot.guildSettings.resetCommandChannelId(interaction.guild.id)
         await interaction.response.send_message("Text commands are allowed in any channel.", ephemeral=True)
 

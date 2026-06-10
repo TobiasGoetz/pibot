@@ -3,15 +3,6 @@
 from typing import Any
 
 
-def maskSecret(value: str | None) -> str:
-    """Mask a secret value for display."""
-    if not value:
-        return "(not set)"
-    if len(value) <= 4:
-        return "****"
-    return f"****{value[-4:]}"
-
-
 def getNested(document: dict, path: tuple[str, ...]) -> Any:
     """Read a nested value from a document."""
     current: Any = document

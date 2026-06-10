@@ -4,20 +4,18 @@ import logging
 import time
 from typing import Any, Protocol
 
-from pibot.guild_settings.feature import getFeature, getFeatures
+from pibot.guild_settings.model import FeatureSettings, getFeature, readPath, toStoredValue
 from pibot.guild_settings.general import GeneralConfig, resolve as resolveGeneral
 from pibot.guild_settings.store import SettingsStore
-from pibot.guild_settings.util import getNested
 
 LOGGER = logging.getLogger("guild_settings.service")
 CACHE_TTL_SECONDS = 60
 
 
 class GuildLike(Protocol):
-    """Minimal guild interface for settings initialization."""
+    """Minimal guild interface for settings removal."""
 
     id: int
-    name: str
 
 
 class GuildSettingsService:
@@ -27,7 +25,6 @@ class GuildSettingsService:
         """Initialize the service."""
         self.store = store
         self._cache: dict[int, tuple[dict, float]] = {}
-        getFeatures()
 
     def invalidateCache(self, guildId: int) -> None:
         """Drop cached settings for a guild."""
@@ -59,53 +56,33 @@ class GuildSettingsService:
         self.store.unsetPath(guildId, dottedPath)
         self.invalidateCache(guildId)
 
-    async def ensure(self, guild: GuildLike) -> None:
-        """Ensure a guild document exists (overrides only; defaults live in code)."""
-        self.store.ensureGuild(guild.id, guild.name)
-        self.invalidateCache(guild.id)
+    def setFeatureSetting(self, guildId: int, settings: type[FeatureSettings], path: str, value: Any) -> None:
+        """Set a feature setting, unsetting when the value matches the default."""
+        defaultValue = toStoredValue(readPath(settings.resolve({}), path))
+        if value == defaultValue:
+            self.unsetFeatureSetting(guildId, settings, path)
+        else:
+            self.setPath(guildId, f"features.{settings.settingKey(path)}", value)
+
+    def unsetFeatureSetting(self, guildId: int, settings: type[FeatureSettings], path: str) -> None:
+        """Reset a feature setting to its model default."""
+        self.unsetPath(guildId, f"features.{settings.settingKey(path)}")
 
     async def remove(self, guild: GuildLike) -> None:
         """Remove guild settings when the bot leaves."""
         self.store.delete(guild.id)
         self.invalidateCache(guild.id)
 
-    async def isFeatureEnabled(self, guildId: int, feature: str) -> bool:
-        """Return whether a feature is enabled for the guild."""
-        featureConfig = getFeature(feature)
-        if featureConfig is None:
-            return False
-        document = self.getDocument(guildId)
-        enabled = getNested(document, ("features", feature, "enabled"))
-        if enabled is not None:
-            return bool(enabled)
-        return featureConfig.defaultEnabled
-
-    async def setFeatureEnabled(self, guildId: int, feature: str, enabled: bool) -> None:
-        """Enable or disable a feature for the guild."""
-        featureConfig = getFeature(feature)
-        if featureConfig is None:
-            raise ValueError(f"Unknown feature: {feature}")
-        path = f"features.{feature}.enabled"
-        if enabled == featureConfig.defaultEnabled:
-            self.unsetPath(guildId, path)
-        else:
-            self.setPath(guildId, path, enabled)
-
     async def isFeatureAvailable(self, guildId: int, feature: str) -> bool:
         """Return whether a feature is enabled and has required credentials."""
-        featureConfig = getFeature(feature)
-        if featureConfig is None:
+        settingsClass = getFeature(feature)
+        if settingsClass is None:
             return False
-        enabled = await self.isFeatureEnabled(guildId, feature)
-        return featureConfig.isAvailable(self.getDocument(guildId), enabled=enabled)
+        return settingsClass.isAvailableFor(self.getDocument(guildId))
 
-    async def resolveFeature(self, guildId: int, feature: str) -> Any:
+    async def resolve[T: FeatureSettings](self, guildId: int, settings: type[T]) -> T:
         """Return resolved settings for a feature."""
-        featureConfig = getFeature(feature)
-        if featureConfig is None:
-            raise ValueError(f"Unknown feature: {feature}")
-        enabled = await self.isFeatureEnabled(guildId, feature)
-        return featureConfig.resolve(self.getDocument(guildId), enabled=enabled)
+        return settings.resolve(self.getDocument(guildId))  # type: ignore[return-value]
 
     async def general(self, guildId: int) -> GeneralConfig:
         """Return resolved general settings."""

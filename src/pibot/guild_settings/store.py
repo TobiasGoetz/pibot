@@ -1,7 +1,6 @@
 """MongoDB persistence for per-guild settings."""
 
 import logging
-from datetime import UTC, datetime
 
 import pymongo
 
@@ -19,43 +18,22 @@ class SettingsStore:
         """Return the raw guild settings document, if present."""
         return self.collection.find_one({"_id": guildId})
 
-    def ensureGuild(self, guildId: int, name: str) -> None:
-        """Ensure a guild document exists (metadata only; settings are sparse overrides)."""
-        now = datetime.now(UTC)
-        self.collection.update_one(
-            {"_id": guildId},
-            {
-                "$set": {"name": name, "updatedAt": now},
-                "$setOnInsert": {"_id": guildId},
-            },
-            upsert=True,
-        )
-
     def setPath(self, guildId: int, dottedPath: str, value) -> None:
         """Set a nested field using MongoDB dotted path notation."""
-        now = datetime.now(UTC)
         self.collection.update_one(
             {"_id": guildId},
-            {"$set": {dottedPath: value, "updatedAt": now}},
+            {"$set": {dottedPath: value}},
+            upsert=True,
         )
         LOGGER.info("Updated %s for guild %s.", dottedPath, guildId)
 
     def unsetPath(self, guildId: int, dottedPath: str) -> None:
         """Remove a nested override so code defaults apply again."""
-        now = datetime.now(UTC)
         self.collection.update_one(
             {"_id": guildId},
-            {"$unset": {dottedPath: ""}, "$set": {"updatedAt": now}},
+            {"$unset": {dottedPath: ""}},
         )
         LOGGER.info("Unset %s for guild %s.", dottedPath, guildId)
-
-    def setName(self, guildId: int, name: str) -> None:
-        """Update the denormalized guild name."""
-        now = datetime.now(UTC)
-        self.collection.update_one(
-            {"_id": guildId},
-            {"$set": {"name": name, "updatedAt": now}},
-        )
 
     def delete(self, guildId: int) -> None:
         """Remove a guild settings document."""

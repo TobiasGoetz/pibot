@@ -10,6 +10,7 @@ dependencies = [
     "deepl~=1.28",
     "discord-py~=2.7",
     "openai~=2.41",
+    "pydantic~=2.13",
     "pymongo~=4.16",
     "python-dotenv~=1.2",
     "pytimeparse~=1.1",

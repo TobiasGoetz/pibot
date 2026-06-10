@@ -78,7 +78,6 @@ class Bot(discord.ext.commands.Bot):
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """When the bot joins a guild."""
         logger.debug("Joined guild %s", guild.name)
-        await self.guildSettings.ensure(guild)
 
     async def on_guild_remove(self, guild: discord.Guild) -> None:
         """When the bot leaves a guild."""
@@ -88,7 +87,6 @@ class Bot(discord.ext.commands.Bot):
     async def on_guild_available(self, guild: discord.Guild) -> None:
         """When a guild becomes available."""
         logger.debug("Guild %s is available", guild.name)
-        await self.guildSettings.ensure(guild)
 
     async def on_message(self, message: discord.Message, /) -> None:
         """When a message is sent."""

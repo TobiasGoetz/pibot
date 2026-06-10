@@ -4,10 +4,15 @@ import copy
 
 import pytest
 
+from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
+from pibot.cogs.translations.config import TranslationsConfig  # noqa: F401 — registers feature
+from pibot.guild_settings.model import getFeatures, getSettings, resolveSettingKey
 from pibot.guild_settings.general import DEFAULT_PREFIX
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
-from pibot.guild_settings.util import getNested, maskSecret
+from pydantic import SecretStr
+
+from pibot.guild_settings.util import getNested
 
 
 class FakeCollection:
@@ -43,6 +48,9 @@ class FakeCollection:
         if upsert and guildId not in self.docs:
             self.docs[guildId] = existing
 
+    def delete_one(self, query: dict) -> None:
+        self.docs.pop(query["_id"], None)
+
 
 def _unsetNested(document: dict, dottedPath: str) -> None:
     """Remove a nested key from an in-memory document."""
@@ -55,9 +63,6 @@ def _unsetNested(document: dict, dottedPath: str) -> None:
         target = nested
     if isinstance(target, dict):
         target.pop(parts[-1], None)
-
-    def delete_one(self, query: dict) -> None:
-        self.docs.pop(query["_id"], None)
 
 
 class FakeSettingsStore(SettingsStore):
@@ -73,44 +78,27 @@ def service() -> GuildSettingsService:
     return GuildSettingsService(FakeSettingsStore())
 
 
-class FakeGuild:
-    """Minimal guild stand-in for ensure."""
-
-    def __init__(self, guildId: int, name: str = "Test Guild") -> None:
-        self.id = guildId
-        self.name = name
-
-
 @pytest.mark.asyncio
-async def testEnsureGuildInsertsMetadataOnly(service: GuildSettingsService) -> None:
-    """New guilds get metadata only; effective settings come from code defaults."""
-    await service.ensure(FakeGuild(1))
-    stored = service.store.findById(1)
-    assert stored is not None
-    assert stored["name"] == "Test Guild"
-    assert "general" not in stored
-    assert "features" not in stored
-
-    merged = service.getDocument(1)
-    assert merged == {}
-
+async def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
+    """With no Mongo document, settings resolve from code defaults."""
+    assert service.getDocument(1) == {}
+    assert service.store.findById(1) is None
     assert await service.getPrefix(1) == DEFAULT_PREFIX
-    assert await service.isFeatureEnabled(1, "summarize") is True
+    assert (await service.resolve(1, SummarizeConfig)).enabled is True
 
 
 @pytest.mark.asyncio
 async def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
     """Features are enabled by default and can be turned off."""
-    await service.ensure(FakeGuild(2))
-    assert await service.isFeatureEnabled(2, "summarize") is True
-    await service.setFeatureEnabled(2, "summarize", False)
-    assert await service.isFeatureEnabled(2, "summarize") is False
+    assert (await service.resolve(2, SummarizeConfig)).enabled is True
+    service.setFeatureSetting(2, SummarizeConfig, "enabled", False)
+    assert (await service.resolve(2, SummarizeConfig)).enabled is False
     stored = service.store.findById(2)
     assert stored is not None
     assert stored["features"]["summarize"]["enabled"] is False
 
-    await service.setFeatureEnabled(2, "summarize", True)
-    assert await service.isFeatureEnabled(2, "summarize") is True
+    service.unsetFeatureSetting(2, SummarizeConfig, "enabled")
+    assert (await service.resolve(2, SummarizeConfig)).enabled is True
     stored = service.store.findById(2)
     assert stored is not None
     assert "features" not in stored or "enabled" not in stored.get("features", {}).get("summarize", {})
@@ -119,7 +107,6 @@ async def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
 @pytest.mark.asyncio
 async def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix overrides persist and reset."""
-    await service.ensure(FakeGuild(3))
     await service.setPrefix(3, "!")
     assert await service.getPrefix(3) == "!"
     stored = service.store.findById(3)
@@ -136,15 +123,14 @@ async def testSetAndResetPrefix(service: GuildSettingsService) -> None:
 @pytest.mark.asyncio
 async def testResetFeatureSettingUnsetsOverride(service: GuildSettingsService) -> None:
     """Resetting a feature setting removes the stored override."""
-    from pibot.cogs.summarize.config import COOLDOWN_SECONDS, SummarizeFeature
+    resolved = resolveSettingKey("summarize.cooldownSeconds")
+    assert resolved is not None
+    featureConfig, path = resolved
+    service.setFeatureSetting(4, featureConfig, path, 120)
+    assert (await service.resolve(4, SummarizeConfig)).cooldownSeconds == 120
 
-    await service.ensure(FakeGuild(4))
-    path = SummarizeFeature.Cooldown.mongoPath(SummarizeFeature.name)
-    service.setPath(4, path, 120)
-    assert (await service.resolveFeature(4, "summarize")).cooldownSeconds == 120
-
-    service.unsetPath(4, path)
-    assert (await service.resolveFeature(4, "summarize")).cooldownSeconds == COOLDOWN_SECONDS
+    service.unsetFeatureSetting(4, featureConfig, path)
+    assert (await service.resolve(4, SummarizeConfig)).cooldownSeconds == COOLDOWN_SECONDS
     stored = service.store.findById(4)
     assert stored is not None
     assert getNested(stored, ("features", "summarize", "cooldownSeconds")) is None
@@ -152,8 +138,6 @@ async def testResetFeatureSettingUnsetsOverride(service: GuildSettingsService) -
 
 def testFeatureDiscovery() -> None:
     """Feature configs self-register from cogs/*/config.py."""
-    from pibot.guild_settings.feature import getFeatures
-
     features = getFeatures()
     assert "summarize" in features
     assert "translations" in features
@@ -161,39 +145,37 @@ def testFeatureDiscovery() -> None:
 
 
 def testSettingRegistration() -> None:
-    """Declarative settings register for autocomplete."""
-    from pibot.cogs.summarize.config import SummarizeFeature
-    from pibot.guild_settings.setting import getAllSettings, getSettingByKey
-
-    getAllSettings()
-    assert getSettingByKey("summarize.cooldownSeconds") is not None
-    assert SummarizeFeature.Cooldown.parse("1h") == 3600
+    """Configurable fields register from the feature model."""
+    paths = [path for path, _ in getSettings(SummarizeConfig)]
+    assert "enabled" in paths
+    assert "cooldownSeconds" in paths
+    assert resolveSettingKey("summarize.enabled") is not None
+    resolved = resolveSettingKey("summarize.cooldownSeconds")
+    assert resolved is not None
+    featureConfig, path = resolved
+    assert featureConfig.parseSetting(path, "3600") == 3600
 
 
 def testSettingDefaultsViaResolve() -> None:
-    """Unset settings resolve from Setting.default."""
-    from pibot.cogs.summarize.config import COOLDOWN_SECONDS, DEFAULT_MODEL, MAX_MESSAGES, SummarizeFeature
+    """Unset settings resolve from model field defaults."""
+    from pibot.cogs.summarize.config import DEFAULT_MODEL
 
-    config = SummarizeFeature.resolve({}, enabled=True)
+    config = SummarizeConfig.resolve({})
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflare.accountId is None
+    assert config.cloudflare.accountId == ""
     assert config.cloudflare.model == DEFAULT_MODEL
     assert config.isAvailable is False
 
 
 def testResolveFromStoredOverride() -> None:
-    """Stored overrides take precedence over code defaults."""
-    from pibot.cogs.summarize.config import COOLDOWN_SECONDS, SummarizeFeature
-
+    """Stored overrides take precedence over model defaults."""
     document = {"features": {"summarize": {"cooldownSeconds": 120}}}
-    config = SummarizeFeature.resolve(document, enabled=True)
+    config = SummarizeConfig.resolve(document)
     assert config.cooldownSeconds == 120
-    assert config.maxMessages == SummarizeFeature.MaxMessages.default
+    assert config.maxMessages == MAX_MESSAGES
 
 
-def testMaskSecret() -> None:
-    """Secrets are masked for display."""
-    assert maskSecret(None) == "(not set)"
-    assert maskSecret("abcd") == "****"
-    assert maskSecret("abcdefghij") == "****ghij"
+def testSecretStrMasksDisplay() -> None:
+    """SecretStr values are masked for display."""
+    assert str(SecretStr("abcd")) == "**********"

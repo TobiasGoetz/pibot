@@ -4,6 +4,7 @@ import logging
 
 import discord
 from pibot.bot import Bot
+from pibot.errors import FeatureDisabled
 from discord import app_commands
 from discord.ext import commands
 
@@ -110,6 +111,15 @@ class ExceptionHandler(commands.Cog):
                 commandName,
             )
             await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
+
+        elif isinstance(error, FeatureDisabled):
+            LOGGER.info(
+                "User %s tried to use %s while feature %s is disabled.",
+                interaction.user,
+                commandName,
+                error.featureName,
+            )
+            await send_app_command_error_message(interaction, str(error), error)
 
         else:
             LOGGER.error(

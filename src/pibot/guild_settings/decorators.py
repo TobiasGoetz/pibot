@@ -8,11 +8,8 @@ import discord
 from discord.ext import commands
 
 from pibot.bot import Bot
-from pibot.guild_settings.feature import getFeature
-
-FEATURE_DISABLED_MESSAGE = (
-    "This feature is disabled on this server. An administrator can enable it with `/settings feature`."
-)
+from pibot.errors import FeatureDisabled
+from pibot.guild_settings.model import getFeature
 
 
 def requiresFeature(featureName: str) -> Callable:
@@ -28,14 +25,13 @@ def requiresFeature(featureName: str) -> Callable:
                     )
                 return
             bot = cast(Bot, getattr(cog, "bot"))
-            if getFeature(featureName) is None:
+            settingsClass = getFeature(featureName)
+            if settingsClass is None:
                 if not interaction.response.is_done():
                     await interaction.response.send_message(f"Unknown feature `{featureName}`.", ephemeral=True)
                 return
-            if not await bot.guildSettings.isFeatureEnabled(interaction.guild.id, featureName):
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(FEATURE_DISABLED_MESSAGE, ephemeral=True)
-                return
+            if not settingsClass.resolve(bot.guildSettings.getDocument(interaction.guild.id)).enabled:
+                raise FeatureDisabled(featureName)
             return await func(cog, interaction, *args, **kwargs)
 
         return wrapper

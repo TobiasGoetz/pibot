@@ -1,12 +1,7 @@
 pibot.guild\_settings package
 =============================
 
-.. automodule:: pibot.guild_settings.setting
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-.. automodule:: pibot.guild_settings.feature
+.. automodule:: pibot.guild_settings.model
    :members:
    :show-inheritance:
    :undoc-members:

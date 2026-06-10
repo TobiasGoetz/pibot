@@ -11,7 +11,7 @@ from discord.ext import commands
 from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
 from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
-from pibot.cogs.summarize.config import CloudflareConfig, SummarizeConfig, SummarizeFeature
+from pibot.cogs.summarize.config import CloudflareConfig, SummarizeConfig
 from pibot.guild_settings.decorators import requiresFeature
 
 logger = logging.getLogger("cog.summarize")
@@ -45,54 +45,38 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
         return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    config = await interaction.client.guildSettings.resolveFeature(interaction.guild.id, SummarizeFeature.name)
+    config = await interaction.client.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
 class Summarize(commands.Cog):
     """Channel summarization commands."""
 
-    featureName = SummarizeFeature.name
+    featureName = SummarizeConfig.name
 
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
         self._gatewayCache: dict[tuple[int, str, str, str, str], AIGateway] = {}
 
-    def _cacheKey(
-        self,
-        guildId: int,
-        cloudflare: CloudflareConfig,
-        *,
-        accountId: str,
-        gateway: str,
-        token: str,
-    ) -> tuple[int, str, str, str, str]:
-        return (guildId, accountId, gateway, token, cloudflare.model)
+    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str, str]:
+        token = cloudflare.token.get_secret_value()
+        return (guildId, cloudflare.accountId, cloudflare.gateway, token, cloudflare.model)
 
     async def _getGateway(self, guildId: int) -> AIGateway | None:
         """Return a cached Cloudflare gateway for the guild, if configured."""
-        config = await self.bot.guildSettings.resolveFeature(guildId, SummarizeFeature.name)
+        config = await self.bot.guildSettings.resolve(guildId, SummarizeConfig)
         cloudflare = config.cloudflare
         if not cloudflare.isConfigured:
             return None
-        assert cloudflare.accountId is not None
-        assert cloudflare.gateway is not None
-        assert cloudflare.token is not None
-        cacheKey = self._cacheKey(
-            guildId,
-            cloudflare,
-            accountId=cloudflare.accountId,
-            gateway=cloudflare.gateway,
-            token=cloudflare.token,
-        )
+        cacheKey = self._cacheKey(guildId, cloudflare)
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
             return cached
         gateway = CloudflareAIGateway(
             account_id=cloudflare.accountId,
             gateway=cloudflare.gateway,
-            token=cloudflare.token,
+            token=cloudflare.token.get_secret_value(),
             model=cloudflare.model,
         )
         self._gatewayCache[cacheKey] = gateway
@@ -156,7 +140,7 @@ class Summarize(commands.Cog):
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
-    @requiresFeature(SummarizeFeature.name)
+    @requiresFeature(SummarizeConfig.name)
     async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
@@ -167,7 +151,7 @@ class Summarize(commands.Cog):
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = await self.bot.guildSettings.resolveFeature(interaction.guild.id, SummarizeFeature.name)
+        guildConfig = await self.bot.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
         if not guildConfig.isAvailable:
             await interaction.response.send_message(NOT_CONFIGURED_MESSAGE, ephemeral=True)
             return

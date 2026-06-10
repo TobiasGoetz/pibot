@@ -1,22 +1,20 @@
 """General per-guild settings (prefix, command channel)."""
 
-from dataclasses import dataclass
-
-from pibot.guild_settings.util import getNested
+from pydantic import BaseModel, ConfigDict
 
 DEFAULT_PREFIX = "."
 
 
-@dataclass(frozen=True)
-class GeneralConfig:
+class GeneralConfig(BaseModel):
     """Resolved general settings."""
 
-    prefix: str
-    commandChannelId: int | None
+    model_config = ConfigDict(frozen=True)
+
+    prefix: str = DEFAULT_PREFIX
+    commandChannelId: int | None = None
 
 
 def resolve(document: dict) -> GeneralConfig:
     """Resolve general settings from stored overrides."""
-    prefix = getNested(document, ("general", "prefix")) or DEFAULT_PREFIX
-    commandChannelId = getNested(document, ("general", "commandChannelId"))
-    return GeneralConfig(prefix=prefix, commandChannelId=commandChannelId)
+    stored = document.get("general") or {}
+    return GeneralConfig.model_validate(stored)
