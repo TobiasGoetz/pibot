@@ -1,7 +1,6 @@
 """Declarative per-feature setting definitions."""
 
 from abc import ABC
-from collections.abc import Callable
 from enum import StrEnum
 from typing import Any, ClassVar, get_args, get_origin
 
@@ -29,7 +28,6 @@ class Setting[T](ABC):
     valueType: ClassVar[SettingValueType] = SettingValueType.STRING
     secret: ClassVar[bool] = False
     default: ClassVar[Any] = None
-    envDefault: ClassVar[Callable[[], Any] | None] = None
 
     @classmethod
     def fullKey(cls, featureName: str) -> str:
@@ -86,14 +84,9 @@ class Setting[T](ABC):
 
     @classmethod
     def resolveValue(cls, document: dict, featureName: str) -> Any:
-        """Resolve stored guild value, then env default, then setting default."""
+        """Resolve stored guild override, otherwise the setting default."""
         stored = cls.getStored(document, featureName)
-        if stored is not None:
-            value = stored
-        elif cls.envDefault is not None:
-            value = cls.envDefault()
-        else:
-            value = cls.default
+        value = stored if stored is not None else cls.default
 
         storageType = cls.storageType()
         if storageType is int and value is not None:

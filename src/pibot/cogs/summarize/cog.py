@@ -34,7 +34,7 @@ SUMMARY_SYSTEM_PROMPT = (
 
 NOT_CONFIGURED_MESSAGE = (
     "Summarize is not configured for this server. "
-    "Use `/settings set summarize.cloudflare.token …` or configure global env defaults."
+    "An admin must configure Cloudflare via `/settings set summarize.cloudflare.token …`."
 )
 
 
@@ -59,23 +59,41 @@ class Summarize(commands.Cog):
         self.bot = bot
         self._gatewayCache: dict[tuple[int, str, str, str, str], AIGateway] = {}
 
-    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str, str]:
-        return (guildId, cloudflare.accountId, cloudflare.gateway, cloudflare.token, cloudflare.model)
+    def _cacheKey(
+        self,
+        guildId: int,
+        cloudflare: CloudflareConfig,
+        *,
+        accountId: str,
+        gateway: str,
+        token: str,
+    ) -> tuple[int, str, str, str, str]:
+        return (guildId, accountId, gateway, token, cloudflare.model)
 
     async def _getGateway(self, guildId: int) -> AIGateway | None:
         """Return a cached Cloudflare gateway for the guild, if configured."""
         config = await self.bot.guildSettings.resolveFeature(guildId, SummarizeFeature.name)
-        if not config.cloudflare.isConfigured:
+        cloudflare = config.cloudflare
+        if not cloudflare.isConfigured:
             return None
-        cacheKey = self._cacheKey(guildId, config.cloudflare)
+        assert cloudflare.accountId is not None
+        assert cloudflare.gateway is not None
+        assert cloudflare.token is not None
+        cacheKey = self._cacheKey(
+            guildId,
+            cloudflare,
+            accountId=cloudflare.accountId,
+            gateway=cloudflare.gateway,
+            token=cloudflare.token,
+        )
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
             return cached
         gateway = CloudflareAIGateway(
-            account_id=config.cloudflare.accountId,
-            gateway=config.cloudflare.gateway,
-            token=config.cloudflare.token,
-            model=config.cloudflare.model,
+            account_id=cloudflare.accountId,
+            gateway=cloudflare.gateway,
+            token=cloudflare.token,
+            model=cloudflare.model,
         )
         self._gatewayCache[cacheKey] = gateway
         return gateway

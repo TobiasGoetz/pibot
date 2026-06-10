@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-from pibot.guild_settings.env_defaults import cloudflareConfig
 from pibot.guild_settings.feature import FeatureConfig
 from pibot.guild_settings.setting import Setting, SettingValueType
 
@@ -12,35 +11,13 @@ MAX_MESSAGES = 1000
 DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 
-def _envCloudflareAccountId() -> str:
-    envCf = cloudflareConfig()
-    return envCf.accountId if envCf else ""
-
-
-def _envCloudflareGateway() -> str:
-    envCf = cloudflareConfig()
-    return envCf.gateway if envCf else ""
-
-
-def _envCloudflareToken() -> str:
-    envCf = cloudflareConfig()
-    return envCf.token if envCf else ""
-
-
-def _envCloudflareModel() -> str:
-    envCf = cloudflareConfig()
-    if envCf and envCf.model:
-        return envCf.model
-    return DEFAULT_MODEL
-
-
 @dataclass(frozen=True)
 class CloudflareConfig:
     """Resolved Cloudflare AI Gateway credentials."""
 
-    accountId: str
-    gateway: str
-    token: str
+    accountId: str | None
+    gateway: str | None
+    token: str | None
     model: str
 
     @property
@@ -98,38 +75,34 @@ class SummarizeFeature(FeatureConfig):
         default = MAX_MESSAGES
 
     class CloudflareAccountId(Setting[str]):
-        """Cloudflare account ID override."""
+        """Cloudflare account ID for this server."""
 
         key = "cloudflare.accountId"
-        description = "Cloudflare account ID override"
+        description = "Cloudflare account ID for this server"
         valueType = SettingValueType.STRING
         default = None
-        envDefault = _envCloudflareAccountId
 
     class CloudflareGateway(Setting[str]):
-        """Cloudflare AI Gateway name override."""
+        """Cloudflare AI Gateway name for this server."""
 
         key = "cloudflare.gateway"
-        description = "Cloudflare AI Gateway name override"
+        description = "Cloudflare AI Gateway name for this server"
         valueType = SettingValueType.STRING
         default = None
-        envDefault = _envCloudflareGateway
 
     class CloudflareToken(Setting[str]):
-        """Cloudflare AI Gateway token override."""
+        """Cloudflare AI Gateway token for this server."""
 
         key = "cloudflare.token"
-        description = "Cloudflare AI Gateway token override"
+        description = "Cloudflare AI Gateway token for this server"
         valueType = SettingValueType.STRING
         secret = True
         default = None
-        envDefault = _envCloudflareToken
 
     class CloudflareModel(Setting[str]):
-        """Cloudflare AI model override."""
+        """Cloudflare AI model for this server."""
 
         key = "cloudflare.model"
-        description = "Cloudflare AI model override"
+        description = "Cloudflare AI model for this server"
         valueType = SettingValueType.STRING
-        default = None
-        envDefault = _envCloudflareModel
+        default = DEFAULT_MODEL

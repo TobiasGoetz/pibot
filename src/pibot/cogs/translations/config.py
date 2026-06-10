@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-from pibot.guild_settings.env_defaults import deeplApiKey
 from pibot.guild_settings.feature import FeatureConfig
 from pibot.guild_settings.setting import Setting, SettingValueType
 
@@ -28,11 +27,10 @@ class TranslationsFeature(FeatureConfig):
     configClass = TranslationsConfig
 
     class DeeplApiKey(Setting[str]):
-        """DeepL API key override for this server."""
+        """DeepL API key for this server."""
 
         key = "deeplApiKey"
-        description = "DeepL API key override for this server"
+        description = "DeepL API key for this server"
         valueType = SettingValueType.STRING
         secret = True
         default = None
-        envDefault = deeplApiKey

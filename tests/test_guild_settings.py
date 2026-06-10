@@ -171,14 +171,15 @@ def testSettingRegistration() -> None:
 
 
 def testSettingDefaultsViaResolve() -> None:
-    """Unset settings resolve from Setting.default and env fallbacks."""
-    from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeFeature
+    """Unset settings resolve from Setting.default."""
+    from pibot.cogs.summarize.config import COOLDOWN_SECONDS, DEFAULT_MODEL, MAX_MESSAGES, SummarizeFeature
 
     config = SummarizeFeature.resolve({}, enabled=True)
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflare.accountId == ""
-    assert config.cloudflare.model == "openai/gpt-4o-mini"
+    assert config.cloudflare.accountId is None
+    assert config.cloudflare.model == DEFAULT_MODEL
+    assert config.isAvailable is False
 
 
 def testResolveFromStoredOverride() -> None:

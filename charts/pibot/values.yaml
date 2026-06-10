@@ -6,13 +6,6 @@ discord:
   token: ""
 mongodb:
   uri: ""
-deepl:
-  apiKey: ""
-cloudflare:
-  accountId: ""
-  aiGateway: ""
-  aiGatewayToken: ""
-  aiModel: ""
 
 logging:
   level: INFO
