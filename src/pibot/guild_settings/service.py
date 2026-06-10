@@ -87,27 +87,3 @@ class GuildSettingsService:
     async def general(self, guildId: int) -> GeneralConfig:
         """Return resolved general settings."""
         return resolveGeneral(self.getDocument(guildId))
-
-    async def getPrefix(self, guildId: int) -> str:
-        """Return the command prefix for a guild."""
-        return (await self.general(guildId)).prefix
-
-    async def getCommandChannelId(self, guildId: int) -> int | None:
-        """Return the restricted command channel ID, if any."""
-        return (await self.general(guildId)).commandChannelId
-
-    async def setPrefix(self, guildId: int, prefix: str) -> None:
-        """Set the command prefix for a guild."""
-        self.setPath(guildId, "general.prefix", prefix)
-
-    async def resetPrefix(self, guildId: int) -> None:
-        """Reset the command prefix to the default."""
-        self.unsetPath(guildId, "general.prefix")
-
-    async def setCommandChannelId(self, guildId: int, channelId: int) -> None:
-        """Restrict text commands to a channel."""
-        self.setPath(guildId, "general.commandChannelId", channelId)
-
-    async def resetCommandChannelId(self, guildId: int) -> None:
-        """Allow text commands in any channel."""
-        self.unsetPath(guildId, "general.commandChannelId")

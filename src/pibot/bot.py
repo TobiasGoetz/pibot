@@ -96,8 +96,8 @@ class Bot(discord.ext.commands.Bot):
         if message.author.bot:
             return
 
-        prefix = await self.guildSettings.getPrefix(message.guild.id)
-        if not message.content.lower().startswith(prefix.lower()):
+        general = await self.guildSettings.general(message.guild.id)
+        if not message.content.lower().startswith(general.prefix.lower()):
             return
 
         default_command_channel = discord.utils.get(
@@ -105,7 +105,7 @@ class Bot(discord.ext.commands.Bot):
             guild__name=message.guild.name,
             name="botspam",
         )
-        commandChannelId = await self.guildSettings.getCommandChannelId(message.guild.id)
+        commandChannelId = general.commandChannelId
         command_channel = message.guild.get_channel(commandChannelId) if commandChannelId else default_command_channel
 
         if command_channel is not None and message.channel.id != command_channel.id:

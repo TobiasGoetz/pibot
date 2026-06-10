@@ -139,7 +139,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set the command prefix."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.setPrefix(interaction.guild.id, prefix)
+        self.bot.guildSettings.setPath(interaction.guild.id, "general.prefix", prefix)
         logger.info("%s set prefix to %s for %s.", interaction.user, prefix, interaction.guild.name)
         await interaction.response.send_message(f"Prefix set to `{prefix}`.", ephemeral=True)
 
@@ -148,7 +148,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set the command channel."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.setCommandChannelId(interaction.guild.id, channel.id)
+        self.bot.guildSettings.setPath(interaction.guild.id, "general.commandChannelId", channel.id)
         logger.info("%s set command channel to %s for %s.", interaction.user, channel.name, interaction.guild.name)
         await interaction.response.send_message(f"Command channel set to {channel.mention}.", ephemeral=True)
 
@@ -157,7 +157,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Clear the command channel restriction."""
         if interaction.guild is None:
             return
-        await self.bot.guildSettings.resetCommandChannelId(interaction.guild.id)
+        self.bot.guildSettings.unsetPath(interaction.guild.id, "general.commandChannelId")
         await interaction.response.send_message("Text commands are allowed in any channel.", ephemeral=True)
 
 

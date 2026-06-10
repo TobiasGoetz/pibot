@@ -80,7 +80,7 @@ async def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
     """With no Mongo document, settings resolve from code defaults."""
     assert service.getDocument(1) == {}
     assert service.store.findById(1) is None
-    assert await service.getPrefix(1) == DEFAULT_PREFIX
+    assert (await service.general(1)).prefix == DEFAULT_PREFIX
     assert (await service.resolve(1, SummarizeConfig)).enabled is True
 
 
@@ -104,14 +104,14 @@ async def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
 @pytest.mark.asyncio
 async def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix overrides persist and reset."""
-    await service.setPrefix(3, "!")
-    assert await service.getPrefix(3) == "!"
+    service.setPath(3, "general.prefix", "!")
+    assert (await service.general(3)).prefix == "!"
     stored = service.store.findById(3)
     assert stored is not None
     assert stored["general"]["prefix"] == "!"
 
-    await service.resetPrefix(3)
-    assert await service.getPrefix(3) == DEFAULT_PREFIX
+    service.unsetPath(3, "general.prefix")
+    assert (await service.general(3)).prefix == DEFAULT_PREFIX
     stored = service.store.findById(3)
     assert stored is not None
     assert "general" not in stored or "prefix" not in stored.get("general", {})
