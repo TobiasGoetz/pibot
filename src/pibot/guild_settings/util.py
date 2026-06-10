@@ -1,6 +1,5 @@
 """Shared helpers for guild settings documents."""
 
-import copy
 from typing import Any
 
 
@@ -21,16 +20,3 @@ def getNested(document: dict, path: tuple[str, ...]) -> Any:
             return None
         current = current[key]
     return current
-
-
-def deepMerge(base: dict, overlay: dict | None) -> dict:
-    """Deep-merge overlay into a copy of base."""
-    result = copy.deepcopy(base)
-    if not overlay:
-        return result
-    for key, value in overlay.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deepMerge(result[key], value)
-        else:
-            result[key] = copy.deepcopy(value)
-    return result
