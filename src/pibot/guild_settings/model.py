@@ -53,9 +53,7 @@ class FeatureSettings(BaseModel):
     @classmethod
     def resolve(cls, document: dict) -> Self:
         """Resolve settings from stored guild overrides."""
-        from pibot.guild_settings.util import getNested
-
-        stored = getNested(document, ("features", cls.name)) or {}
+        stored = readDictPath(document, f"features.{cls.name}") or {}
         return cls.model_validate(stored)
 
     @classmethod
@@ -156,6 +154,16 @@ def readPath(model: BaseModel, path: str) -> object:
     current: object = model
     for part in path.split("."):
         current = getattr(current, part)
+    return current
+
+
+def readDictPath(document: dict, path: str) -> Any:
+    """Read a nested value from a document using a dotted path."""
+    current: Any = document
+    for key in path.split("."):
+        if not isinstance(current, dict) or key not in current:
+            return None
+        current = current[key]
     return current
 
 

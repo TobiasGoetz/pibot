@@ -6,14 +6,11 @@ import pytest
 
 from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
 from pibot.cogs.translations.config import TranslationsConfig  # noqa: F401 — registers feature
-from pibot.guild_settings.model import getFeatures, getSettings, resolveSettingKey
+from pibot.guild_settings.model import getFeatures, getSettings, readDictPath, resolveSettingKey
 from pibot.guild_settings.general import DEFAULT_PREFIX
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
 from pydantic import SecretStr
-
-from pibot.guild_settings.util import getNested
-
 
 class FakeCollection:
     """In-memory MongoDB collection stub."""
@@ -133,7 +130,7 @@ async def testResetFeatureSettingUnsetsOverride(service: GuildSettingsService) -
     assert (await service.resolve(4, SummarizeConfig)).cooldownSeconds == COOLDOWN_SECONDS
     stored = service.store.findById(4)
     assert stored is not None
-    assert getNested(stored, ("features", "summarize", "cooldownSeconds")) is None
+    assert readDictPath(stored, "features.summarize.cooldownSeconds") is None
 
 
 def testFeatureDiscovery() -> None:
