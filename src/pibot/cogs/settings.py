@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from pibot.bot import Bot
-from pibot.guild_settings.model import getFeature, getFeatures, getSettings, resolveSettingKey
+from pibot.guild_settings.model import getFeature, getFeatures, getSettings, readPath, resolveSettingKey
 
 logger = logging.getLogger("cog.settings")
 
@@ -31,7 +31,7 @@ async def settingKeyAutocomplete(
 ) -> list[app_commands.Choice[str]]:
     """Autocomplete registered setting keys."""
     keys = [
-        settingsClass.settingKey(path)
+        f"{settingsClass.name}.{path}"
         for settingsClass in getFeatures().values()
         for path, _ in getSettings(settingsClass)
     ]
@@ -86,10 +86,11 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             return
 
         resolved = await self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
-        lines = [
-            f"**{settingsClass.settingKey(path)}**\n{description}\n→ `{settingsClass.formatSetting(path, resolved)}`"
-            for path, description in getSettings(settingsClass)
-        ]
+        lines = []
+        for path, description in getSettings(settingsClass):
+            value = readPath(resolved, path)
+            display = "" if value is None else str(value)
+            lines.append(f"**{settingsClass.name}.{path}**\n{description}\n→ `{display}`")
         embed = discord.Embed(
             title=f"Settings — {feature}",
             description="\n\n".join(lines) if lines else "No settings defined.",

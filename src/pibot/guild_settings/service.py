@@ -62,11 +62,11 @@ class GuildSettingsService:
         if value == defaultValue:
             self.unsetFeatureSetting(guildId, settings, path)
         else:
-            self.setPath(guildId, f"features.{settings.settingKey(path)}", value)
+            self.setPath(guildId, f"features.{settings.name}.{path}", value)
 
     def unsetFeatureSetting(self, guildId: int, settings: type[FeatureSettings], path: str) -> None:
         """Reset a feature setting to its model default."""
-        self.unsetPath(guildId, f"features.{settings.settingKey(path)}")
+        self.unsetPath(guildId, f"features.{settings.name}.{path}")
 
     async def remove(self, guild: GuildLike) -> None:
         """Remove guild settings when the bot leaves."""
@@ -78,7 +78,7 @@ class GuildSettingsService:
         settingsClass = getFeature(feature)
         if settingsClass is None:
             return False
-        return settingsClass.isAvailableFor(self.getDocument(guildId))
+        return settingsClass.resolve(self.getDocument(guildId)).isAvailable
 
     async def resolve[T: FeatureSettings](self, guildId: int, settings: type[T]) -> T:
         """Return resolved settings for a feature."""
