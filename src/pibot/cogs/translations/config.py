@@ -1,7 +1,5 @@
 """Translations feature settings."""
 
-from typing import Annotated
-
 from pydantic import Field, SecretStr
 
 from pibot.guild_settings.model import FeatureSettings
@@ -13,10 +11,10 @@ class TranslationsConfig(FeatureSettings):
     name = "translations"
     description = "Flag-reaction translations via DeepL"
 
-    deeplApiKey: Annotated[
-        SecretStr | None,
-        Field(description="DeepL API key for this server"),
-    ] = None
+    deeplApiKey: SecretStr | None = Field(
+        default=None,
+        description="DeepL API key for this server",
+    )
 
     @property
     def configured(self) -> bool:

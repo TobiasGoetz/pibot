@@ -145,22 +145,6 @@ def testSettingDefaults() -> None:
     assert config.configured is False
 
 
-def testLegacyCloudflareGroupMigratesOnLoad() -> None:
-    """Nested cloudflare documents from older configs migrate to flat fields."""
-    config = SummarizeConfig.model_validate(
-        {
-            "cloudflare": {
-                "baseUrl": "https://example.com",
-                "token": "secret",
-                "model": "test-model",
-            }
-        }
-    )
-    assert config.cloudflareBaseUrl == "https://example.com"
-    assert config.cloudflareToken.get_secret_value() == "secret"
-    assert config.cloudflareModel == "test-model"
-
-
 def testSecretStrMasksDisplay() -> None:
     """SecretStr values are masked for display."""
     assert str(SecretStr("abcd")) == "**********"

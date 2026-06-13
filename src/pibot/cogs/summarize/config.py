@@ -1,8 +1,6 @@
 """Summarize feature settings."""
 
-from typing import Annotated, Any
-
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr
 
 from pibot.guild_settings.model import FeatureSettings
 
@@ -18,42 +16,30 @@ class SummarizeConfig(FeatureSettings):
     name = "summarize"
     description = "AI channel summaries via Cloudflare"
 
-    cooldownSeconds: Annotated[int, Field(description="Cooldown between /summarize uses (seconds)")] = COOLDOWN_SECONDS
-    maxDurationSeconds: Annotated[
-        int,
-        Field(description="Maximum lookback duration for /summarize (seconds)"),
-    ] = MAX_DURATION_SECONDS
-    maxMessages: Annotated[int, Field(description="Maximum messages per summary")] = MAX_MESSAGES
-    cloudflareBaseUrl: Annotated[
-        str,
-        Field(description="Cloudflare AI Gateway base URL (through `/compat`; the client appends `/chat/completions`)"),
-    ] = ""
-    cloudflareToken: Annotated[
-        SecretStr,
-        Field(description="Cloudflare AI Gateway token for this server"),
-    ] = SecretStr("")
-    cloudflareModel: Annotated[
-        str,
-        Field(description="Cloudflare AI model for this server"),
-    ] = DEFAULT_MODEL
-
-    @model_validator(mode="before")
-    @classmethod
-    def migrateLegacyCloudflareGroup(cls, data: Any) -> Any:
-        """Map nested ``cloudflare`` documents from older stored configs."""
-        if not isinstance(data, dict):
-            return data
-        cloudflare = data.pop("cloudflare", None)
-        if not isinstance(cloudflare, dict):
-            return data
-        legacyFields = {
-            "cloudflareBaseUrl": cloudflare.get("baseUrl", ""),
-            "cloudflareToken": cloudflare.get("token", ""),
-            "cloudflareModel": cloudflare.get("model", DEFAULT_MODEL),
-        }
-        for key, value in legacyFields.items():
-            data.setdefault(key, value)
-        return data
+    cooldownSeconds: int = Field(
+        default=COOLDOWN_SECONDS,
+        description="Cooldown between /summarize uses (seconds)",
+    )
+    maxDurationSeconds: int = Field(
+        default=MAX_DURATION_SECONDS,
+        description="Maximum lookback duration for /summarize (seconds)",
+    )
+    maxMessages: int = Field(
+        default=MAX_MESSAGES,
+        description="Maximum messages per summary",
+    )
+    cloudflareBaseUrl: str = Field(
+        default="",
+        description=("Cloudflare AI Gateway base URL (through `/compat`; the client appends `/chat/completions`)"),
+    )
+    cloudflareToken: SecretStr = Field(
+        default=SecretStr(""),
+        description="Cloudflare AI Gateway token for this server",
+    )
+    cloudflareModel: str = Field(
+        default=DEFAULT_MODEL,
+        description="Cloudflare AI model for this server",
+    )
 
     @property
     def configured(self) -> bool:
