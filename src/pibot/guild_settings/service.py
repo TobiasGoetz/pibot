@@ -1,10 +1,10 @@
-"""Guild settings — shared storage, general settings, and feature toggles."""
+"""Guild settings — shared storage and general configuration."""
 
 import discord
 
-from pibot.guild_settings.config import GuildConfig
+from pibot.guild_settings.general import GeneralConfig
 from pibot.guild_settings.model import FeatureSettings
-from pibot.guild_settings.store import SettingsStore
+from pibot.guild_settings.store import SettingsStore, T
 
 
 class GuildSettingsService:
@@ -14,34 +14,35 @@ class GuildSettingsService:
         """Initialize the service."""
         self.store = store
 
-    def get(self, guildId: int) -> GuildConfig:
-        """Return settings for a guild."""
-        stored = self.store.findById(guildId)
-        return stored if stored is not None else GuildConfig()
+    def get(self, guildId: int) -> GeneralConfig:
+        """Return general settings for a guild."""
+        return self.store.findGeneral(guildId)
+
+    def getFeature(self, guildId: int, model: type[T]) -> T:
+        """Return feature settings for a guild."""
+        return self.store.findFeature(guildId, model.name, model)
 
     def setGeneralSetting(self, guildId: int, field: str, value: object) -> None:
         """Set a general setting."""
         config = self.get(guildId)
-        updated = config.model_copy(update={"general": config.general.model_copy(update={field: value})})
-        self.store.save(guildId, updated)
+        updated = config.model_copy(update={field: value})
+        self.store.saveGeneral(guildId, updated)
 
     def unsetGeneralSetting(self, guildId: int, field: str) -> None:
         """Reset a general setting to its model default."""
-        default = getattr(GuildConfig().general, field)
+        default = getattr(GeneralConfig(), field)
         self.setGeneralSetting(guildId, field, default)
 
-    def setFeatureSetting(self, guildId: int, settings: type[FeatureSettings], field: str, value: object) -> None:
+    def setFeatureField(self, guildId: int, model: type[FeatureSettings], field: str, value: object) -> None:
         """Set a feature setting."""
-        config = self.get(guildId)
-        feature = getattr(config.features, settings.name)
-        updatedFeature = feature.model_copy(update={field: value})
-        updatedFeatures = config.features.model_copy(update={settings.name: updatedFeature})
-        self.store.save(guildId, config.model_copy(update={"features": updatedFeatures}))
+        config = self.getFeature(guildId, model)
+        updated = config.model_copy(update={field: value})
+        self.store.saveFeature(guildId, model.name, updated)
 
-    def unsetFeatureSetting(self, guildId: int, settings: type[FeatureSettings], field: str) -> None:
+    def unsetFeatureField(self, guildId: int, model: type[FeatureSettings], field: str) -> None:
         """Reset a feature setting to its model default."""
-        defaultFeature = getattr(GuildConfig().features, settings.name)
-        self.setFeatureSetting(guildId, settings, field, getattr(defaultFeature, field))
+        default = getattr(model(), field)
+        self.setFeatureField(guildId, model, field, default)
 
     async def remove(self, guild: discord.Guild) -> None:
         """Remove guild settings when the bot leaves."""

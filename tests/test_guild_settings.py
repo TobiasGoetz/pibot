@@ -6,8 +6,8 @@ import pytest
 from pydantic import SecretStr
 
 from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
-from pibot.guild_settings.config import GuildConfig
-from pibot.guild_settings.general import DEFAULT_PREFIX
+from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
+from pibot.guild_settings.general import DEFAULT_PREFIX, GeneralConfig
 from pibot.guild_settings.model import getFeatures
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
@@ -26,10 +26,17 @@ class FakeCollection:
             return copy.deepcopy(self.docs.get(query["_id"]))
         return None
 
-    def replace_one(self, query: dict, document: dict, upsert: bool = False) -> None:
-        """Replace a stored document."""
+    def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
+        """Apply a partial update to a stored document."""
         guildId = query["_id"]
-        self.docs[guildId] = copy.deepcopy(document)
+        document = copy.deepcopy(self.docs.get(guildId, {"_id": guildId}))
+        for key, value in update.get("$set", {}).items():
+            if "." in key:
+                section, field = key.split(".", 1)
+                document.setdefault(section, {})[field] = copy.deepcopy(value)
+            else:
+                document[key] = copy.deepcopy(value)
+        self.docs[guildId] = document
 
     def delete_one(self, query: dict) -> None:
         """Delete a stored document."""
@@ -52,68 +59,65 @@ def service() -> GuildSettingsService:
 
 def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
     """With no Mongo document, settings use model defaults."""
-    assert service.store.findById(1) is None
-    assert service.get(1).general.prefix == DEFAULT_PREFIX
-    assert service.get(1).features.summarize.enabled is True
+    assert service.get(1).prefix == DEFAULT_PREFIX
+    assert service.getFeature(1, SummarizeConfig).enabled is True
 
 
 def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
     """Feature enabled flag persists via Pydantic round-trip."""
-    assert service.get(2).features.summarize.enabled is True
-    service.setFeatureSetting(2, SummarizeConfig, "enabled", False)
-    assert service.get(2).features.summarize.enabled is False
-    stored = service.store.findById(2)
-    assert stored is not None
-    assert stored.features.summarize.enabled is False
+    assert service.getFeature(2, SummarizeConfig).enabled is True
+    service.setFeatureField(2, SummarizeConfig, "enabled", False)
+    assert service.getFeature(2, SummarizeConfig).enabled is False
+    stored = service.store.findFeature(2, SummarizeConfig.name, SummarizeConfig)
+    assert stored.enabled is False
 
-    service.unsetFeatureSetting(2, SummarizeConfig, "enabled")
-    assert service.get(2).features.summarize.enabled is True
+    service.unsetFeatureField(2, SummarizeConfig, "enabled")
+    assert service.getFeature(2, SummarizeConfig).enabled is True
 
 
 def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix persists and resets to the model default."""
     service.setGeneralSetting(3, "prefix", "!")
-    assert service.get(3).general.prefix == "!"
-    stored = service.store.findById(3)
-    assert stored is not None
-    assert stored.general.prefix == "!"
+    assert service.get(3).prefix == "!"
+    stored = service.store.findGeneral(3)
+    assert stored.prefix == "!"
 
     service.unsetGeneralSetting(3, "prefix")
-    assert service.get(3).general.prefix == DEFAULT_PREFIX
+    assert service.get(3).prefix == DEFAULT_PREFIX
 
 
 def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:
     """Resetting a feature setting restores the model default."""
-    service.setFeatureSetting(4, SummarizeConfig, "cooldownSeconds", 120)
-    assert service.get(4).features.summarize.cooldownSeconds == 120
+    service.setFeatureField(4, SummarizeConfig, "cooldownSeconds", 120)
+    assert service.getFeature(4, SummarizeConfig).cooldownSeconds == 120
 
-    service.unsetFeatureSetting(4, SummarizeConfig, "cooldownSeconds")
-    assert service.get(4).features.summarize.cooldownSeconds == COOLDOWN_SECONDS
+    service.unsetFeatureField(4, SummarizeConfig, "cooldownSeconds")
+    assert service.getFeature(4, SummarizeConfig).cooldownSeconds == COOLDOWN_SECONDS
 
 
 def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> None:
     """Feature updates preserve sibling fields."""
-    service.setFeatureSetting(6, SummarizeConfig, "cooldownSeconds", 120)
-    service.setFeatureSetting(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
-    config = service.get(6)
-    assert config.features.summarize.cooldownSeconds == 120
-    assert config.features.summarize.cloudflareBaseUrl == "https://example.com"
-    assert config.features.summarize.maxMessages == MAX_MESSAGES
+    service.setFeatureField(6, SummarizeConfig, "cooldownSeconds", 120)
+    service.setFeatureField(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    config = service.getFeature(6, SummarizeConfig)
+    assert config.cooldownSeconds == 120
+    assert config.cloudflareBaseUrl == "https://example.com"
+    assert config.maxMessages == MAX_MESSAGES
 
 
-def testGuildConfigTypedAccess(service: GuildSettingsService) -> None:
-    """GuildConfig exposes nested typed attribute access."""
-    config = service.get(1)
-    assert config.features.summarize.cloudflareBaseUrl == ""
-    assert config.features.summarize.cooldownSeconds == COOLDOWN_SECONDS
+def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -> None:
+    """Updating general settings does not wipe feature sections."""
+    service.setFeatureField(7, SummarizeConfig, "cooldownSeconds", 120)
+    service.setGeneralSetting(7, "prefix", "!")
+    assert service.getFeature(7, SummarizeConfig).cooldownSeconds == 120
+    assert service.get(7).prefix == "!"
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
     """Pydantic fills missing fields when loading a partial stored document."""
-    config = GuildConfig.model_validate({"features": {"summarize": {"cooldownSeconds": 120}}})
-    assert config.features.summarize.cooldownSeconds == 120
-    assert config.features.summarize.maxMessages == MAX_MESSAGES
-    assert config.general.prefix == DEFAULT_PREFIX
+    config = SummarizeConfig.model_validate({"cooldownSeconds": 120})
+    assert config.cooldownSeconds == 120
+    assert config.maxMessages == MAX_MESSAGES
 
 
 def testFeatureDiscovery() -> None:
@@ -137,7 +141,7 @@ def testSettingDefaults() -> None:
     """Unset settings use model field defaults."""
     from pibot.cogs.summarize.config import DEFAULT_MODEL
 
-    config = GuildConfig().features.summarize
+    config = SummarizeConfig()
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
     assert config.cloudflareBaseUrl == ""
@@ -148,3 +152,10 @@ def testSettingDefaults() -> None:
 def testSecretStrMasksDisplay() -> None:
     """SecretStr values are masked for display."""
     assert str(SecretStr("abcd")) == "**********"
+
+
+def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:
+    """GeneralConfig exposes typed attribute access."""
+    config = service.get(1)
+    assert config.prefix == DEFAULT_PREFIX
+    assert GeneralConfig.model_validate({}).prefix == DEFAULT_PREFIX

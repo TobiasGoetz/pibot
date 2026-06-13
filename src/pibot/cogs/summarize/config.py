@@ -18,11 +18,11 @@ class SummarizeConfig(FeatureSettings):
 
     cooldownSeconds: int = Field(
         default=COOLDOWN_SECONDS,
-        description="Cooldown between /summarize uses (seconds)",
+        description="Cooldown between /summarize channel uses (seconds)",
     )
     maxDurationSeconds: int = Field(
         default=MAX_DURATION_SECONDS,
-        description="Maximum lookback duration for /summarize (seconds)",
+        description="Maximum lookback duration for /summarize channel (seconds)",
     )
     maxMessages: int = Field(
         default=MAX_MESSAGES,

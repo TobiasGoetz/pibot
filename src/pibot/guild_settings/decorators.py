@@ -9,10 +9,11 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.errors import FeatureDisabled, FeatureNotConfigured
+from pibot.guild_settings.model import FeatureSettings
 
 
-def requiresFeature(featureName: str) -> Callable:
-    """Require a feature to be enabled for the interaction guild."""
+def requiresFeature(configClass: type[FeatureSettings]) -> Callable:
+    """Require a feature to be enabled and configured for the interaction guild."""
 
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
@@ -25,17 +26,11 @@ def requiresFeature(featureName: str) -> Callable:
                 return
 
             bot = cast(Bot, getattr(cog, "bot"))
-            config = bot.guildSettings.get(interaction.guild.id)
-            featureConfig = config.features.feature(featureName)
-            if featureConfig is None:
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(f"Unknown feature `{featureName}`.", ephemeral=True)
-                return
-
+            featureConfig = bot.guildSettings.getFeature(interaction.guild.id, configClass)
             if not featureConfig.enabled:
-                raise FeatureDisabled(featureName)
+                raise FeatureDisabled(configClass.name)
             if not featureConfig.configured:
-                raise FeatureNotConfigured(featureName)
+                raise FeatureNotConfigured(configClass.name)
             return await func(cog, interaction, *args, **kwargs)
 
         return wrapper

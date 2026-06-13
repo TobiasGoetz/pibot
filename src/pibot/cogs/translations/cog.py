@@ -9,16 +9,22 @@ from discord.ext import commands
 from pibot.bot import Bot
 from pibot.cogs.translations.config import TranslationsConfig
 from pibot.guild_settings.decorators import requiresFeature
+from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 from pibot.translation_service.deepl_translator import DeepLTranslator
 from pibot.translation_service.translator import Translator
 
 logger = logging.getLogger("cog.translations")
 
 
-class Translations(commands.Cog):
+class Translations(
+    FeatureSettingsMixin,
+    commands.GroupCog,
+    group_name="translations",
+    group_description="Flag-reaction translations",
+):
     """Translation commands."""
 
-    featureName = TranslationsConfig.name
+    featureConfig = TranslationsConfig
 
     language_dict: dict[str, str] = {
         "🇦🇪": "AR",  # Arabic
@@ -63,7 +69,7 @@ class Translations(commands.Cog):
 
     def _getTranslator(self, guildId: int) -> Translator | None:
         """Return a cached DeepL translator for the guild, if configured."""
-        config = self.bot.guildSettings.get(guildId).features.translations
+        config = self.bot.guildSettings.getFeature(guildId, TranslationsConfig)
         if not config.deeplApiKey:
             return None
         apiKey = config.deeplApiKey.get_secret_value()
@@ -85,7 +91,7 @@ class Translations(commands.Cog):
         if payload.guild_id is None:
             return
 
-        config = self.bot.guildSettings.get(payload.guild_id).features.translations
+        config = self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
         if not config.available:
             return
 
@@ -156,9 +162,9 @@ class Translations(commands.Cog):
 
         await message.reply(content=f"{target_lang_emoji}\n{translation}", mention_author=False, silent=True)
 
-    @app_commands.command(name="get_languages", description="Get the available languages for translation.")
-    @requiresFeature(TranslationsConfig.name)
-    async def getLanguages(self, interaction: discord.Interaction) -> None:
+    @app_commands.command(name="languages", description="Get the available languages for translation.")
+    @requiresFeature(TranslationsConfig)
+    async def languages(self, interaction: discord.Interaction) -> None:
         """
         Get the available languages for translation.
 

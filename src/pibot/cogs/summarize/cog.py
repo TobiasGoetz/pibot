@@ -13,6 +13,7 @@ from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.decorators import requiresFeature
+from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
 logger = logging.getLogger("cog.summarize")
 
@@ -40,14 +41,19 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
         return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    config = interaction.client.guildSettings.get(interaction.guild.id).features.summarize
+    config = interaction.client.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
-class Summarize(commands.Cog):
+class Summarize(
+    FeatureSettingsMixin,
+    commands.GroupCog,
+    group_name="summarize",
+    group_description="AI channel summaries",
+):
     """Channel summarization commands."""
 
-    featureName = SummarizeConfig.name
+    featureConfig = SummarizeConfig
 
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
@@ -60,7 +66,7 @@ class Summarize(commands.Cog):
 
     def _getGateway(self, guildId: int) -> AIGateway:
         """Return a cached Cloudflare gateway for the guild."""
-        config = self.bot.guildSettings.get(guildId).features.summarize
+        config = self.bot.guildSettings.getFeature(guildId, SummarizeConfig)
         cacheKey = self._cacheKey(guildId, config)
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
@@ -126,13 +132,13 @@ class Summarize(commands.Cog):
         return chunks
 
     @app_commands.command(
-        name="summarize",
+        name="channel",
         description="Summarize recent messages in this channel using AI.",
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
-    @requiresFeature(SummarizeConfig.name)
-    async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
+    @requiresFeature(SummarizeConfig)
+    async def channel(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
 
@@ -142,7 +148,7 @@ class Summarize(commands.Cog):
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = self.bot.guildSettings.get(interaction.guild.id).features.summarize
+        guildConfig = self.bot.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
         seconds = self._parseDuration(duration, guildConfig)
         cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
 

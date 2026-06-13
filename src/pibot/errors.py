@@ -23,7 +23,7 @@ class FeatureDisabled(discord.app_commands.AppCommandError):
         self.featureName = featureName
         super().__init__(
             f"This feature is disabled on this server. "
-            f"An administrator can enable it with `/settings set {featureName}.enabled true`."
+            f"An administrator can enable it with `/{featureName} settings set enabled true`."
         )
 
 
@@ -35,5 +35,5 @@ class FeatureNotConfigured(discord.app_commands.AppCommandError):
         self.featureName = featureName
         super().__init__(
             f"**{featureName}** is not configured for this server. "
-            f"An administrator can review required settings with `/settings view {featureName}`."
+            f"An administrator can review required settings with `/{featureName} settings view`."
         )

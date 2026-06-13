@@ -53,11 +53,7 @@ class FeatureSettings(SettingsGroup):
         """Whether the feature is on and ready to run."""
         return self.enabled and self.configured
 
+
 def getFeatures() -> dict[str, type[FeatureSettings]]:
     """Return all registered feature settings classes."""
     return dict(_REGISTRY)
-
-
-def getFeature(name: str) -> type[FeatureSettings] | None:
-    """Return a feature settings class by name."""
-    return _REGISTRY.get(name)
