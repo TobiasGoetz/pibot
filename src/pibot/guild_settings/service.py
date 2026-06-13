@@ -1,7 +1,6 @@
 """Guild settings — shared storage, general settings, and feature toggles."""
 
 import logging
-import time
 from typing import Any
 
 import discord
@@ -11,7 +10,6 @@ from pibot.guild_settings.model import FeatureSettings, readPath, setDictPath, t
 from pibot.guild_settings.store import SettingsStore
 
 LOGGER = logging.getLogger("guild_settings.service")
-CACHE_TTL_SECONDS = 60
 
 
 class GuildSettingsService:
@@ -20,28 +18,15 @@ class GuildSettingsService:
     def __init__(self, store: SettingsStore) -> None:
         """Initialize the service."""
         self.store = store
-        self._cache: dict[int, tuple[GuildConfig, float]] = {}
-
-    def invalidateCache(self, guildId: int) -> None:
-        """Drop cached settings for a guild."""
-        self._cache.pop(guildId, None)
 
     def get(self, guildId: int) -> GuildConfig:
         """Return settings for a guild."""
-        cached = self._cache.get(guildId)
-        now = time.monotonic()
-        if cached and now - cached[1] < CACHE_TTL_SECONDS:
-            return cached[0]
-
         stored = self.store.findById(guildId)
-        config = stored if stored is not None else GuildConfig()
-        self._cache[guildId] = (config, now)
-        return config
+        return stored if stored is not None else GuildConfig()
 
     def save(self, guildId: int, config: GuildConfig) -> None:
-        """Persist settings and invalidate the cache."""
+        """Persist settings."""
         self.store.save(guildId, config)
-        self.invalidateCache(guildId)
 
     def _updateAtPath(self, guildId: int, path: str, value: Any) -> GuildConfig:
         data = self.get(guildId).model_dump()
@@ -72,4 +57,3 @@ class GuildSettingsService:
     async def remove(self, guild: discord.Guild) -> None:
         """Remove guild settings when the bot leaves."""
         self.store.delete(guild.id)
-        self.invalidateCache(guild.id)
