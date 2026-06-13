@@ -4,36 +4,32 @@ import logging
 
 import pymongo
 
+from pibot.guild_settings.config import GuildConfig
+
 LOGGER = logging.getLogger("guild_settings.store")
 
 
 class SettingsStore:
-    """Thin MongoDB access layer for the discord.settings collection."""
+    """MongoDB access layer for the discord.settings collection."""
 
     def __init__(self, client: pymongo.MongoClient) -> None:
         """Initialize collection handles."""
         self.collection = client["discord"]["settings"]
 
-    def findById(self, guildId: int) -> dict | None:
-        """Return the raw guild settings document, if present."""
-        return self.collection.find_one({"_id": guildId})
+    def findById(self, guildId: int) -> GuildConfig | None:
+        """Return guild settings, if present."""
+        raw = self.collection.find_one({"_id": guildId})
+        if raw is None:
+            return None
+        payload = {key: raw[key] for key in ("general", "features") if key in raw}
+        return GuildConfig.model_validate(payload)
 
-    def setPath(self, guildId: int, dottedPath: str, value) -> None:
-        """Set a nested field using MongoDB dotted path notation."""
-        self.collection.update_one(
-            {"_id": guildId},
-            {"$set": {dottedPath: value}},
-            upsert=True,
-        )
-        LOGGER.info("Updated %s for guild %s.", dottedPath, guildId)
-
-    def unsetPath(self, guildId: int, dottedPath: str) -> None:
-        """Remove a nested override so code defaults apply again."""
-        self.collection.update_one(
-            {"_id": guildId},
-            {"$unset": {dottedPath: ""}},
-        )
-        LOGGER.info("Unset %s for guild %s.", dottedPath, guildId)
+    def save(self, guildId: int, config: GuildConfig) -> None:
+        """Persist guild settings."""
+        document = config.model_dump()
+        document["_id"] = guildId
+        self.collection.replace_one({"_id": guildId}, document, upsert=True)
+        LOGGER.info("Saved settings for guild %s.", guildId)
 
     def delete(self, guildId: int) -> None:
         """Remove a guild settings document."""

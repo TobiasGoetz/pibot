@@ -1,11 +1,11 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
 
-from pibot.guild_settings.env import collectEnvDefaults, nestedModel
+from pibot.guild_settings.env import nestedModel
 
 LOGGER = logging.getLogger("guild_settings.model")
 
@@ -52,14 +52,6 @@ class FeatureSettings(SettingsGroup):
         except ValidationError as exc:
             raise ValueError(exc.errors()[0]["msg"]) from exc
         return toStoredValue(readPath(config, path))
-
-    @classmethod
-    def resolve(cls, document: dict) -> Self:
-        """Resolve settings from env defaults and stored guild overrides."""
-        stored = readDictPath(document, f"features.{cls.name}") or {}
-        merged = _deepMerge(collectEnvDefaults(cls), stored)
-        return cls.model_validate(merged)
-
 
 def getSettings(cls: type[FeatureSettings]) -> tuple[tuple[str, str], ...]:
     """Return configurable fields (path, description) from the model schema."""
@@ -109,14 +101,17 @@ def readPath(model: BaseModel, path: str) -> object:
     return current
 
 
-def readDictPath(document: dict, path: str) -> Any:
-    """Read a nested value from a document using a dotted path."""
-    current: Any = document
-    for key in path.split("."):
-        if not isinstance(current, dict) or key not in current:
-            return None
-        current = current[key]
-    return current
+def setDictPath(document: dict, path: str, value: Any) -> None:
+    """Write a nested value into a document using a dotted path."""
+    current: dict = document
+    parts = path.split(".")
+    for key in parts[:-1]:
+        nested = current.get(key)
+        if not isinstance(nested, dict):
+            nested = {}
+            current[key] = nested
+        current = nested
+    current[parts[-1]] = value
 
 
 def toStoredValue(value: object) -> object:
@@ -124,17 +119,6 @@ def toStoredValue(value: object) -> object:
     if isinstance(value, SecretStr):
         return value.get_secret_value()
     return value
-
-
-def _deepMerge(base: dict, overrides: dict) -> dict:
-    """Merge dicts, recursing into nested dicts."""
-    result = dict(base)
-    for key, value in overrides.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = _deepMerge(result[key], value)
-        else:
-            result[key] = value
-    return result
 
 
 def _nestPath(path: str, value: object) -> dict:

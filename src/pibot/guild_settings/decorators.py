@@ -9,7 +9,6 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.errors import FeatureDisabled, FeatureNotConfigured
-from pibot.guild_settings.model import getFeature
 
 
 def requiresFeature(featureName: str) -> Callable:
@@ -26,16 +25,16 @@ def requiresFeature(featureName: str) -> Callable:
                 return
 
             bot = cast(Bot, getattr(cog, "bot"))
-            settingsClass = getFeature(featureName)
-            if settingsClass is None:
+            config = bot.guildSettings.get(interaction.guild.id)
+            featureConfig = config.features.feature(featureName)
+            if featureConfig is None:
                 if not interaction.response.is_done():
                     await interaction.response.send_message(f"Unknown feature `{featureName}`.", ephemeral=True)
                 return
 
-            resolved = settingsClass.resolve(bot.guildSettings.getDocument(interaction.guild.id))
-            if not resolved.enabled:
+            if not featureConfig.enabled:
                 raise FeatureDisabled(featureName)
-            if not resolved.configured:
+            if not featureConfig.configured:
                 raise FeatureNotConfigured(featureName)
             return await func(cog, interaction, *args, **kwargs)
 

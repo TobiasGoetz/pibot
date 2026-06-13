@@ -63,7 +63,7 @@ class Translations(commands.Cog):
 
     def _getTranslator(self, guildId: int) -> Translator | None:
         """Return a cached DeepL translator for the guild, if configured."""
-        config = self.bot.guildSettings.resolve(guildId, TranslationsConfig)
+        config = self.bot.guildSettings.get(guildId).features.translations
         if not config.deeplApiKey:
             return None
         apiKey = config.deeplApiKey.get_secret_value()
@@ -85,7 +85,7 @@ class Translations(commands.Cog):
         if payload.guild_id is None:
             return
 
-        config = TranslationsConfig.resolve(self.bot.guildSettings.getDocument(payload.guild_id))
+        config = self.bot.guildSettings.get(payload.guild_id).features.translations
         if not config.available:
             return
 

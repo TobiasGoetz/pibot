@@ -53,7 +53,9 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             return
         lines = []
         for name, settingsClass in getFeatures().items():
-            resolved = self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
+            resolved = self.bot.guildSettings.get(interaction.guild.id).features.feature(name)
+            if resolved is None:
+                continue
             status = "on" if resolved.enabled else "off"
             if resolved.enabled and not resolved.configured:
                 status += " (not configured)"
@@ -69,7 +71,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         if interaction.guild is None:
             return
         if feature is None:
-            general = self.bot.guildSettings.general(interaction.guild.id)
+            general = self.bot.guildSettings.get(interaction.guild.id).general
             channel = f"<#{general.commandChannelId}>" if general.commandChannelId else "(any channel)"
             embed = discord.Embed(
                 title="General settings",
@@ -83,7 +85,11 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             await interaction.response.send_message(f"Unknown feature `{feature}`.", ephemeral=True)
             return
 
-        resolved = self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
+        resolved = self.bot.guildSettings.get(interaction.guild.id).features.feature(feature)
+        if resolved is None:
+            await interaction.response.send_message(f"Unknown feature `{feature}`.", ephemeral=True)
+            return
+
         lines = []
         for path, description in getSettings(settingsClass):
             value = readPath(resolved, path)
