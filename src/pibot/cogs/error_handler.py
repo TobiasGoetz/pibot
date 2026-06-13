@@ -231,7 +231,7 @@ async def send_app_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     try:
@@ -255,7 +255,7 @@ async def send_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     await ctx.send(embed=embed)
