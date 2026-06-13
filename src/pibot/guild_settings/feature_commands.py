@@ -64,7 +64,8 @@ async def sendSettingsSet(
         return
     bot.guildSettings.setFeatureField(interaction.guild.id, configClass, setting, parsed)
     logger.info("%s set %s.%s for %s.", interaction.user, configClass.name, setting, interaction.guild.name)
-    await interaction.response.send_message(f"Set **{setting}**.", ephemeral=True)
+    display = formatSettingValue(setting, parsed) or "(unset)"
+    await interaction.response.send_message(f"Set **{setting}** to `{display}`.", ephemeral=True)
 
 
 async def sendSettingsReset(
