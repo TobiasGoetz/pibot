@@ -10,6 +10,7 @@ import discord
 import discord.ext.commands
 import pymongo
 
+from pibot.cogs.general.config import GeneralConfig
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
 from pibot.settings import COMMAND_SYNC_BEHAVIOR, command_sync_behavior, is_dev_tools
@@ -96,7 +97,7 @@ class Bot(discord.ext.commands.Bot):
         if message.author.bot:
             return
 
-        general = self.guildSettings.get(message.guild.id)
+        general = self.guildSettings.getFeature(message.guild.id, GeneralConfig)
         if not message.content.lower().startswith(general.prefix.lower()):
             return
 

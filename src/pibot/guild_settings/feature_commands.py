@@ -14,6 +14,8 @@ def formatSettingValue(field: str, value: object) -> str:
     """Format a stored setting value for display."""
     if value is None:
         return ""
+    if field == "commandChannelId":
+        return f"<#{value}>"
     return str(value)
 
 

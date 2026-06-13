@@ -5,9 +5,11 @@ import copy
 import pytest
 from pydantic import SecretStr
 
+from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
+from pibot.cogs.general.config import DEFAULT_PREFIX, GeneralConfig
+from pibot.cogs.general import config as _generalConfig  # noqa: F401 — registers GeneralConfig
 from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
 from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
-from pibot.guild_settings.general import DEFAULT_PREFIX, GeneralConfig
 from pibot.guild_settings.model import getFeatures
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
@@ -59,7 +61,7 @@ def service() -> GuildSettingsService:
 
 def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
     """With no Mongo document, settings use model defaults."""
-    assert service.get(1).prefix == DEFAULT_PREFIX
+    assert service.getFeature(1, GeneralConfig).prefix == DEFAULT_PREFIX
     assert service.getFeature(1, SummarizeConfig).enabled is True
 
 
@@ -77,13 +79,13 @@ def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
 
 def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix persists and resets to the model default."""
-    service.setGeneralSetting(3, "prefix", "!")
-    assert service.get(3).prefix == "!"
-    stored = service.store.findGeneral(3)
+    service.setFeatureField(3, GeneralConfig, "prefix", "!")
+    assert service.getFeature(3, GeneralConfig).prefix == "!"
+    stored = service.store.findFeature(3, GeneralConfig.name, GeneralConfig)
     assert stored.prefix == "!"
 
-    service.unsetGeneralSetting(3, "prefix")
-    assert service.get(3).prefix == DEFAULT_PREFIX
+    service.unsetFeatureField(3, GeneralConfig, "prefix")
+    assert service.getFeature(3, GeneralConfig).prefix == DEFAULT_PREFIX
 
 
 def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:
@@ -108,9 +110,9 @@ def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> 
 def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -> None:
     """Updating general settings does not wipe feature sections."""
     service.setFeatureField(7, SummarizeConfig, "cooldownSeconds", 120)
-    service.setGeneralSetting(7, "prefix", "!")
+    service.setFeatureField(7, GeneralConfig, "prefix", "!")
     assert service.getFeature(7, SummarizeConfig).cooldownSeconds == 120
-    assert service.get(7).prefix == "!"
+    assert service.getFeature(7, GeneralConfig).prefix == "!"
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
@@ -123,6 +125,8 @@ def testPartialDocumentUsesModelDefaults() -> None:
 def testFeatureDiscovery() -> None:
     """Feature configs self-register from cogs/*/config.py."""
     features = getFeatures()
+    assert "general" in features
+    assert "admin" in features
     assert "summarize" in features
     assert "translations" in features
     assert features["summarize"].description
@@ -156,6 +160,6 @@ def testSecretStrMasksDisplay() -> None:
 
 def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:
     """GeneralConfig exposes typed attribute access."""
-    config = service.get(1)
+    config = service.getFeature(1, GeneralConfig)
     assert config.prefix == DEFAULT_PREFIX
     assert GeneralConfig.model_validate({}).prefix == DEFAULT_PREFIX
