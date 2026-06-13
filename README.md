@@ -6,9 +6,33 @@ A discord bot providing administration and utility features!
 
 * Easy to run (uses Python)
 * Modular cog-based architecture
-* MongoDB integration for guild settings
+* MongoDB integration for per-guild feature settings (sparse storage — only non-default values)
 * DeepL translation support
+* AI channel summaries (Cloudflare)
 * Development tools for testing
+
+## Guild settings
+
+Each feature cog owns its configuration. Administrators use slash commands under `/<feature> settings`:
+
+| Command | Description |
+| ------- | ----------- |
+| `/<feature> settings view` | List all settings and current values |
+| `/<feature> settings set <setting> <value>` | Change one setting |
+| `/<feature> settings reset <setting>` | Restore one setting to its default |
+
+Features with settings today:
+
+| Feature | Examples |
+| ------- | -------- |
+| `general` | `prefix`, `commandChannelId`, `countdownMaxSeconds` |
+| `admin` | `mutedRoleName`, `maxClearAmount`, `enabled` |
+| `summarize` | Cloudflare gateway URL/token/model, limits, `enabled` |
+| `translations` | DeepL API key, `enabled` |
+
+Settings are stored in MongoDB under `features.<featureName>`. Only values that differ from the model defaults are written.
+
+To add settings for a new feature: subclass `FeatureSettings` in `cogs/<feature>/config.py`, mix in `FeatureSettingsMixin` on the cog, and set `featureConfig = YourConfig`.
 
 ## Installation
 

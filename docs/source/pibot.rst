@@ -7,8 +7,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   pibot.ai_gateway
    pibot.cogs
-   pibot.guild_settings
    pibot.translation_service
 
 Submodules
@@ -26,6 +26,14 @@ pibot.errors module
 -------------------
 
 .. automodule:: pibot.errors
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pibot.settings module
+---------------------
+
+.. automodule:: pibot.settings
    :members:
    :show-inheritance:
    :undoc-members:

@@ -12,8 +12,9 @@ Instructions and context for AI agents working on this project.
 ## Project structure
 
 - Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `guild_settings/`, `errors.py`.
-- **Cogs**: Add new features as cogs under `cogs/`; they are loaded in `bot.py`.
-- **Settings**: Environment-driven options and helpers are in `pibot/settings.py`; `Bot` reads them in `__init__`.
+- **Cogs**: Add new features as packages under `cogs/<feature>/` (`config.py`, `cog.py`, `__init__.py`); they are loaded in `bot.py`.
+- **Runtime settings**: Environment-driven options and helpers are in `pibot/settings.py`; `Bot` reads them in `__init__`.
+- **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`). Each feature defines a `FeatureSettings` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings.getFeature()`. Only non-default fields are persisted (`sparseDump()`).
 
 ## Build & publish
 
@@ -63,7 +64,7 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 ## Environment
 
 - Config via `.env`; see `.env.example` for variables.
-- Requires a Discord bot token and MongoDB. Feature API keys (DeepL, Cloudflare) are configured per guild via `/settings`.
+- Requires a Discord bot token and MongoDB. Per-guild feature options (prefix, API keys, limits, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`).
 
 ## Conventions
 

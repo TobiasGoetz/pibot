@@ -1,16 +1,19 @@
 pibot.cogs package
 ==================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pibot.cogs.admin
+   pibot.cogs.general
+   pibot.cogs.summarize
+   pibot.cogs.translations
+
 Submodules
 ----------
-
-pibot.cogs.admin module
------------------------
-
-.. automodule:: pibot.cogs.admin
-   :members:
-   :show-inheritance:
-   :undoc-members:
 
 pibot.cogs.devTools module
 --------------------------
@@ -24,30 +27,6 @@ pibot.cogs.error\_handler module
 --------------------------------
 
 .. automodule:: pibot.cogs.error_handler
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pibot.cogs.general module
--------------------------
-
-.. automodule:: pibot.cogs.general
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pibot.cogs.summarize package
-----------------------------
-
-.. automodule:: pibot.cogs.summarize.cog
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pibot.cogs.translations package
--------------------------------
-
-.. automodule:: pibot.cogs.translations.cog
    :members:
    :show-inheritance:
    :undoc-members:
