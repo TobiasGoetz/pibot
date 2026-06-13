@@ -26,12 +26,21 @@ class SettingsStore:
         return model.model_validate(section)
 
     def saveFeature(self, guildId: int, name: str, config: FeatureSettings) -> None:
-        """Persist one feature section without touching other settings."""
-        self.collection.update_one(
-            {"_id": guildId},
-            {"$set": {f"features.{name}": config.model_dump(mode="json")}},
-            upsert=True,
-        )
+        """Persist only non-default feature fields without touching other settings."""
+        payload = config.sparseDump()
+        featureKey = f"features.{name}"
+        if payload:
+            self.collection.update_one(
+                {"_id": guildId},
+                {"$set": {featureKey: payload}},
+                upsert=True,
+            )
+        else:
+            self.collection.update_one(
+                {"_id": guildId},
+                {"$unset": {featureKey: ""}},
+                upsert=True,
+            )
         LOGGER.info("Saved %s settings for guild %s.", name, guildId)
 
     def delete(self, guildId: int) -> None:

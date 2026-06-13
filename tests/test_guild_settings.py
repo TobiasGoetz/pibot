@@ -38,6 +38,16 @@ class FakeCollection:
                 document.setdefault(section, {})[field] = copy.deepcopy(value)
             else:
                 document[key] = copy.deepcopy(value)
+        for key in update.get("$unset", {}):
+            if "." in key:
+                section, field = key.split(".", 1)
+                sectionDict = document.get(section)
+                if isinstance(sectionDict, dict):
+                    sectionDict.pop(field, None)
+                    if not sectionDict:
+                        document.pop(section, None)
+            else:
+                document.pop(key, None)
         self.docs[guildId] = document
 
     def delete_one(self, query: dict) -> None:
@@ -86,6 +96,22 @@ def testSetAndResetPrefix(service: GuildSettingsService) -> None:
 
     service.unsetFeatureField(3, GeneralConfig, "prefix")
     assert service.getFeature(3, GeneralConfig).prefix == DEFAULT_PREFIX
+
+
+def testSparseStorageOmitsDefaults(service: GuildSettingsService) -> None:
+    """MongoDB stores only fields that differ from model defaults."""
+    service.setFeatureField(5, SummarizeConfig, "maxMessages", 500)
+    raw = service.store.collection.find_one({"_id": 5})
+    assert raw is not None
+    assert raw["features"]["summarize"] == {"maxMessages": 500}
+
+
+def testUnsetRemovesStoredDefaultFields(service: GuildSettingsService) -> None:
+    """Resetting a field removes it from stored feature settings."""
+    service.setFeatureField(9, SummarizeConfig, "maxMessages", 500)
+    service.unsetFeatureField(9, SummarizeConfig, "maxMessages")
+    raw = service.store.collection.find_one({"_id": 9})
+    assert raw is None or "summarize" not in raw.get("features", {})
 
 
 def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:

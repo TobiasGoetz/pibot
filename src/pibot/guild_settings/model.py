@@ -53,6 +53,13 @@ class FeatureSettings(SettingsGroup):
         """Whether the feature is on and ready to run."""
         return self.enabled and self.configured
 
+    def sparseDump(self) -> dict:
+        """Return only fields that differ from model defaults (for MongoDB storage)."""
+        modelClass = type(self)
+        defaults = modelClass().model_dump(mode="json")
+        current = self.model_dump(mode="json")
+        return {key: value for key, value in current.items() if value != defaults.get(key)}
+
 
 def getFeatures() -> dict[str, type[FeatureSettings]]:
     """Return all registered feature settings classes."""
