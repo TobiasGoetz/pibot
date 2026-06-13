@@ -8,12 +8,12 @@ from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 class CloudflareAIGateway(AIGateway):
     """Cloudflare AI Gateway via the OpenAI-compatible ``/compat`` endpoint."""
 
-    def __init__(self, account_id: str, gateway: str, token: str, model: str = "openai/gpt-4o-mini") -> None:
+    def __init__(self, base_url: str, token: str, model: str = "openai/gpt-4o-mini") -> None:
         """Initialize the gateway client."""
         self.model = model
         self.client = AsyncOpenAI(
             api_key=token,
-            base_url=f"https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway}/compat",
+            base_url=base_url,
         )
 
     async def chat(

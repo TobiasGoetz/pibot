@@ -4,7 +4,7 @@ import logging
 
 import discord
 from pibot.bot import Bot
-from pibot.errors import FeatureDisabled
+from pibot.errors import FeatureDisabled, FeatureNotConfigured
 from discord import app_commands
 from discord.ext import commands
 
@@ -115,6 +115,15 @@ class ExceptionHandler(commands.Cog):
         elif isinstance(error, FeatureDisabled):
             LOGGER.info(
                 "User %s tried to use %s while feature %s is disabled.",
+                interaction.user,
+                commandName,
+                error.featureName,
+            )
+            await send_app_command_error_message(interaction, str(error), error)
+
+        elif isinstance(error, FeatureNotConfigured):
+            LOGGER.info(
+                "User %s tried to use %s while feature %s is not configured.",
                 interaction.user,
                 commandName,
                 error.featureName,

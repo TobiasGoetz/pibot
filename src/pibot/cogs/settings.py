@@ -53,11 +53,9 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             return
         lines = []
         for name, settingsClass in getFeatures().items():
-            resolved = await self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
-            enabled = resolved.enabled
-            available = await self.bot.guildSettings.isFeatureAvailable(interaction.guild.id, name)
-            status = "on" if enabled else "off"
-            if enabled and not available:
+            resolved = self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
+            status = "on" if resolved.enabled else "off"
+            if resolved.enabled and not resolved.isAvailable:
                 status += " (not configured)"
             lines.append(f"**{name}** — {status}\n{settingsClass.description}")
         embed = discord.Embed(title="Features", description="\n\n".join(lines))
@@ -71,7 +69,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         if interaction.guild is None:
             return
         if feature is None:
-            general = await self.bot.guildSettings.general(interaction.guild.id)
+            general = self.bot.guildSettings.general(interaction.guild.id)
             channel = f"<#{general.commandChannelId}>" if general.commandChannelId else "(any channel)"
             embed = discord.Embed(
                 title="General settings",
@@ -85,7 +83,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             await interaction.response.send_message(f"Unknown feature `{feature}`.", ephemeral=True)
             return
 
-        resolved = await self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
+        resolved = self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
         lines = []
         for path, description in getSettings(settingsClass):
             value = readPath(resolved, path)

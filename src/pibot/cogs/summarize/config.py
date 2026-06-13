@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
+from pibot.guild_settings.env import EnvVar
 from pibot.guild_settings.model import FeatureSettings
 
 COOLDOWN_SECONDS = 60 * 60
@@ -17,15 +18,26 @@ class CloudflareConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    accountId: Annotated[str, Field(description="Cloudflare account ID for this server")] = ""
-    gateway: Annotated[str, Field(description="Cloudflare AI Gateway name for this server")] = ""
-    token: Annotated[SecretStr, Field(description="Cloudflare AI Gateway token for this server")] = SecretStr("")
-    model: Annotated[str, Field(description="Cloudflare AI model for this server")] = DEFAULT_MODEL
+    baseUrl: Annotated[
+        str,
+        Field(description="Cloudflare AI Gateway base URL (through `/compat`; the client appends `/chat/completions`)"),
+        EnvVar("CLOUDFLARE_AI_URL"),
+    ] = ""
+    token: Annotated[
+        SecretStr,
+        Field(description="Cloudflare AI Gateway token for this server"),
+        EnvVar("CLOUDFLARE_AI_GATEWAY_TOKEN"),
+    ] = SecretStr("")
+    model: Annotated[
+        str,
+        Field(description="Cloudflare AI model for this server"),
+        EnvVar("CLOUDFLARE_AI_MODEL"),
+    ] = DEFAULT_MODEL
 
     @property
     def isConfigured(self) -> bool:
         """Whether all required credentials are present."""
-        return bool(self.accountId and self.gateway and self.token)
+        return bool(self.baseUrl and self.token.get_secret_value())
 
 
 class SummarizeConfig(FeatureSettings):

@@ -1,9 +1,11 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
-from typing import Annotated, Any, ClassVar, Self, get_args, get_origin
+from typing import Any, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError
+
+from pibot.guild_settings.env import collectEnvDefaults, nestedModel
 
 LOGGER = logging.getLogger("guild_settings.model")
 
@@ -44,23 +46,24 @@ class FeatureSettings(BaseModel):
 
     @classmethod
     def resolve(cls, document: dict) -> Self:
-        """Resolve settings from stored guild overrides."""
+        """Resolve settings from env defaults and stored guild overrides."""
         stored = readDictPath(document, f"features.{cls.name}") or {}
-        return cls.model_validate(stored)
+        merged = _deepMerge(collectEnvDefaults(cls), stored)
+        return cls.model_validate(merged)
 
 
 def getSettings(cls: type[FeatureSettings]) -> tuple[tuple[str, str], ...]:
     """Return configurable fields (path, description) from the model schema."""
-    return _collectSettings(cls)
+    return _collectSettingPaths(cls)
 
 
-def _collectSettings(model: type[BaseModel], pathPrefix: str = "") -> tuple[tuple[str, str], ...]:
+def _collectSettingPaths(model: type[BaseModel], pathPrefix: str = "") -> tuple[tuple[str, str], ...]:
     settings: list[tuple[str, str]] = []
     for name, fieldInfo in model.model_fields.items():
         path = f"{pathPrefix}.{name}" if pathPrefix else name
-        nested = _nestedModel(fieldInfo.annotation)
+        nested = nestedModel(fieldInfo.annotation)
         if nested is not None:
-            settings.extend(_collectSettings(nested, path))
+            settings.extend(_collectSettingPaths(nested, path))
             continue
         settings.append((path, fieldInfo.description or path))
     return tuple(settings)
@@ -114,6 +117,17 @@ def toStoredValue(value: object) -> object:
     return value
 
 
+def _deepMerge(base: dict, overrides: dict) -> dict:
+    """Merge dicts, recursing into nested dicts."""
+    result = dict(base)
+    for key, value in overrides.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = _deepMerge(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
 def _nestPath(path: str, value: object) -> dict:
     parts = path.split(".")
     root: dict = {}
@@ -124,17 +138,3 @@ def _nestPath(path: str, value: object) -> dict:
         current = nested
     current[parts[-1]] = value
     return root
-
-
-def _nestedModel(annotation: object) -> type[BaseModel] | None:
-    while get_origin(annotation) is Annotated:
-        annotation = get_args(annotation)[0]
-    origin = get_origin(annotation)
-    if origin is not None:
-        for arg in get_args(annotation):
-            if isinstance(arg, type) and issubclass(arg, BaseModel):
-                return arg
-        return None
-    if isinstance(annotation, type) and issubclass(annotation, BaseModel):
-        return annotation
-    return None

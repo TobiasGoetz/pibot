@@ -1,5 +1,7 @@
 """General per-guild settings (prefix, command channel)."""
 
+from typing import Self
+
 from pydantic import BaseModel, ConfigDict
 
 DEFAULT_PREFIX = "."
@@ -13,8 +15,7 @@ class GeneralConfig(BaseModel):
     prefix: str = DEFAULT_PREFIX
     commandChannelId: int | None = None
 
-
-def resolve(document: dict) -> GeneralConfig:
-    """Resolve general settings from stored overrides."""
-    stored = document.get("general") or {}
-    return GeneralConfig.model_validate(stored)
+    @classmethod
+    def resolve(cls, document: dict) -> Self:
+        """Resolve general settings from stored overrides."""
+        return cls.model_validate(document.get("general") or {})

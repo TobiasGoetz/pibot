@@ -69,65 +69,73 @@ class FakeSettingsStore(SettingsStore):
         self.collection = FakeCollection()
 
 
+@pytest.fixture(autouse=True)
+def clearFeatureEnv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep feature env defaults out of tests unless explicitly set."""
+    for name in (
+        "DEEPL_API_KEY",
+        "CLOUDFLARE_AI_URL",
+        "CLOUDFLARE_AI_GATEWAY_TOKEN",
+        "CLOUDFLARE_AI_MODEL",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture
 def service() -> GuildSettingsService:
     """Guild settings service with a fake store."""
     return GuildSettingsService(FakeSettingsStore())
 
 
-@pytest.mark.asyncio
-async def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
+def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
     """With no Mongo document, settings resolve from code defaults."""
     assert service.getDocument(1) == {}
     assert service.store.findById(1) is None
-    assert (await service.general(1)).prefix == DEFAULT_PREFIX
-    assert (await service.resolve(1, SummarizeConfig)).enabled is True
+    assert service.general(1).prefix == DEFAULT_PREFIX
+    assert service.resolve(1, SummarizeConfig).enabled is True
 
 
-@pytest.mark.asyncio
-async def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
+def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
     """Features are enabled by default and can be turned off."""
-    assert (await service.resolve(2, SummarizeConfig)).enabled is True
+    assert service.resolve(2, SummarizeConfig).enabled is True
     service.setFeatureSetting(2, SummarizeConfig, "enabled", False)
-    assert (await service.resolve(2, SummarizeConfig)).enabled is False
+    assert service.resolve(2, SummarizeConfig).enabled is False
     stored = service.store.findById(2)
     assert stored is not None
     assert stored["features"]["summarize"]["enabled"] is False
 
     service.unsetFeatureSetting(2, SummarizeConfig, "enabled")
-    assert (await service.resolve(2, SummarizeConfig)).enabled is True
+    assert service.resolve(2, SummarizeConfig).enabled is True
     stored = service.store.findById(2)
     assert stored is not None
     assert "features" not in stored or "enabled" not in stored.get("features", {}).get("summarize", {})
 
 
-@pytest.mark.asyncio
-async def testSetAndResetPrefix(service: GuildSettingsService) -> None:
+def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix overrides persist and reset."""
     service.setPath(3, "general.prefix", "!")
-    assert (await service.general(3)).prefix == "!"
+    assert service.general(3).prefix == "!"
     stored = service.store.findById(3)
     assert stored is not None
     assert stored["general"]["prefix"] == "!"
 
     service.unsetPath(3, "general.prefix")
-    assert (await service.general(3)).prefix == DEFAULT_PREFIX
+    assert service.general(3).prefix == DEFAULT_PREFIX
     stored = service.store.findById(3)
     assert stored is not None
     assert "general" not in stored or "prefix" not in stored.get("general", {})
 
 
-@pytest.mark.asyncio
-async def testResetFeatureSettingUnsetsOverride(service: GuildSettingsService) -> None:
+def testResetFeatureSettingUnsetsOverride(service: GuildSettingsService) -> None:
     """Resetting a feature setting removes the stored override."""
     resolved = resolveSettingKey("summarize.cooldownSeconds")
     assert resolved is not None
     featureConfig, path = resolved
     service.setFeatureSetting(4, featureConfig, path, 120)
-    assert (await service.resolve(4, SummarizeConfig)).cooldownSeconds == 120
+    assert service.resolve(4, SummarizeConfig).cooldownSeconds == 120
 
     service.unsetFeatureSetting(4, featureConfig, path)
-    assert (await service.resolve(4, SummarizeConfig)).cooldownSeconds == COOLDOWN_SECONDS
+    assert service.resolve(4, SummarizeConfig).cooldownSeconds == COOLDOWN_SECONDS
     stored = service.store.findById(4)
     assert stored is not None
     assert readDictPath(stored, "features.summarize.cooldownSeconds") is None
@@ -160,7 +168,7 @@ def testSettingDefaultsViaResolve() -> None:
     config = SummarizeConfig.resolve({})
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflare.accountId == ""
+    assert config.cloudflare.baseUrl == ""
     assert config.cloudflare.model == DEFAULT_MODEL
     assert config.isAvailable is False
 
@@ -176,3 +184,44 @@ def testResolveFromStoredOverride() -> None:
 def testSecretStrMasksDisplay() -> None:
     """SecretStr values are masked for display."""
     assert str(SecretStr("abcd")) == "**********"
+
+
+def testEnvDefaultsForDeepl(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DEEPL_API_KEY applies when no guild override is stored."""
+    monkeypatch.setenv("DEEPL_API_KEY", "env-key")
+    config = TranslationsConfig.resolve({})
+    assert config.deeplApiKey is not None
+    assert config.deeplApiKey.get_secret_value() == "env-key"
+    assert config.isAvailable is True
+
+
+def testGuildOverrideTakesPrecedenceOverEnv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stored guild settings override env defaults."""
+    monkeypatch.setenv("DEEPL_API_KEY", "env-key")
+    document = {"features": {"translations": {"deeplApiKey": "guild-key"}}}
+    config = TranslationsConfig.resolve(document)
+    assert config.deeplApiKey is not None
+    assert config.deeplApiKey.get_secret_value() == "guild-key"
+
+
+def testEnvDefaultsForCloudflare(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cloudflare env vars apply when no guild override is stored."""
+    monkeypatch.setenv(
+        "CLOUDFLARE_AI_URL",
+        "https://gateway.ai.cloudflare.com/v1/acct/gw/compat",
+    )
+    monkeypatch.setenv("CLOUDFLARE_AI_GATEWAY_TOKEN", "token")
+    monkeypatch.setenv("CLOUDFLARE_AI_MODEL", "openai/gpt-4o")
+    config = SummarizeConfig.resolve({})
+    assert config.cloudflare.baseUrl == "https://gateway.ai.cloudflare.com/v1/acct/gw/compat"
+    assert config.cloudflare.token.get_secret_value() == "token"
+    assert config.cloudflare.model == "openai/gpt-4o"
+    assert config.isAvailable is True
+
+
+def testPartialCloudflareEnvOnlyAppliesSetVars(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unset env vars are omitted; partial config leaves isAvailable false."""
+    monkeypatch.setenv("CLOUDFLARE_AI_URL", "https://gateway.ai.cloudflare.com/v1/acct/gw/compat")
+    config = SummarizeConfig.resolve({})
+    assert config.cloudflare.baseUrl == "https://gateway.ai.cloudflare.com/v1/acct/gw/compat"
+    assert config.isAvailable is False

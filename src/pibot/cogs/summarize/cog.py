@@ -32,11 +32,6 @@ SUMMARY_SYSTEM_PROMPT = (
     "Do not quote long message chains or list every participant."
 )
 
-NOT_CONFIGURED_MESSAGE = (
-    "Summarize is not configured for this server. "
-    "An admin must configure Cloudflare via `/settings set summarize.cloudflare.token …`."
-)
-
 
 async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Cooldown | None:
     """Apply per-guild summarize cooldown; bot owner is exempt."""
@@ -45,7 +40,7 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
         return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    config = await interaction.client.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
+    config = interaction.client.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
@@ -57,25 +52,22 @@ class Summarize(commands.Cog):
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        self._gatewayCache: dict[tuple[int, str, str, str, str], AIGateway] = {}
+        self._gatewayCache: dict[tuple[int, str, str, str], AIGateway] = {}
 
-    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str, str]:
+    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str]:
         token = cloudflare.token.get_secret_value()
-        return (guildId, cloudflare.accountId, cloudflare.gateway, token, cloudflare.model)
+        return (guildId, cloudflare.baseUrl, token, cloudflare.model)
 
-    async def _getGateway(self, guildId: int) -> AIGateway | None:
-        """Return a cached Cloudflare gateway for the guild, if configured."""
-        config = await self.bot.guildSettings.resolve(guildId, SummarizeConfig)
+    def _getGateway(self, guildId: int) -> AIGateway:
+        """Return a cached Cloudflare gateway for the guild."""
+        config = self.bot.guildSettings.resolve(guildId, SummarizeConfig)
         cloudflare = config.cloudflare
-        if not cloudflare.isConfigured:
-            return None
         cacheKey = self._cacheKey(guildId, cloudflare)
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
             return cached
         gateway = CloudflareAIGateway(
-            account_id=cloudflare.accountId,
-            gateway=cloudflare.gateway,
+            base_url=cloudflare.baseUrl,
             token=cloudflare.token.get_secret_value(),
             model=cloudflare.model,
         )
@@ -140,7 +132,7 @@ class Summarize(commands.Cog):
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
-    @requiresFeature(SummarizeConfig.name)
+    @requiresFeature(SummarizeConfig.name, requireConfigured=True)
     async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.
@@ -151,11 +143,7 @@ class Summarize(commands.Cog):
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = await self.bot.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
-        if not guildConfig.isAvailable:
-            await interaction.response.send_message(NOT_CONFIGURED_MESSAGE, ephemeral=True)
-            return
-
+        guildConfig = self.bot.guildSettings.resolve(interaction.guild.id, SummarizeConfig)
         seconds = self._parseDuration(duration, guildConfig)
         cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
 
@@ -185,10 +173,7 @@ class Summarize(commands.Cog):
         )
         logger.debug("Summary input preview: %r", formatted[:500])
 
-        aiGateway = await self._getGateway(interaction.guild.id)
-        if aiGateway is None:
-            await interaction.followup.send(NOT_CONFIGURED_MESSAGE)
-            return
+        aiGateway = self._getGateway(interaction.guild.id)
 
         summary = await aiGateway.chat(
             [

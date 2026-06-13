@@ -2,20 +2,16 @@
 
 import logging
 import time
-from typing import Any, Protocol
+from typing import Any
 
-from pibot.guild_settings.model import FeatureSettings, getFeature, readPath, toStoredValue
-from pibot.guild_settings.general import GeneralConfig, resolve as resolveGeneral
+import discord
+
+from pibot.guild_settings.model import FeatureSettings, readPath, toStoredValue
+from pibot.guild_settings.general import GeneralConfig
 from pibot.guild_settings.store import SettingsStore
 
 LOGGER = logging.getLogger("guild_settings.service")
 CACHE_TTL_SECONDS = 60
-
-
-class GuildLike(Protocol):
-    """Minimal guild interface for settings removal."""
-
-    id: int
 
 
 class GuildSettingsService:
@@ -68,22 +64,15 @@ class GuildSettingsService:
         """Reset a feature setting to its model default."""
         self.unsetPath(guildId, f"features.{settings.name}.{path}")
 
-    async def remove(self, guild: GuildLike) -> None:
+    async def remove(self, guild: discord.Guild) -> None:
         """Remove guild settings when the bot leaves."""
         self.store.delete(guild.id)
         self.invalidateCache(guild.id)
 
-    async def isFeatureAvailable(self, guildId: int, feature: str) -> bool:
-        """Return whether a feature is enabled and has required credentials."""
-        settingsClass = getFeature(feature)
-        if settingsClass is None:
-            return False
-        return settingsClass.resolve(self.getDocument(guildId)).isAvailable
-
-    async def resolve[T: FeatureSettings](self, guildId: int, settings: type[T]) -> T:
+    def resolve[T: FeatureSettings](self, guildId: int, settings: type[T]) -> T:
         """Return resolved settings for a feature."""
         return settings.resolve(self.getDocument(guildId))  # type: ignore[return-value]
 
-    async def general(self, guildId: int) -> GeneralConfig:
+    def general(self, guildId: int) -> GeneralConfig:
         """Return resolved general settings."""
-        return resolveGeneral(self.getDocument(guildId))
+        return GeneralConfig.resolve(self.getDocument(guildId))

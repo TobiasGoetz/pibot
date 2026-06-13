@@ -61,9 +61,9 @@ class Translations(commands.Cog):
         self.bot = bot
         self._translatorCache: dict[tuple[int, str], Translator] = {}
 
-    async def _getTranslator(self, guildId: int) -> Translator | None:
+    def _getTranslator(self, guildId: int) -> Translator | None:
         """Return a cached DeepL translator for the guild, if configured."""
-        config = await self.bot.guildSettings.resolve(guildId, TranslationsConfig)
+        config = self.bot.guildSettings.resolve(guildId, TranslationsConfig)
         if not config.deeplApiKey:
             return None
         apiKey = config.deeplApiKey.get_secret_value()
@@ -85,10 +85,7 @@ class Translations(commands.Cog):
         if payload.guild_id is None:
             return
 
-        if not TranslationsConfig.resolve(self.bot.guildSettings.getDocument(payload.guild_id)).enabled:
-            return
-
-        if not await self.bot.guildSettings.isFeatureAvailable(payload.guild_id, self.featureName):
+        if not TranslationsConfig.resolve(self.bot.guildSettings.getDocument(payload.guild_id)).isAvailable:
             return
 
         if not payload.emoji.is_unicode_emoji():
@@ -135,7 +132,7 @@ class Translations(commands.Cog):
         :param target_lang: The target language to translate to.
         :param target_lang_emoji: The emoji of the target language.
         """
-        translator = await self._getTranslator(guild_id)
+        translator = self._getTranslator(guild_id)
         if translator is None:
             logger.debug("No DeepL translator configured for guild %s.", guild_id)
             return
