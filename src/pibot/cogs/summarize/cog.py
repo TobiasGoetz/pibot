@@ -132,7 +132,7 @@ class Summarize(commands.Cog):
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
-    @requiresFeature(SummarizeConfig.name, requireConfigured=True)
+    @requiresFeature(SummarizeConfig.name)
     async def summarize(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.

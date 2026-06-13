@@ -55,7 +55,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         for name, settingsClass in getFeatures().items():
             resolved = self.bot.guildSettings.resolve(interaction.guild.id, settingsClass)
             status = "on" if resolved.enabled else "off"
-            if resolved.enabled and not resolved.isAvailable:
+            if resolved.enabled and not resolved.configured:
                 status += " (not configured)"
             lines.append(f"**{name}** — {status}\n{settingsClass.description}")
         embed = discord.Embed(title="Features", description="\n\n".join(lines))

@@ -12,7 +12,7 @@ from pibot.errors import FeatureDisabled, FeatureNotConfigured
 from pibot.guild_settings.model import getFeature
 
 
-def requiresFeature(featureName: str, *, requireConfigured: bool = False) -> Callable:
+def requiresFeature(featureName: str) -> Callable:
     """Require a feature to be enabled for the interaction guild."""
 
     def decorator(func: Callable) -> Callable:
@@ -24,16 +24,18 @@ def requiresFeature(featureName: str, *, requireConfigured: bool = False) -> Cal
                         "This command can only be used in a server.", ephemeral=True
                     )
                 return
+
             bot = cast(Bot, getattr(cog, "bot"))
             settingsClass = getFeature(featureName)
             if settingsClass is None:
                 if not interaction.response.is_done():
                     await interaction.response.send_message(f"Unknown feature `{featureName}`.", ephemeral=True)
                 return
+
             resolved = settingsClass.resolve(bot.guildSettings.getDocument(interaction.guild.id))
             if not resolved.enabled:
                 raise FeatureDisabled(featureName)
-            if requireConfigured and not resolved.isAvailable:
+            if not resolved.configured:
                 raise FeatureNotConfigured(featureName)
             return await func(cog, interaction, *args, **kwargs)
 

@@ -55,6 +55,6 @@ class SummarizeConfig(FeatureSettings):
     cloudflare: CloudflareConfig = Field(default_factory=CloudflareConfig)
 
     @property
-    def isAvailable(self) -> bool:
-        """Whether summarize can run for this guild."""
-        return self.enabled and self.cloudflare.isConfigured
+    def configured(self) -> bool:
+        """Whether summarize is configured for this guild."""
+        return self.cloudflare.isConfigured

@@ -31,9 +31,14 @@ class FeatureSettings(BaseModel):
         LOGGER.debug("Registered feature: %s", cls.name)
 
     @property
-    def isAvailable(self) -> bool:
-        """Whether the feature can run for this guild."""
-        raise NotImplementedError(f"{type(self).__name__} must implement isAvailable")
+    def configured(self) -> bool:
+        """Whether required settings are present for this feature."""
+        return True
+
+    @property
+    def available(self) -> bool:
+        """Whether the feature is on and ready to run."""
+        return self.enabled and self.configured
 
     @classmethod
     def parseSetting(cls, path: str, raw: str) -> object:

@@ -170,7 +170,7 @@ def testSettingDefaultsViaResolve() -> None:
     assert config.maxMessages == MAX_MESSAGES
     assert config.cloudflare.baseUrl == ""
     assert config.cloudflare.model == DEFAULT_MODEL
-    assert config.isAvailable is False
+    assert config.configured is False
 
 
 def testResolveFromStoredOverride() -> None:
@@ -192,7 +192,7 @@ def testEnvDefaultsForDeepl(monkeypatch: pytest.MonkeyPatch) -> None:
     config = TranslationsConfig.resolve({})
     assert config.deeplApiKey is not None
     assert config.deeplApiKey.get_secret_value() == "env-key"
-    assert config.isAvailable is True
+    assert config.configured is True
 
 
 def testGuildOverrideTakesPrecedenceOverEnv(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -216,12 +216,12 @@ def testEnvDefaultsForCloudflare(monkeypatch: pytest.MonkeyPatch) -> None:
     assert config.cloudflare.baseUrl == "https://gateway.ai.cloudflare.com/v1/acct/gw/compat"
     assert config.cloudflare.token.get_secret_value() == "token"
     assert config.cloudflare.model == "openai/gpt-4o"
-    assert config.isAvailable is True
+    assert config.configured is True
 
 
 def testPartialCloudflareEnvOnlyAppliesSetVars(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Unset env vars are omitted; partial config leaves isAvailable false."""
+    """Unset env vars are omitted; partial config leaves configured false."""
     monkeypatch.setenv("CLOUDFLARE_AI_URL", "https://gateway.ai.cloudflare.com/v1/acct/gw/compat")
     config = SummarizeConfig.resolve({})
     assert config.cloudflare.baseUrl == "https://gateway.ai.cloudflare.com/v1/acct/gw/compat"
-    assert config.isAvailable is False
+    assert config.configured is False

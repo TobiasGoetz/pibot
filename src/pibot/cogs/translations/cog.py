@@ -85,7 +85,8 @@ class Translations(commands.Cog):
         if payload.guild_id is None:
             return
 
-        if not TranslationsConfig.resolve(self.bot.guildSettings.getDocument(payload.guild_id)).isAvailable:
+        config = TranslationsConfig.resolve(self.bot.guildSettings.getDocument(payload.guild_id))
+        if not config.available:
             return
 
         if not payload.emoji.is_unicode_emoji():

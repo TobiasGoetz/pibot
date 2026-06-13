@@ -21,6 +21,6 @@ class TranslationsConfig(FeatureSettings):
     ] = None
 
     @property
-    def isAvailable(self) -> bool:
-        """Whether translations can run for this guild."""
-        return self.enabled and bool(self.deeplApiKey)
+    def configured(self) -> bool:
+        """Whether translations is configured for this guild."""
+        return bool(self.deeplApiKey)
