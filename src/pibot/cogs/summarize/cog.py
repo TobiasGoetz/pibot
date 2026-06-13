@@ -11,7 +11,7 @@ from discord.ext import commands
 from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
 from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
-from pibot.cogs.summarize.config import CloudflareConfig, SummarizeConfig
+from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.decorators import requiresFeature
 
 logger = logging.getLogger("cog.summarize")
@@ -54,22 +54,21 @@ class Summarize(commands.Cog):
         self.bot = bot
         self._gatewayCache: dict[tuple[int, str, str, str], AIGateway] = {}
 
-    def _cacheKey(self, guildId: int, cloudflare: CloudflareConfig) -> tuple[int, str, str, str]:
-        token = cloudflare.token.get_secret_value()
-        return (guildId, cloudflare.baseUrl, token, cloudflare.model)
+    def _cacheKey(self, guildId: int, config: SummarizeConfig) -> tuple[int, str, str, str]:
+        token = config.cloudflareToken.get_secret_value()
+        return (guildId, config.cloudflareBaseUrl, token, config.cloudflareModel)
 
     def _getGateway(self, guildId: int) -> AIGateway:
         """Return a cached Cloudflare gateway for the guild."""
         config = self.bot.guildSettings.get(guildId).features.summarize
-        cloudflare = config.cloudflare
-        cacheKey = self._cacheKey(guildId, cloudflare)
+        cacheKey = self._cacheKey(guildId, config)
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
             return cached
         gateway = CloudflareAIGateway(
-            base_url=cloudflare.baseUrl,
-            token=cloudflare.token.get_secret_value(),
-            model=cloudflare.model,
+            base_url=config.cloudflareBaseUrl,
+            token=config.cloudflareToken.get_secret_value(),
+            model=config.cloudflareModel,
         )
         self._gatewayCache[cacheKey] = gateway
         return gateway

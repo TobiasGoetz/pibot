@@ -8,7 +8,7 @@ from pydantic import SecretStr
 from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
 from pibot.guild_settings.config import GuildConfig
 from pibot.guild_settings.general import DEFAULT_PREFIX
-from pibot.guild_settings.model import getFeatures, getSettings, resolveSettingKey
+from pibot.guild_settings.model import getFeatures, getSettings
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
 
@@ -72,38 +72,45 @@ def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
 
 def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix persists and resets to the model default."""
-    service.setPath(3, "general.prefix", "!")
+    service.setPrefix(3, "!")
     assert service.get(3).general.prefix == "!"
     stored = service.store.findById(3)
     assert stored is not None
     assert stored.general.prefix == "!"
 
-    service.unsetPath(3, "general.prefix")
+    service.unsetPrefix(3)
     assert service.get(3).general.prefix == DEFAULT_PREFIX
 
 
 def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:
     """Resetting a feature setting restores the model default."""
-    resolved = resolveSettingKey("summarize.cooldownSeconds")
-    assert resolved is not None
-    featureConfig, path = resolved
-    service.setFeatureSetting(4, featureConfig, path, 120)
+    service.setFeatureSetting(4, SummarizeConfig, "cooldownSeconds", 120)
     assert service.get(4).features.summarize.cooldownSeconds == 120
 
-    service.unsetFeatureSetting(4, featureConfig, path)
+    service.unsetFeatureSetting(4, SummarizeConfig, "cooldownSeconds")
     assert service.get(4).features.summarize.cooldownSeconds == COOLDOWN_SECONDS
+
+
+def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> None:
+    """Feature updates preserve sibling fields."""
+    service.setFeatureSetting(6, SummarizeConfig, "cooldownSeconds", 120)
+    service.setFeatureSetting(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    config = service.get(6)
+    assert config.features.summarize.cooldownSeconds == 120
+    assert config.features.summarize.cloudflareBaseUrl == "https://example.com"
+    assert config.features.summarize.maxMessages == MAX_MESSAGES
 
 
 def testGuildConfigTypedAccess(service: GuildSettingsService) -> None:
     """GuildConfig exposes nested typed attribute access."""
     config = service.get(1)
-    assert config.features.summarize.cloudflare.baseUrl == ""
+    assert config.features.summarize.cloudflareBaseUrl == ""
     assert config.features.summarize.cooldownSeconds == COOLDOWN_SECONDS
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
     """Pydantic fills missing fields when loading a partial stored document."""
-    config = GuildConfig.model_validate({"features": {"summarize": {"cooldownSeconds": 120}}})
+    config = GuildConfig.fromDocument({"features": {"summarize": {"cooldownSeconds": 120}}})
     assert config.features.summarize.cooldownSeconds == 120
     assert config.features.summarize.maxMessages == MAX_MESSAGES
     assert config.general.prefix == DEFAULT_PREFIX
@@ -119,14 +126,11 @@ def testFeatureDiscovery() -> None:
 
 def testSettingRegistration() -> None:
     """Configurable fields register from the feature model."""
-    paths = [path for path, _ in getSettings(SummarizeConfig)]
-    assert "enabled" in paths
-    assert "cooldownSeconds" in paths
-    assert resolveSettingKey("summarize.enabled") is not None
-    resolved = resolveSettingKey("summarize.cooldownSeconds")
-    assert resolved is not None
-    featureConfig, path = resolved
-    assert featureConfig.parseSetting(path, "3600") == 3600
+    fields = [field for field, _ in getSettings(SummarizeConfig)]
+    assert "enabled" in fields
+    assert "cooldownSeconds" in fields
+    assert "cloudflareBaseUrl" in fields
+    assert SummarizeConfig.parseSetting("cooldownSeconds", "3600") == 3600
 
 
 def testSettingDefaults() -> None:
@@ -136,9 +140,25 @@ def testSettingDefaults() -> None:
     config = GuildConfig().features.summarize
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflare.baseUrl == ""
-    assert config.cloudflare.model == DEFAULT_MODEL
+    assert config.cloudflareBaseUrl == ""
+    assert config.cloudflareModel == DEFAULT_MODEL
     assert config.configured is False
+
+
+def testLegacyCloudflareGroupMigratesOnLoad() -> None:
+    """Nested cloudflare documents from older configs migrate to flat fields."""
+    config = SummarizeConfig.model_validate(
+        {
+            "cloudflare": {
+                "baseUrl": "https://example.com",
+                "token": "secret",
+                "model": "test-model",
+            }
+        }
+    )
+    assert config.cloudflareBaseUrl == "https://example.com"
+    assert config.cloudflareToken.get_secret_value() == "secret"
+    assert config.cloudflareModel == "test-model"
 
 
 def testSecretStrMasksDisplay() -> None:

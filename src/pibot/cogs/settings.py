@@ -7,7 +7,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from pibot.bot import Bot
-from pibot.guild_settings.model import getFeature, getFeatures, getSettings, readPath, resolveSettingKey
+from pibot.guild_settings.model import getFeature, getFeatures, getSettings
 
 logger = logging.getLogger("cog.settings")
 
@@ -25,17 +25,25 @@ async def featureNameAutocomplete(
     return _autocompleteChoices(list(getFeatures()), current)
 
 
-async def settingKeyAutocomplete(
+async def featureSettingAutocomplete(
     interaction: discord.Interaction,
     current: str,
 ) -> list[app_commands.Choice[str]]:
-    """Autocomplete registered setting keys."""
-    keys = [
-        f"{settingsClass.name}.{path}"
-        for settingsClass in getFeatures().values()
-        for path, _ in getSettings(settingsClass)
-    ]
-    return _autocompleteChoices(keys, current)
+    """Autocomplete settings for the selected feature."""
+    featureName = interaction.namespace.feature
+    if not isinstance(featureName, str):
+        return []
+    settingsClass = getFeature(featureName)
+    if settingsClass is None:
+        return []
+    lowered = current.lower()
+    choices: list[app_commands.Choice[str]] = []
+    for field, description in getSettings(settingsClass):
+        if lowered not in field.lower() and lowered not in description.lower():
+            continue
+        name = f"{field} — {description}" if description else field
+        choices.append(app_commands.Choice(name=name[:100], value=field))
+    return choices[:25]
 
 
 @app_commands.default_permissions(administrator=True)
@@ -91,10 +99,10 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             return
 
         lines = []
-        for path, description in getSettings(settingsClass):
-            value = readPath(resolved, path)
+        for field, description in getSettings(settingsClass):
+            value = getattr(resolved, field)
             display = "" if value is None else str(value)
-            lines.append(f"**{settingsClass.name}.{path}**\n{description}\n→ `{display}`")
+            lines.append(f"**{field}**\n{description}\n→ `{display}`")
         embed = discord.Embed(
             title=f"Settings — {feature}",
             description="\n\n".join(lines) if lines else "No settings defined.",
@@ -102,48 +110,52 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @app_commands.command(name="set", description="Set a feature setting.")
-    @app_commands.describe(key="Setting key (feature.setting)", value="New value")
-    @app_commands.autocomplete(key=settingKeyAutocomplete)
-    async def setCmd(self, interaction: discord.Interaction, key: str, value: str) -> None:
-        """Set a feature setting by key."""
+    @app_commands.describe(feature="Feature to configure", setting="Setting to change", value="New value")
+    @app_commands.autocomplete(feature=featureNameAutocomplete, setting=featureSettingAutocomplete)
+    async def setCmd(
+        self,
+        interaction: discord.Interaction,
+        feature: str,
+        setting: str,
+        value: str,
+    ) -> None:
+        """Set a feature setting."""
         if interaction.guild is None:
             return
-        resolved = resolveSettingKey(key)
-        if resolved is None:
-            await interaction.response.send_message(f"Unknown setting `{key}`.", ephemeral=True)
+        settingsClass = getFeature(feature)
+        if settingsClass is None or setting not in settingsClass.model_fields:
+            await interaction.response.send_message(f"Unknown setting for `{feature}`.", ephemeral=True)
             return
-        settingsClass, path = resolved
         try:
-            parsed = settingsClass.parseSetting(path, value)
+            parsed = settingsClass.parseSetting(setting, value)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
-        self.bot.guildSettings.setFeatureSetting(interaction.guild.id, settingsClass, path, parsed)
-        logger.info("%s set %s for %s.", interaction.user, key, interaction.guild.name)
-        await interaction.response.send_message(f"Set **{key}**.", ephemeral=True)
+        self.bot.guildSettings.setFeatureSetting(interaction.guild.id, settingsClass, setting, parsed)
+        logger.info("%s set %s.%s for %s.", interaction.user, feature, setting, interaction.guild.name)
+        await interaction.response.send_message(f"Set **{feature}** › **{setting}**.", ephemeral=True)
 
     @app_commands.command(name="reset", description="Reset a feature setting to its default.")
-    @app_commands.describe(key="Setting key (feature.setting)")
-    @app_commands.autocomplete(key=settingKeyAutocomplete)
-    async def reset(self, interaction: discord.Interaction, key: str) -> None:
+    @app_commands.describe(feature="Feature to configure", setting="Setting to reset")
+    @app_commands.autocomplete(feature=featureNameAutocomplete, setting=featureSettingAutocomplete)
+    async def reset(self, interaction: discord.Interaction, feature: str, setting: str) -> None:
         """Reset a feature setting override."""
         if interaction.guild is None:
             return
-        resolved = resolveSettingKey(key)
-        if resolved is None:
-            await interaction.response.send_message(f"Unknown setting `{key}`.", ephemeral=True)
+        settingsClass = getFeature(feature)
+        if settingsClass is None or setting not in settingsClass.model_fields:
+            await interaction.response.send_message(f"Unknown setting for `{feature}`.", ephemeral=True)
             return
-        settingsClass, path = resolved
-        self.bot.guildSettings.unsetFeatureSetting(interaction.guild.id, settingsClass, path)
-        logger.info("%s reset %s for %s.", interaction.user, key, interaction.guild.name)
-        await interaction.response.send_message(f"Reset **{key}** to default.", ephemeral=True)
+        self.bot.guildSettings.unsetFeatureSetting(interaction.guild.id, settingsClass, setting)
+        logger.info("%s reset %s.%s for %s.", interaction.user, feature, setting, interaction.guild.name)
+        await interaction.response.send_message(f"Reset **{feature}** › **{setting}** to default.", ephemeral=True)
 
     @app_commands.command(name="prefix", description="Set the prefix for text commands.")
     async def prefix(self, interaction: discord.Interaction, prefix: str) -> None:
         """Set the command prefix."""
         if interaction.guild is None:
             return
-        self.bot.guildSettings.setPath(interaction.guild.id, "general.prefix", prefix)
+        self.bot.guildSettings.setPrefix(interaction.guild.id, prefix)
         logger.info("%s set prefix to %s for %s.", interaction.user, prefix, interaction.guild.name)
         await interaction.response.send_message(f"Prefix set to `{prefix}`.", ephemeral=True)
 
@@ -152,7 +164,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Set the command channel."""
         if interaction.guild is None:
             return
-        self.bot.guildSettings.setPath(interaction.guild.id, "general.commandChannelId", channel.id)
+        self.bot.guildSettings.setCommandChannel(interaction.guild.id, channel.id)
         logger.info("%s set command channel to %s for %s.", interaction.user, channel.name, interaction.guild.name)
         await interaction.response.send_message(f"Command channel set to {channel.mention}.", ephemeral=True)
 
@@ -161,7 +173,7 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
         """Clear the command channel restriction."""
         if interaction.guild is None:
             return
-        self.bot.guildSettings.unsetPath(interaction.guild.id, "general.commandChannelId")
+        self.bot.guildSettings.unsetCommandChannel(interaction.guild.id)
         await interaction.response.send_message("Text commands are allowed in any channel.", ephemeral=True)
 
 

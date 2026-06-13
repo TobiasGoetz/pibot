@@ -22,11 +22,11 @@ class SettingsStore:
         if raw is None:
             return None
         payload = {key: raw[key] for key in ("general", "features") if key in raw}
-        return GuildConfig.model_validate(payload)
+        return GuildConfig.fromDocument(payload)
 
     def save(self, guildId: int, config: GuildConfig) -> None:
         """Persist guild settings."""
-        document = config.model_dump()
+        document = config.toDocument()
         document["_id"] = guildId
         self.collection.replace_one({"_id": guildId}, document, upsert=True)
         LOGGER.info("Saved settings for guild %s.", guildId)
