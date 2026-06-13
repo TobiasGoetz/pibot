@@ -8,7 +8,7 @@ from pydantic import SecretStr
 from pibot.cogs.summarize.config import COOLDOWN_SECONDS, MAX_MESSAGES, SummarizeConfig
 from pibot.guild_settings.config import GuildConfig
 from pibot.guild_settings.general import DEFAULT_PREFIX
-from pibot.guild_settings.model import getFeatures, getSettings
+from pibot.guild_settings.model import getFeatures
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
 
@@ -126,7 +126,7 @@ def testFeatureDiscovery() -> None:
 
 def testSettingRegistration() -> None:
     """Configurable fields register from the feature model."""
-    fields = [field for field, _ in getSettings(SummarizeConfig)]
+    fields = list(SummarizeConfig.model_fields)
     assert "enabled" in fields
     assert "cooldownSeconds" in fields
     assert "cloudflareBaseUrl" in fields

@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.guild_settings.general import GENERAL_SETTINGS, GeneralConfig
-from pibot.guild_settings.model import SettingsGroup, getFeature, getFeatures, getSettings
+from pibot.guild_settings.model import SettingsGroup, getFeature, getFeatures
 
 logger = logging.getLogger("cog.settings")
 
@@ -53,7 +53,8 @@ async def featureSettingAutocomplete(
         return []
     lowered = current.lower()
     choices: list[app_commands.Choice[str]] = []
-    for field, description in getSettings(settingsClass):
+    for field, fieldInfo in settingsClass.model_fields.items():
+        description = fieldInfo.description or field
         if lowered not in field.lower() and lowered not in description.lower():
             continue
         name = f"{field} — {description}" if description else field
@@ -111,7 +112,8 @@ class Settings(commands.GroupCog, group_name="settings", group_description="Conf
             title = f"Settings — {group}"
 
         lines = []
-        for field, description in getSettings(settingsClass):
+        for field, fieldInfo in settingsClass.model_fields.items():
+            description = fieldInfo.description or field
             value = getattr(config, field)
             display = _formatSettingValue(field, value)
             lines.append(f"**{field}**\n{description}\n→ `{display or '(unset)'}`")

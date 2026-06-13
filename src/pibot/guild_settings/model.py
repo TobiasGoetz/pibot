@@ -53,12 +53,6 @@ class FeatureSettings(SettingsGroup):
         """Whether the feature is on and ready to run."""
         return self.enabled and self.configured
 
-
-def getSettings(cls: type[SettingsGroup]) -> tuple[tuple[str, str], ...]:
-    """Return configurable fields (name, description) from a settings model."""
-    return tuple((name, fieldInfo.description or name) for name, fieldInfo in cls.model_fields.items())
-
-
 def getFeatures() -> dict[str, type[FeatureSettings]]:
     """Return all registered feature settings classes."""
     return dict(_REGISTRY)
