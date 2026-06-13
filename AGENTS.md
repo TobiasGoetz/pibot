@@ -63,7 +63,7 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 ## Environment
 
 - Config via `.env`; see `.env.example` for variables.
-- Requires a Discord bot token and (for full features) MongoDB and DeepL API key.
+- Requires a Discord bot token and MongoDB. Feature API keys (DeepL, Cloudflare) are configured per guild via `/settings`.
 
 ## Conventions
 

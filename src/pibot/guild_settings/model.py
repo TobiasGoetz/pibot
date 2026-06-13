@@ -29,6 +29,17 @@ class SettingsGroup(BaseModel):
         """Deserialize from a MongoDB/BSON document payload."""
         return cls.model_validate(data)
 
+    @classmethod
+    def parseSetting(cls, field: str, raw: str) -> object:
+        """Parse a user-provided string into a stored value."""
+        if field not in cls.model_fields:
+            msg = f"Unknown setting {field!r}"
+            raise ValueError(msg)
+        try:
+            return TypeAdapter(cls.model_fields[field].annotation).validate_python(raw)
+        except ValidationError as exc:
+            raise ValueError(exc.errors()[0]["msg"]) from exc
+
 
 class FeatureSettings(SettingsGroup):
     """Per-feature guild settings model. Subclass once per feature; fields are the settings."""
@@ -51,19 +62,9 @@ class FeatureSettings(SettingsGroup):
         """Whether the feature is on and ready to run."""
         return self.enabled and self.configured
 
-    @classmethod
-    def parseSetting(cls, field: str, raw: str) -> object:
-        """Parse a user-provided string into a stored value."""
-        if field not in cls.model_fields:
-            msg = f"Unknown setting {field!r}"
-            raise ValueError(msg)
-        try:
-            return TypeAdapter(cls.model_fields[field].annotation).validate_python(raw)
-        except ValidationError as exc:
-            raise ValueError(exc.errors()[0]["msg"]) from exc
 
-def getSettings(cls: type[FeatureSettings]) -> tuple[tuple[str, str], ...]:
-    """Return configurable fields (name, description) from the feature model."""
+def getSettings(cls: type[SettingsGroup]) -> tuple[tuple[str, str], ...]:
+    """Return configurable fields (name, description) from a settings model."""
     return tuple((name, fieldInfo.description or name) for name, fieldInfo in cls.model_fields.items())
 
 

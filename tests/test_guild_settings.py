@@ -72,13 +72,13 @@ def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
 
 def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix persists and resets to the model default."""
-    service.setPrefix(3, "!")
+    service.setGeneralSetting(3, "prefix", "!")
     assert service.get(3).general.prefix == "!"
     stored = service.store.findById(3)
     assert stored is not None
     assert stored.general.prefix == "!"
 
-    service.unsetPrefix(3)
+    service.unsetGeneralSetting(3, "prefix")
     assert service.get(3).general.prefix == DEFAULT_PREFIX
 
 
