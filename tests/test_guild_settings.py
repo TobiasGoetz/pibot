@@ -110,7 +110,7 @@ def testGuildConfigTypedAccess(service: GuildSettingsService) -> None:
 
 def testPartialDocumentUsesModelDefaults() -> None:
     """Pydantic fills missing fields when loading a partial stored document."""
-    config = GuildConfig.fromDocument({"features": {"summarize": {"cooldownSeconds": 120}}})
+    config = GuildConfig.model_validate({"features": {"summarize": {"cooldownSeconds": 120}}})
     assert config.features.summarize.cooldownSeconds == 120
     assert config.features.summarize.maxMessages == MAX_MESSAGES
     assert config.general.prefix == DEFAULT_PREFIX

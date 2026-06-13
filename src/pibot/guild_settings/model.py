@@ -1,7 +1,7 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
-from typing import Any, ClassVar, Self
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 
@@ -19,15 +19,6 @@ class SettingsGroup(BaseModel):
     def configured(self) -> bool:
         """Whether required values are present for this group."""
         return True
-
-    def toDocument(self) -> dict[str, Any]:
-        """Serialize to a MongoDB/BSON-compatible document."""
-        return self.model_dump(mode="json")
-
-    @classmethod
-    def fromDocument(cls, data: dict[str, Any]) -> Self:
-        """Deserialize from a MongoDB/BSON document payload."""
-        return cls.model_validate(data)
 
     @classmethod
     def parseSetting(cls, field: str, raw: str) -> object:
