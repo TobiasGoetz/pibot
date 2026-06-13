@@ -4,7 +4,6 @@ from typing import Annotated, Any
 
 from pydantic import Field, SecretStr, model_validator
 
-from pibot.guild_settings.env import EnvVar
 from pibot.guild_settings.model import FeatureSettings
 
 COOLDOWN_SECONDS = 60 * 60
@@ -28,17 +27,14 @@ class SummarizeConfig(FeatureSettings):
     cloudflareBaseUrl: Annotated[
         str,
         Field(description="Cloudflare AI Gateway base URL (through `/compat`; the client appends `/chat/completions`)"),
-        EnvVar("CLOUDFLARE_AI_URL"),
     ] = ""
     cloudflareToken: Annotated[
         SecretStr,
         Field(description="Cloudflare AI Gateway token for this server"),
-        EnvVar("CLOUDFLARE_AI_GATEWAY_TOKEN"),
     ] = SecretStr("")
     cloudflareModel: Annotated[
         str,
         Field(description="Cloudflare AI model for this server"),
-        EnvVar("CLOUDFLARE_AI_MODEL"),
     ] = DEFAULT_MODEL
 
     @model_validator(mode="before")

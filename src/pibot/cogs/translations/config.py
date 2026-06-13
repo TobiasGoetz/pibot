@@ -4,7 +4,6 @@ from typing import Annotated
 
 from pydantic import Field, SecretStr
 
-from pibot.guild_settings.env import EnvVar
 from pibot.guild_settings.model import FeatureSettings
 
 
@@ -17,10 +16,9 @@ class TranslationsConfig(FeatureSettings):
     deeplApiKey: Annotated[
         SecretStr | None,
         Field(description="DeepL API key for this server"),
-        EnvVar("DEEPL_API_KEY"),
     ] = None
 
     @property
     def configured(self) -> bool:
-        """Whether translations is configured for this guild."""
+        """Whether translations is configured for this server."""
         return bool(self.deeplApiKey)

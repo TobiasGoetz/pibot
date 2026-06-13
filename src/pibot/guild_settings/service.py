@@ -14,10 +14,14 @@ class GuildSettingsService:
         """Initialize the service."""
         self.store = store
 
-    def get(self, guildId: int) -> GuildConfig:
-        """Return settings for a guild."""
+    def _getStored(self, guildId: int) -> GuildConfig:
+        """Return persisted settings from MongoDB."""
         stored = self.store.findById(guildId)
         return stored if stored is not None else GuildConfig()
+
+    def get(self, guildId: int) -> GuildConfig:
+        """Return settings for a guild."""
+        return self._getStored(guildId)
 
     def setPrefix(self, guildId: int, prefix: str) -> None:
         """Set the text command prefix."""
@@ -45,12 +49,12 @@ class GuildSettingsService:
         self._updateFeature(guildId, settings, field, getattr(defaultFeature, field))
 
     def _updateGeneral(self, guildId: int, field: str, value: object) -> None:
-        config = self.get(guildId)
+        config = self._getStored(guildId)
         updated = config.model_copy(update={"general": config.general.model_copy(update={field: value})})
         self.store.save(guildId, updated)
 
     def _updateFeature(self, guildId: int, settings: type[FeatureSettings], field: str, value: object) -> None:
-        config = self.get(guildId)
+        config = self._getStored(guildId)
         feature = getattr(config.features, settings.name)
         updatedFeature = feature.model_copy(update={field: value})
         updatedFeatures = config.features.model_copy(update={settings.name: updatedFeature})

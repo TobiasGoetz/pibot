@@ -62,7 +62,6 @@ class FeatureSettings(SettingsGroup):
         except ValidationError as exc:
             raise ValueError(exc.errors()[0]["msg"]) from exc
 
-
 def getSettings(cls: type[FeatureSettings]) -> tuple[tuple[str, str], ...]:
     """Return configurable fields (name, description) from the feature model."""
     return tuple((name, fieldInfo.description or name) for name, fieldInfo in cls.model_fields.items())
