@@ -24,9 +24,8 @@ class GuildSettingsService:
         self.store.saveFeature(guildId, model.name, updated)
 
     def unsetFeatureField(self, guildId: int, model: type[FeatureSettings], field: str) -> None:
-        """Reset a feature setting to its model default."""
-        default = getattr(model(), field)
-        self.setFeatureField(guildId, model, field, default)
+        """Remove a feature setting from storage; defaults apply on next load."""
+        self.store.unsetFeatureField(guildId, model.name, field)
 
     async def remove(self, guild: discord.Guild) -> None:
         """Remove guild settings when the bot leaves."""

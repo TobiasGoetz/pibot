@@ -1,13 +1,24 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
-from typing import Any, ClassVar
+from typing import Annotated, Any, ClassVar, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from pydantic.fields import FieldInfo
 
 LOGGER = logging.getLogger("guild_settings.model")
 
 _REGISTRY: dict[str, type[FeatureSettings]] = {}
+
+TSettings = TypeVar("TSettings", bound="SettingsGroup")
+
+
+def fieldDefault(fieldInfo: FieldInfo) -> object:
+    """Return the default value for an optional model field."""
+    if fieldInfo.is_required():
+        msg = "Required settings cannot be reset to a model default."
+        raise ValueError(msg)
+    return fieldInfo.get_default(call_default_factory=True)
 
 
 class SettingsGroup(BaseModel):
@@ -15,9 +26,23 @@ class SettingsGroup(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    @classmethod
+    def fromStored(cls: type[TSettings], data: dict[str, Any]) -> TSettings:
+        """Build settings from a partial MongoDB feature section."""
+        values: dict[str, Any] = {}
+        for name, fieldInfo in cls.model_fields.items():
+            if name in data:
+                values[name] = data[name]
+            elif not fieldInfo.is_required():
+                values[name] = fieldDefault(fieldInfo)
+        return cls.model_construct(**values)  # type: ignore[return-value]
+
     @property
     def configured(self) -> bool:
-        """Whether required values are present for this group."""
+        """Whether all required settings are present."""
+        for name, fieldInfo in type(self).model_fields.items():
+            if fieldInfo.is_required() and name not in self.model_fields_set:
+                return False
         return True
 
     @classmethod
@@ -26,10 +51,29 @@ class SettingsGroup(BaseModel):
         if field not in cls.model_fields:
             msg = f"Unknown setting {field!r}"
             raise ValueError(msg)
+        fieldInfo = cls.model_fields[field]
+        annotated = (
+            Annotated[cast(Any, fieldInfo.annotation), *fieldInfo.metadata]  # ty: ignore[invalid-type-form]
+            if fieldInfo.metadata
+            else fieldInfo.annotation
+        )
         try:
-            return TypeAdapter(cls.model_fields[field].annotation).validate_python(raw)
+            return TypeAdapter(annotated).validate_python(raw)
         except ValidationError as exc:
             raise ValueError(exc.errors()[0]["msg"]) from exc
+
+    def sparseDump(self) -> dict[str, Any]:
+        """Return only stored fields that should be persisted."""
+        dumped = self.model_dump(mode="json")
+        defaultDump = type(self).fromStored({}).model_dump(mode="json")
+        stored: dict[str, Any] = {}
+        for name in self.model_fields_set:
+            fieldInfo = type(self).model_fields[name]
+            value = dumped[name]
+            if not fieldInfo.is_required() and value == defaultDump.get(name):
+                continue
+            stored[name] = value
+        return stored
 
 
 class FeatureSettings(SettingsGroup):
@@ -52,13 +96,6 @@ class FeatureSettings(SettingsGroup):
     def available(self) -> bool:
         """Whether the feature is on and ready to run."""
         return self.enabled and self.configured
-
-    def sparseDump(self) -> dict:
-        """Return only fields that differ from model defaults (for MongoDB storage)."""
-        modelClass = type(self)
-        defaults = modelClass().model_dump(mode="json")
-        current = self.model_dump(mode="json")
-        return {key: value for key, value in current.items() if value != defaults.get(key)}
 
 
 def getFeatures() -> dict[str, type[FeatureSettings]]:

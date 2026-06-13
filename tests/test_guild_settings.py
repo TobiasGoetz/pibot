@@ -33,22 +33,37 @@ class FakeCollection:
         guildId = query["_id"]
         document = copy.deepcopy(self.docs.get(guildId, {"_id": guildId}))
         for key, value in update.get("$set", {}).items():
-            if "." in key:
-                section, field = key.split(".", 1)
-                document.setdefault(section, {})[field] = copy.deepcopy(value)
-            else:
-                document[key] = copy.deepcopy(value)
+            self._setPath(document, key, value)
         for key in update.get("$unset", {}):
-            if "." in key:
-                section, field = key.split(".", 1)
-                sectionDict = document.get(section)
-                if isinstance(sectionDict, dict):
-                    sectionDict.pop(field, None)
-                    if not sectionDict:
-                        document.pop(section, None)
-            else:
-                document.pop(key, None)
+            self._unsetPath(document, key)
         self.docs[guildId] = document
+
+    @staticmethod
+    def _setPath(document: dict, key: str, value: object) -> None:
+        parts = key.split(".")
+        cursor: dict = document
+        for part in parts[:-1]:
+            cursor = cursor.setdefault(part, {})
+        cursor[parts[-1]] = copy.deepcopy(value)
+
+    @staticmethod
+    def _unsetPath(document: dict, key: str) -> None:
+        parts = key.split(".")
+        cursor: object = document
+        for part in parts[:-1]:
+            if not isinstance(cursor, dict) or part not in cursor:
+                return
+            cursor = cursor[part]
+        if isinstance(cursor, dict):
+            cursor.pop(parts[-1], None)
+            if not cursor and len(parts) > 1:
+                parent: dict = document
+                for part in parts[:-2]:
+                    parent = parent[part]
+                if not parent.get(parts[-2]):
+                    parent.pop(parts[-2], None)
+                if not parent and len(parts) > 2 and parts[0] in document and not document[parts[0]]:
+                    document.pop(parts[0], None)
 
     def delete_one(self, query: dict) -> None:
         """Delete a stored document."""
@@ -142,10 +157,11 @@ def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
-    """Pydantic fills missing fields when loading a partial stored document."""
-    config = SummarizeConfig.model_validate({"cooldownSeconds": 120})
+    """Partial stored documents merge with optional model defaults."""
+    config = SummarizeConfig.fromStored({"cooldownSeconds": 120})
     assert config.cooldownSeconds == 120
     assert config.maxMessages == MAX_MESSAGES
+    assert config.configured is False
 
 
 def testFeatureDiscovery() -> None:
@@ -168,20 +184,46 @@ def testSettingRegistration() -> None:
 
 
 def testSettingDefaults() -> None:
-    """Unset settings use model field defaults."""
+    """Unset required settings are absent until stored."""
     from pibot.cogs.summarize.config import DEFAULT_MODEL
 
-    config = SummarizeConfig()
+    config = SummarizeConfig.fromStored({})
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflareBaseUrl == ""
     assert config.cloudflareModel == DEFAULT_MODEL
     assert config.configured is False
+    assert "cloudflareBaseUrl" not in config.model_fields_set
 
 
 def testSecretStrMasksDisplay() -> None:
     """SecretStr values are masked for display."""
     assert str(SecretStr("abcd")) == "**********"
+
+
+def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsService) -> None:
+    """Setting an optional field back to its default removes it from MongoDB."""
+    service.setFeatureField(11, SummarizeConfig, "maxMessages", 500)
+    service.setFeatureField(11, SummarizeConfig, "cooldownSeconds", 120)
+    service.setFeatureField(11, SummarizeConfig, "maxMessages", MAX_MESSAGES)
+
+    raw = service.store.collection.find_one({"_id": 11})
+    assert raw is not None
+    assert raw["features"]["summarize"] == {"cooldownSeconds": 120}
+
+
+def testRequiredSettingResetRemovesStoredField(service: GuildSettingsService) -> None:
+    """Resetting a required setting removes it from MongoDB."""
+    service.setFeatureField(10, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    service.setFeatureField(10, SummarizeConfig, "cloudflareToken", SecretStr("token"))
+    assert service.getFeature(10, SummarizeConfig).configured is True
+
+    service.unsetFeatureField(10, SummarizeConfig, "cloudflareBaseUrl")
+    config = service.getFeature(10, SummarizeConfig)
+    assert config.configured is False
+    assert "cloudflareBaseUrl" not in config.model_fields_set
+    raw = service.store.collection.find_one({"_id": 10})
+    assert raw is not None
+    assert "cloudflareBaseUrl" not in raw["features"]["summarize"]
 
 
 def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:

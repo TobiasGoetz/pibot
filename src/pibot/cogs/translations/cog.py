@@ -8,7 +8,6 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.cogs.translations.config import TranslationsConfig
-from pibot.guild_settings.decorators import requiresFeature
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 from pibot.translation_service.deepl_translator import DeepLTranslator
 from pibot.translation_service.translator import Translator
@@ -67,11 +66,9 @@ class Translations(
         self.bot = bot
         self._translatorCache: dict[tuple[int, str], Translator] = {}
 
-    def _getTranslator(self, guildId: int) -> Translator | None:
-        """Return a cached DeepL translator for the guild, if configured."""
+    def _getTranslator(self, guildId: int) -> Translator:
+        """Return a cached DeepL translator for the guild."""
         config = self.bot.guildSettings.getFeature(guildId, TranslationsConfig)
-        if not config.deeplApiKey:
-            return None
         apiKey = config.deeplApiKey.get_secret_value()
         cacheKey = (guildId, apiKey)
         cached = self._translatorCache.get(cacheKey)
@@ -140,9 +137,6 @@ class Translations(
         :param target_lang_emoji: The emoji of the target language.
         """
         translator = self._getTranslator(guild_id)
-        if translator is None:
-            logger.debug("No DeepL translator configured for guild %s.", guild_id)
-            return
 
         channel = self.bot.get_channel(channel_id)
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):
@@ -163,7 +157,6 @@ class Translations(
         await message.reply(content=f"{target_lang_emoji}\n{translation}", mention_author=False, silent=True)
 
     @app_commands.command(name="languages", description="Get the available languages for translation.")
-    @requiresFeature(TranslationsConfig)
     async def languages(self, interaction: discord.Interaction) -> None:
         """
         Get the available languages for translation.

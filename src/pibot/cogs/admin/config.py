@@ -22,8 +22,3 @@ class AdminConfig(FeatureSettings):
         default=DEFAULT_MAX_CLEAR_AMOUNT,
         description="Maximum messages that can be cleared in one command",
     )
-
-    @property
-    def configured(self) -> bool:
-        """Admin commands do not require external configuration."""
-        return True

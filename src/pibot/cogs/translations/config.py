@@ -11,12 +11,8 @@ class TranslationsConfig(FeatureSettings):
     name = "translations"
     description = "Flag-reaction translations via DeepL"
 
-    deeplApiKey: SecretStr | None = Field(
-        default=None,
+    deeplApiKey: SecretStr = Field(
+        ...,
+        min_length=1,
         description="DeepL API key for this server",
     )
-
-    @property
-    def configured(self) -> bool:
-        """Whether translations is configured for this server."""
-        return bool(self.deeplApiKey)

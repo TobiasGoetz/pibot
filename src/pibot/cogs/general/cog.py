@@ -11,7 +11,6 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.cogs.general.config import GeneralConfig
-from pibot.guild_settings.decorators import requiresFeature
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
 logger = logging.getLogger("cog.general")
@@ -32,13 +31,11 @@ class General(
         self.bot = bot
 
     @app_commands.command(name="ping", description="Displays the bots ping.")
-    @requiresFeature(GeneralConfig)
     async def ping(self, interaction: discord.Interaction) -> None:
         """Display the bots ping."""
         await interaction.response.send_message(f"Ping: {self.bot.latency * 1000:.0f}ms", ephemeral=True)
 
     @app_commands.command(name="version", description="Displays the bot version.")
-    @requiresFeature(GeneralConfig)
     async def version(self, interaction: discord.Interaction) -> None:
         """Display the bot's version."""
         await interaction.response.send_message(
@@ -53,7 +50,6 @@ class General(
         name="countdown",
         description="Start a countdown for a specified amount of time.",
     )
-    @requiresFeature(GeneralConfig)
     async def countdown(self, interaction: discord.Interaction, time_str: str) -> None:
         """
         Start a countdown for a specified amount of time.

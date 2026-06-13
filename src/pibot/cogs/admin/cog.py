@@ -8,7 +8,6 @@ from discord.ext import commands
 
 from pibot.bot import Bot
 from pibot.cogs.admin.config import AdminConfig
-from pibot.guild_settings.decorators import requiresFeature
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
 logger = logging.getLogger("cog.admin")
@@ -30,7 +29,6 @@ class Admin(
 
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
-    @requiresFeature(AdminConfig)
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
         """
         Clear a specified amount of messages.
@@ -58,7 +56,6 @@ class Admin(
 
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="mute", description="Mute a member.")
-    @requiresFeature(AdminConfig)
     async def mute(
         self,
         interaction: discord.Interaction,
@@ -101,7 +98,6 @@ class Admin(
 
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="unmute", description="Unmute a member.")
-    @requiresFeature(AdminConfig)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member) -> None:
         """
         Unmute a member.

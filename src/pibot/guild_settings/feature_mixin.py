@@ -6,17 +6,50 @@ import discord
 from discord import app_commands
 
 from pibot.bot import Bot
+from pibot.errors import FeatureDisabled, FeatureNotConfigured
 from pibot.guild_settings.feature_commands import sendSettingsReset, sendSettingsSet, sendSettingsView
 from pibot.guild_settings.model import FeatureSettings
 
 
 class FeatureSettingsMixin:
-    """Adds ``/{feature} settings view|set|reset`` to a feature GroupCog."""
+    """Adds ``/{feature} settings view|set|reset`` and gates feature commands by guild settings."""
 
     featureConfig: ClassVar[type[FeatureSettings]]
     bot: Bot
 
     settings = app_commands.Group(name="settings", description="Configure this feature for this server")
+
+    def _isSettingsSubcommand(self, interaction: discord.Interaction) -> bool:
+        """Whether the interaction targets ``/{feature} settings …`` (always allowed)."""
+        command = interaction.command
+        if not isinstance(command, app_commands.Command):
+            return False
+        parent = command.parent
+        while parent is not None:
+            if parent.name == self.settings.name:
+                return True
+            parent = parent.parent
+        return False
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        """Require the feature to be enabled and configured, except for settings commands."""
+        if self._isSettingsSubcommand(interaction):
+            return True
+
+        if interaction.guild is None:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    "This command can only be used in a server.",
+                    ephemeral=True,
+                )
+            return False
+
+        featureConfig = self.bot.guildSettings.getFeature(interaction.guild.id, self.featureConfig)
+        if not featureConfig.enabled:
+            raise FeatureDisabled(self.featureConfig.name)
+        if not featureConfig.configured:
+            raise FeatureNotConfigured(self.featureConfig.name)
+        return True
 
     async def settingsFieldAutocomplete(
         self,

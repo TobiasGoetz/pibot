@@ -31,9 +31,12 @@ async def sendSettingsView(
     lines = []
     for field, fieldInfo in configClass.model_fields.items():
         description = fieldInfo.description or field
-        value = getattr(config, field)
-        display = formatSettingValue(field, value)
-        lines.append(f"**{field}**\n{description}\n→ `{display or '(unset)'}`")
+        if fieldInfo.is_required() and field not in config.model_fields_set:
+            display = "(unset)"
+        else:
+            display = formatSettingValue(field, getattr(config, field)) or "(unset)"
+        required = " (required)" if fieldInfo.is_required() else ""
+        lines.append(f"**{field}**{required}\n{description}\n→ `{display}`")
     embed = discord.Embed(
         title=f"Settings — {configClass.name}",
         description="\n\n".join(lines) if lines else "No settings defined.",

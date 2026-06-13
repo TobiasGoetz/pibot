@@ -12,7 +12,6 @@ from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
 from pibot.ai_gateway.gateway import AIGateway, ChatMessage
 from pibot.bot import Bot
 from pibot.cogs.summarize.config import SummarizeConfig
-from pibot.guild_settings.decorators import requiresFeature
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
 logger = logging.getLogger("cog.summarize")
@@ -137,7 +136,6 @@ class Summarize(
     )
     @app_commands.describe(duration="How far back to look (default 1h; e.g. 1d, 10min).")
     @app_commands.checks.dynamic_cooldown(summarizeCooldown)
-    @requiresFeature(SummarizeConfig)
     async def channel(self, interaction: discord.Interaction, duration: str = "1h") -> None:
         """
         Summarize channel messages for the given duration.

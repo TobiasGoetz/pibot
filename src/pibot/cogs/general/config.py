@@ -26,8 +26,3 @@ class GeneralConfig(FeatureSettings):
         default=DEFAULT_COUNTDOWN_MAX_SECONDS,
         description="Maximum countdown duration in seconds",
     )
-
-    @property
-    def configured(self) -> bool:
-        """General settings always have usable defaults."""
-        return True

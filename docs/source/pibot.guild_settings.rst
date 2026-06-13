@@ -28,8 +28,3 @@ Feature-specific models live in ``cogs/<feature>/config.py``.
    :members:
    :show-inheritance:
    :undoc-members:
-
-.. automodule:: pibot.guild_settings.decorators
-   :members:
-   :show-inheritance:
-   :undoc-members:
