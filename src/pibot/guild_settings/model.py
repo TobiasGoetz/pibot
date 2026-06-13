@@ -12,10 +12,19 @@ LOGGER = logging.getLogger("guild_settings.model")
 _REGISTRY: dict[str, type[FeatureSettings]] = {}
 
 
-class FeatureSettings(BaseModel):
-    """Per-feature guild settings model. Subclass once per feature; fields are the settings."""
+class SettingsGroup(BaseModel):
+    """Grouped guild settings fields. Subclass for nested groups or top-level config sections."""
 
     model_config = ConfigDict(frozen=True)
+
+    @property
+    def configured(self) -> bool:
+        """Whether required values are present for this group."""
+        return True
+
+
+class FeatureSettings(SettingsGroup):
+    """Per-feature guild settings model. Subclass once per feature; fields are the settings."""
 
     name: ClassVar[str]
     description: ClassVar[str]
@@ -29,11 +38,6 @@ class FeatureSettings(BaseModel):
             return
         _REGISTRY[cls.name] = cls
         LOGGER.debug("Registered feature: %s", cls.name)
-
-    @property
-    def configured(self) -> bool:
-        """Whether required settings are present for this feature."""
-        return True
 
     @property
     def available(self) -> bool:

@@ -2,10 +2,10 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr
+from pydantic import Field, SecretStr
 
 from pibot.guild_settings.env import EnvVar
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import FeatureSettings, SettingsGroup
 
 COOLDOWN_SECONDS = 60 * 60
 MAX_DURATION_SECONDS = 7 * 24 * 60 * 60
@@ -13,10 +13,8 @@ MAX_MESSAGES = 1000
 DEFAULT_MODEL = "openai/gpt-4o-mini"
 
 
-class CloudflareConfig(BaseModel):
+class CloudflareConfig(SettingsGroup):
     """Cloudflare AI Gateway credentials for this server."""
-
-    model_config = ConfigDict(frozen=True)
 
     baseUrl: Annotated[
         str,
@@ -35,7 +33,7 @@ class CloudflareConfig(BaseModel):
     ] = DEFAULT_MODEL
 
     @property
-    def isConfigured(self) -> bool:
+    def configured(self) -> bool:
         """Whether all required credentials are present."""
         return bool(self.baseUrl and self.token.get_secret_value())
 
@@ -57,4 +55,4 @@ class SummarizeConfig(FeatureSettings):
     @property
     def configured(self) -> bool:
         """Whether summarize is configured for this guild."""
-        return self.cloudflare.isConfigured
+        return self.cloudflare.configured

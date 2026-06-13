@@ -2,15 +2,13 @@
 
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict
+from pibot.guild_settings.model import SettingsGroup
 
 DEFAULT_PREFIX = "."
 
 
-class GeneralConfig(BaseModel):
+class GeneralConfig(SettingsGroup):
     """Resolved general settings."""
-
-    model_config = ConfigDict(frozen=True)
 
     prefix: str = DEFAULT_PREFIX
     commandChannelId: int | None = None
