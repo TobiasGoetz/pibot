@@ -40,7 +40,7 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
         return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    config = interaction.client.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
+    config = await interaction.client.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
@@ -63,9 +63,9 @@ class Summarize(
         token = config.cloudflareToken.get_secret_value()
         return (guildId, config.cloudflareBaseUrl, token, config.cloudflareModel)
 
-    def _getGateway(self, guildId: int) -> AIGateway:
+    async def _getGateway(self, guildId: int) -> AIGateway:
         """Return a cached Cloudflare gateway for the guild."""
-        config = self.bot.guildSettings.getFeature(guildId, SummarizeConfig)
+        config = await self.bot.guildSettings.getFeature(guildId, SummarizeConfig)
         cacheKey = self._cacheKey(guildId, config)
         cached = self._gatewayCache.get(cacheKey)
         if cached is not None:
@@ -146,7 +146,7 @@ class Summarize(
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = self.bot.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
+        guildConfig = await self.bot.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
         seconds = self._parseDuration(duration, guildConfig)
         cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
 
@@ -176,7 +176,7 @@ class Summarize(
         )
         logger.debug("Summary input preview: %r", formatted[:500])
 
-        aiGateway = self._getGateway(interaction.guild.id)
+        aiGateway = await self._getGateway(interaction.guild.id)
 
         summary = await aiGateway.chat(
             [

@@ -27,7 +27,7 @@ async def sendSettingsView(
     """Send an embed listing all settings for a feature."""
     if interaction.guild is None:
         return
-    config = bot.guildSettings.getFeature(interaction.guild.id, configClass)
+    config = await bot.guildSettings.getFeature(interaction.guild.id, configClass)
     lines = []
     for field, fieldInfo in configClass.model_fields.items():
         description = fieldInfo.description or field
@@ -62,7 +62,7 @@ async def sendSettingsSet(
     except ValueError as exc:
         await interaction.response.send_message(str(exc), ephemeral=True)
         return
-    bot.guildSettings.setFeatureField(interaction.guild.id, configClass, setting, parsed)
+    await bot.guildSettings.setFeatureField(interaction.guild.id, configClass, setting, parsed)
     logger.info("%s set %s.%s for %s.", interaction.user, configClass.name, setting, interaction.guild.name)
     display = formatSettingValue(setting, parsed) or "(unset)"
     await interaction.response.send_message(f"Set **{setting}** to `{display}`.", ephemeral=True)
@@ -80,6 +80,6 @@ async def sendSettingsReset(
     if setting not in configClass.model_fields:
         await interaction.response.send_message(f"Unknown setting `{setting}`.", ephemeral=True)
         return
-    bot.guildSettings.unsetFeatureField(interaction.guild.id, configClass, setting)
+    await bot.guildSettings.unsetFeatureField(interaction.guild.id, configClass, setting)
     logger.info("%s reset %s.%s for %s.", interaction.user, configClass.name, setting, interaction.guild.name)
     await interaction.response.send_message(f"Reset **{setting}** to default.", ephemeral=True)

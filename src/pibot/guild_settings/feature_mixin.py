@@ -44,7 +44,7 @@ class FeatureSettingsMixin:
                 )
             return False
 
-        featureConfig = self.bot.guildSettings.getFeature(interaction.guild.id, self.featureConfig)
+        featureConfig = await self.bot.guildSettings.getFeature(interaction.guild.id, self.featureConfig)
         if not featureConfig.enabled:
             raise FeatureDisabled(self.featureConfig.name)
         if not featureConfig.configured:

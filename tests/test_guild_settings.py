@@ -22,13 +22,13 @@ class FakeCollection:
         """Initialize an empty in-memory collection."""
         self.docs: dict[int, dict] = {}
 
-    def find_one(self, query: dict) -> dict | None:
+    async def find_one(self, query: dict) -> dict | None:
         """Return a stored document by ``_id``."""
         if "_id" in query:
             return copy.deepcopy(self.docs.get(query["_id"]))
         return None
 
-    def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
+    async def update_one(self, query: dict, update: dict, upsert: bool = False) -> None:
         """Apply a partial update to a stored document."""
         guildId = query["_id"]
         document = copy.deepcopy(self.docs.get(guildId, {"_id": guildId}))
@@ -65,7 +65,7 @@ class FakeCollection:
                 if not parent and len(parts) > 2 and parts[0] in document and not document[parts[0]]:
                     document.pop(parts[0], None)
 
-    def delete_one(self, query: dict) -> None:
+    async def delete_one(self, query: dict) -> None:
         """Delete a stored document."""
         self.docs.pop(query["_id"], None)
 
@@ -84,76 +84,76 @@ def service() -> GuildSettingsService:
     return GuildSettingsService(FakeSettingsStore())
 
 
-def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
+async def testDefaultsWithoutDocument(service: GuildSettingsService) -> None:
     """With no Mongo document, settings use model defaults."""
-    assert service.getFeature(1, GeneralConfig).prefix == DEFAULT_PREFIX
-    assert service.getFeature(1, SummarizeConfig).enabled is True
+    assert (await service.getFeature(1, GeneralConfig)).prefix == DEFAULT_PREFIX
+    assert (await service.getFeature(1, SummarizeConfig)).enabled is True
 
 
-def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
+async def testFeatureEnabledOptOut(service: GuildSettingsService) -> None:
     """Feature enabled flag persists via Pydantic round-trip."""
-    assert service.getFeature(2, SummarizeConfig).enabled is True
-    service.setFeatureField(2, SummarizeConfig, "enabled", False)
-    assert service.getFeature(2, SummarizeConfig).enabled is False
-    stored = service.store.findFeature(2, SummarizeConfig.name, SummarizeConfig)
+    assert (await service.getFeature(2, SummarizeConfig)).enabled is True
+    await service.setFeatureField(2, SummarizeConfig, "enabled", False)
+    assert (await service.getFeature(2, SummarizeConfig)).enabled is False
+    stored = await service.store.findFeature(2, SummarizeConfig.name, SummarizeConfig)
     assert stored.enabled is False
 
-    service.unsetFeatureField(2, SummarizeConfig, "enabled")
-    assert service.getFeature(2, SummarizeConfig).enabled is True
+    await service.unsetFeatureField(2, SummarizeConfig, "enabled")
+    assert (await service.getFeature(2, SummarizeConfig)).enabled is True
 
 
-def testSetAndResetPrefix(service: GuildSettingsService) -> None:
+async def testSetAndResetPrefix(service: GuildSettingsService) -> None:
     """Guild prefix persists and resets to the model default."""
-    service.setFeatureField(3, GeneralConfig, "prefix", "!")
-    assert service.getFeature(3, GeneralConfig).prefix == "!"
-    stored = service.store.findFeature(3, GeneralConfig.name, GeneralConfig)
+    await service.setFeatureField(3, GeneralConfig, "prefix", "!")
+    assert (await service.getFeature(3, GeneralConfig)).prefix == "!"
+    stored = await service.store.findFeature(3, GeneralConfig.name, GeneralConfig)
     assert stored.prefix == "!"
 
-    service.unsetFeatureField(3, GeneralConfig, "prefix")
-    assert service.getFeature(3, GeneralConfig).prefix == DEFAULT_PREFIX
+    await service.unsetFeatureField(3, GeneralConfig, "prefix")
+    assert (await service.getFeature(3, GeneralConfig)).prefix == DEFAULT_PREFIX
 
 
-def testSparseStorageOmitsDefaults(service: GuildSettingsService) -> None:
+async def testSparseStorageOmitsDefaults(service: GuildSettingsService) -> None:
     """MongoDB stores only fields that differ from model defaults."""
-    service.setFeatureField(5, SummarizeConfig, "maxMessages", 500)
-    raw = service.store.collection.find_one({"_id": 5})
+    await service.setFeatureField(5, SummarizeConfig, "maxMessages", 500)
+    raw = await service.store.collection.find_one({"_id": 5})
     assert raw is not None
     assert raw["features"]["summarize"] == {"maxMessages": 500}
 
 
-def testUnsetRemovesStoredDefaultFields(service: GuildSettingsService) -> None:
+async def testUnsetRemovesStoredDefaultFields(service: GuildSettingsService) -> None:
     """Resetting a field removes it from stored feature settings."""
-    service.setFeatureField(9, SummarizeConfig, "maxMessages", 500)
-    service.unsetFeatureField(9, SummarizeConfig, "maxMessages")
-    raw = service.store.collection.find_one({"_id": 9})
+    await service.setFeatureField(9, SummarizeConfig, "maxMessages", 500)
+    await service.unsetFeatureField(9, SummarizeConfig, "maxMessages")
+    raw = await service.store.collection.find_one({"_id": 9})
     assert raw is None or "summarize" not in raw.get("features", {})
 
 
-def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:
+async def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) -> None:
     """Resetting a feature setting restores the model default."""
-    service.setFeatureField(4, SummarizeConfig, "cooldownSeconds", 120)
-    assert service.getFeature(4, SummarizeConfig).cooldownSeconds == 120
+    await service.setFeatureField(4, SummarizeConfig, "cooldownSeconds", 120)
+    assert (await service.getFeature(4, SummarizeConfig)).cooldownSeconds == 120
 
-    service.unsetFeatureField(4, SummarizeConfig, "cooldownSeconds")
-    assert service.getFeature(4, SummarizeConfig).cooldownSeconds == COOLDOWN_SECONDS
+    await service.unsetFeatureField(4, SummarizeConfig, "cooldownSeconds")
+    assert (await service.getFeature(4, SummarizeConfig)).cooldownSeconds == COOLDOWN_SECONDS
 
 
-def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> None:
+async def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> None:
     """Feature updates preserve sibling fields."""
-    service.setFeatureField(6, SummarizeConfig, "cooldownSeconds", 120)
-    service.setFeatureField(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
-    config = service.getFeature(6, SummarizeConfig)
+    await service.setFeatureField(6, SummarizeConfig, "cooldownSeconds", 120)
+    await service.setFeatureField(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    config = await service.getFeature(6, SummarizeConfig)
     assert config.cooldownSeconds == 120
     assert config.cloudflareBaseUrl == "https://example.com"
     assert config.maxMessages == MAX_MESSAGES
 
 
-def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -> None:
+async def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -> None:
     """Updating general settings does not wipe feature sections."""
-    service.setFeatureField(7, SummarizeConfig, "cooldownSeconds", 120)
-    service.setFeatureField(7, GeneralConfig, "prefix", "!")
-    assert service.getFeature(7, SummarizeConfig).cooldownSeconds == 120
-    assert service.getFeature(7, GeneralConfig).prefix == "!"
+    await service.setFeatureField(7, SummarizeConfig, "cooldownSeconds", 120)
+    await service.setFeatureField(7, GeneralConfig, "prefix", "!")
+    assert (await service.getFeature(7, SummarizeConfig)).cooldownSeconds == 120
+    assert (await service.getFeature(7, GeneralConfig)).prefix == "!"
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
@@ -200,34 +200,34 @@ def testSecretStrMasksDisplay() -> None:
     assert str(SecretStr("abcd")) == "**********"
 
 
-def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsService) -> None:
+async def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsService) -> None:
     """Setting an optional field back to its default removes it from MongoDB."""
-    service.setFeatureField(11, SummarizeConfig, "maxMessages", 500)
-    service.setFeatureField(11, SummarizeConfig, "cooldownSeconds", 120)
-    service.setFeatureField(11, SummarizeConfig, "maxMessages", MAX_MESSAGES)
+    await service.setFeatureField(11, SummarizeConfig, "maxMessages", 500)
+    await service.setFeatureField(11, SummarizeConfig, "cooldownSeconds", 120)
+    await service.setFeatureField(11, SummarizeConfig, "maxMessages", MAX_MESSAGES)
 
-    raw = service.store.collection.find_one({"_id": 11})
+    raw = await service.store.collection.find_one({"_id": 11})
     assert raw is not None
     assert raw["features"]["summarize"] == {"cooldownSeconds": 120}
 
 
-def testRequiredSettingResetRemovesStoredField(service: GuildSettingsService) -> None:
+async def testRequiredSettingResetRemovesStoredField(service: GuildSettingsService) -> None:
     """Resetting a required setting removes it from MongoDB."""
-    service.setFeatureField(10, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
-    service.setFeatureField(10, SummarizeConfig, "cloudflareToken", SecretStr("token"))
-    assert service.getFeature(10, SummarizeConfig).configured is True
+    await service.setFeatureField(10, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    await service.setFeatureField(10, SummarizeConfig, "cloudflareToken", SecretStr("token"))
+    assert (await service.getFeature(10, SummarizeConfig)).configured is True
 
-    service.unsetFeatureField(10, SummarizeConfig, "cloudflareBaseUrl")
-    config = service.getFeature(10, SummarizeConfig)
+    await service.unsetFeatureField(10, SummarizeConfig, "cloudflareBaseUrl")
+    config = await service.getFeature(10, SummarizeConfig)
     assert config.configured is False
     assert "cloudflareBaseUrl" not in config.model_fields_set
-    raw = service.store.collection.find_one({"_id": 10})
+    raw = await service.store.collection.find_one({"_id": 10})
     assert raw is not None
     assert "cloudflareBaseUrl" not in raw["features"]["summarize"]
 
 
-def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:
+async def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:
     """GeneralConfig exposes typed attribute access."""
-    config = service.getFeature(1, GeneralConfig)
+    config = await service.getFeature(1, GeneralConfig)
     assert config.prefix == DEFAULT_PREFIX
     assert GeneralConfig.model_validate({}).prefix == DEFAULT_PREFIX

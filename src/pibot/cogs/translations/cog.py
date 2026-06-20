@@ -66,9 +66,9 @@ class Translations(
         self.bot = bot
         self._translatorCache: dict[tuple[int, str], Translator] = {}
 
-    def _getTranslator(self, guildId: int) -> Translator:
+    async def _getTranslator(self, guildId: int) -> Translator:
         """Return a cached DeepL translator for the guild."""
-        config = self.bot.guildSettings.getFeature(guildId, TranslationsConfig)
+        config = await self.bot.guildSettings.getFeature(guildId, TranslationsConfig)
         apiKey = config.deeplApiKey.get_secret_value()
         cacheKey = (guildId, apiKey)
         cached = self._translatorCache.get(cacheKey)
@@ -88,7 +88,7 @@ class Translations(
         if payload.guild_id is None:
             return
 
-        config = self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
+        config = await self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
         if not config.available:
             return
 
@@ -136,7 +136,7 @@ class Translations(
         :param target_lang: The target language to translate to.
         :param target_lang_emoji: The emoji of the target language.
         """
-        translator = self._getTranslator(guild_id)
+        translator = await self._getTranslator(guild_id)
 
         channel = self.bot.get_channel(channel_id)
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):

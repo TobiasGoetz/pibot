@@ -59,7 +59,7 @@ class General(
         """
         if interaction.guild is None:
             return
-        config = self.bot.guildSettings.getFeature(interaction.guild.id, GeneralConfig)
+        config = await self.bot.guildSettings.getFeature(interaction.guild.id, GeneralConfig)
         seconds = pytimeparse.parse(time_str)
 
         if seconds is None:

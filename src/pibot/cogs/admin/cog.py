@@ -38,7 +38,7 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
+        config = await self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
         if amount < 1:
             raise commands.BadArgument("Amount must be at least 1.")
         if amount > config.maxClearAmount:
@@ -72,7 +72,7 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
+        config = await self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
         guild = interaction.guild
         await interaction.response.defer()
         role = discord.utils.get(guild.roles, name=config.mutedRoleName)
@@ -107,7 +107,7 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
+        config = await self.bot.guildSettings.getFeature(interaction.guild.id, AdminConfig)
         guild = interaction.guild
         await interaction.response.defer()
         role = discord.utils.get(guild.roles, name=config.mutedRoleName)

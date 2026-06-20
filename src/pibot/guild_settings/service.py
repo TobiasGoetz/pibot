@@ -13,20 +13,20 @@ class GuildSettingsService:
         """Initialize the service."""
         self.store = store
 
-    def getFeature(self, guildId: int, model: type[T]) -> T:
+    async def getFeature(self, guildId: int, model: type[T]) -> T:
         """Return feature settings for a guild."""
-        return self.store.findFeature(guildId, model.name, model)
+        return await self.store.findFeature(guildId, model.name, model)
 
-    def setFeatureField(self, guildId: int, model: type[FeatureSettings], field: str, value: object) -> None:
+    async def setFeatureField(self, guildId: int, model: type[FeatureSettings], field: str, value: object) -> None:
         """Set a feature setting."""
-        config = self.getFeature(guildId, model)
+        config = await self.getFeature(guildId, model)
         updated = config.model_copy(update={field: value})
-        self.store.saveFeature(guildId, model.name, updated)
+        await self.store.saveFeature(guildId, model.name, updated)
 
-    def unsetFeatureField(self, guildId: int, model: type[FeatureSettings], field: str) -> None:
+    async def unsetFeatureField(self, guildId: int, model: type[FeatureSettings], field: str) -> None:
         """Remove a feature setting from storage; defaults apply on next load."""
-        self.store.unsetFeatureField(guildId, model.name, field)
+        await self.store.unsetFeatureField(guildId, model.name, field)
 
     async def remove(self, guild: discord.Guild) -> None:
         """Remove guild settings when the bot leaves."""
-        self.store.delete(guild.id)
+        await self.store.delete(guild.id)

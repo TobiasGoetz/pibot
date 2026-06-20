@@ -8,7 +8,7 @@ from importlib.metadata import PackageNotFoundError, version
 
 import discord
 import discord.ext.commands
-import pymongo
+from pymongo import AsyncMongoClient
 
 from pibot.cogs.general.config import GeneralConfig
 from pibot.guild_settings.service import GuildSettingsService
@@ -42,7 +42,7 @@ class Bot(discord.ext.commands.Bot):
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the bot."""
-        mongoClient = pymongo.MongoClient(os.getenv("MONGODB_URI"))
+        mongoClient = AsyncMongoClient(os.getenv("MONGODB_URI"))
         self.guildSettings = GuildSettingsService(SettingsStore(mongoClient))
         self.commandSyncBehavior = command_sync_behavior()
         self.isDevTools = is_dev_tools()
@@ -97,7 +97,7 @@ class Bot(discord.ext.commands.Bot):
         if message.author.bot:
             return
 
-        general = self.guildSettings.getFeature(message.guild.id, GeneralConfig)
+        general = await self.guildSettings.getFeature(message.guild.id, GeneralConfig)
         if not message.content.lower().startswith(general.prefix.lower()):
             return
 
