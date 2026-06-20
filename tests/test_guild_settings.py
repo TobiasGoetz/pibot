@@ -200,6 +200,34 @@ def testSecretStrMasksDisplay() -> None:
     assert str(SecretStr("abcd")) == "**********"
 
 
+def testFromStoredCoercesSecretStr() -> None:
+    """Stored secret strings are coerced back to SecretStr."""
+    config = SummarizeConfig.fromStored({"cloudflareToken": "my-token"})
+    assert isinstance(config.cloudflareToken, SecretStr)
+    assert config.cloudflareToken.get_secret_value() == "my-token"
+
+
+async def testSecretStrPersistsRealValue(service: GuildSettingsService) -> None:
+    """MongoDB stores the real secret value, not the masked display form."""
+    await service.setFeatureField(12, SummarizeConfig, "cloudflareToken", SecretStr("real-token"))
+    raw = await service.store.collection.find_one({"_id": 12})
+    assert raw is not None
+    assert raw["features"]["summarize"]["cloudflareToken"] == "real-token"
+
+
+async def testSecretStrRoundTripThenUpdateSibling(service: GuildSettingsService) -> None:
+    """Updating another field after saving a secret reloads and persists correctly."""
+    await service.setFeatureField(13, SummarizeConfig, "cloudflareToken", SecretStr("real-token"))
+    await service.setFeatureField(13, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    config = await service.getFeature(13, SummarizeConfig)
+    assert config.cloudflareBaseUrl == "https://example.com"
+    assert config.cloudflareToken.get_secret_value() == "real-token"
+    raw = await service.store.collection.find_one({"_id": 13})
+    assert raw is not None
+    assert raw["features"]["summarize"]["cloudflareToken"] == "real-token"
+    assert raw["features"]["summarize"]["cloudflareBaseUrl"] == "https://example.com"
+
+
 async def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsService) -> None:
     """Setting an optional field back to its default removes it from MongoDB."""
     await service.setFeatureField(11, SummarizeConfig, "maxMessages", 500)

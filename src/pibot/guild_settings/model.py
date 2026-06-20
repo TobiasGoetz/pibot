@@ -3,7 +3,7 @@
 import logging
 from typing import Annotated, Any, ClassVar, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
 
 LOGGER = logging.getLogger("guild_settings.model")
@@ -27,12 +27,32 @@ class SettingsGroup(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     @classmethod
+    def _fieldTypeAdapter(cls, field: str) -> TypeAdapter[Any]:
+        """Return a type adapter for one model field."""
+        fieldInfo = cls.model_fields[field]
+        annotated = (
+            Annotated[cast(Any, fieldInfo.annotation), *fieldInfo.metadata]  # ty: ignore[invalid-type-form]
+            if fieldInfo.metadata
+            else fieldInfo.annotation
+        )
+        return TypeAdapter(annotated)
+
+    @classmethod
+    def _coerceStoredValue(cls, field: str, raw: object) -> object:
+        """Coerce a MongoDB value into the field's Python type."""
+        try:
+            return cls._fieldTypeAdapter(field).validate_python(raw)
+        except ValidationError as exc:
+            msg = f"Invalid stored value for {field!r}: {exc.errors()[0]['msg']}"
+            raise ValueError(msg) from exc
+
+    @classmethod
     def fromStored(cls: type[TSettings], data: dict[str, Any]) -> TSettings:
         """Build settings from a partial MongoDB feature section."""
         values: dict[str, Any] = {}
         for name, fieldInfo in cls.model_fields.items():
             if name in data:
-                values[name] = data[name]
+                values[name] = cls._coerceStoredValue(name, data[name])
             elif not fieldInfo.is_required():
                 values[name] = fieldDefault(fieldInfo)
         return cls.model_construct(**values)  # type: ignore[return-value]
@@ -51,26 +71,25 @@ class SettingsGroup(BaseModel):
         if field not in cls.model_fields:
             msg = f"Unknown setting {field!r}"
             raise ValueError(msg)
-        fieldInfo = cls.model_fields[field]
-        annotated = (
-            Annotated[cast(Any, fieldInfo.annotation), *fieldInfo.metadata]  # ty: ignore[invalid-type-form]
-            if fieldInfo.metadata
-            else fieldInfo.annotation
-        )
         try:
-            return TypeAdapter(annotated).validate_python(raw)
+            return cls._fieldTypeAdapter(field).validate_python(raw)
         except ValidationError as exc:
             raise ValueError(exc.errors()[0]["msg"]) from exc
 
+    def _persistedValue(self, name: str) -> object:
+        """Return a MongoDB-safe value for one stored field."""
+        value = getattr(self, name)
+        if isinstance(value, SecretStr):
+            return value.get_secret_value()
+        return value
+
     def sparseDump(self) -> dict[str, Any]:
         """Return only stored fields that should be persisted."""
-        dumped = self.model_dump(mode="json")
-        defaultDump = type(self).fromStored({}).model_dump(mode="json")
         stored: dict[str, Any] = {}
         for name in self.model_fields_set:
             fieldInfo = type(self).model_fields[name]
-            value = dumped[name]
-            if not fieldInfo.is_required() and value == defaultDump.get(name):
+            value = self._persistedValue(name)
+            if not fieldInfo.is_required() and value == fieldDefault(fieldInfo):
                 continue
             stored[name] = value
         return stored
