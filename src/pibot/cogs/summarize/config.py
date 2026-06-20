@@ -2,7 +2,6 @@
 
 from pydantic import Field
 
-from pibot.config import BotConfig
 from pibot.guild_settings.model import FeatureSettings
 
 COOLDOWN_SECONDS = 60 * 60
@@ -33,8 +32,3 @@ class SummarizeConfig(FeatureSettings):
         default=DEFAULT_MODEL,
         description="Cloudflare AI model for this server",
     )
-
-    @classmethod
-    def isBotReady(cls, botConfig: BotConfig) -> bool:
-        """Whether bot-level Cloudflare credentials are present."""
-        return botConfig.summarize.cloudflare.configured

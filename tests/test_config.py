@@ -23,33 +23,22 @@ def clearBotEnv(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("PIBOT_DISCORD_TOKEN", "discord-token")
     monkeypatch.setenv("PIBOT_MONGODB_URI", "mongodb://localhost:27017/")
-
-
-def testCloudflareConfiguredRequiresBothValues(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cloudflare is configured only when base URL and token are set."""
-    config = BotConfig()
-    assert config.summarize.cloudflare.configured is False
-
     monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL", "https://example.com")
-    assert BotConfig().summarize.cloudflare.configured is False
+    monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN", "cloudflare-token")
+    monkeypatch.setenv("PIBOT_TRANSLATIONS_DEEPL_API_KEY", "deepl-key")
 
-    monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN", "token")
+
+def testCloudflareCredentialsLoadFromEnv() -> None:
+    """Cloudflare credentials load from env."""
     config = BotConfig()
-    assert config.summarize.cloudflare.configured is True
     assert config.summarize.cloudflare.baseUrl == "https://example.com"
-    assert config.summarize.cloudflare.token is not None
-    assert config.summarize.cloudflare.token.get_secret_value() == "token"
+    assert config.summarize.cloudflare.token.get_secret_value() == "cloudflare-token"
 
 
-def testDeeplConfigured(monkeypatch: pytest.MonkeyPatch) -> None:
-    """DeepL is configured when the API key env var is set."""
-    assert BotConfig().translations.deepl.configured is False
-
-    monkeypatch.setenv("PIBOT_TRANSLATIONS_DEEPL_API_KEY", "key")
+def testDeeplApiKeyLoadsFromEnv() -> None:
+    """DeepL API key loads from env."""
     config = BotConfig()
-    assert config.translations.deepl.configured is True
-    assert config.translations.deepl.apiKey is not None
-    assert config.translations.deepl.apiKey.get_secret_value() == "key"
+    assert config.translations.deepl.apiKey.get_secret_value() == "deepl-key"
 
 
 def testRuntimeFlagsFromEnv(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -75,5 +64,24 @@ def testInvalidCommandSyncBehaviorRaises(monkeypatch: pytest.MonkeyPatch) -> Non
 def testRequiredBootstrapVarsRaiseWhenMissing(monkeypatch: pytest.MonkeyPatch) -> None:
     """Bootstrap env vars are required."""
     monkeypatch.delenv("PIBOT_DISCORD_TOKEN", raising=False)
+    with pytest.raises(ValidationError):
+        BotConfig()
+
+
+def testRequiredCloudflareVarsRaiseWhenMissing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cloudflare env vars are required."""
+    monkeypatch.delenv("PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL", raising=False)
+    with pytest.raises(ValidationError):
+        BotConfig()
+
+    monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL", "https://example.com")
+    monkeypatch.delenv("PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN", raising=False)
+    with pytest.raises(ValidationError):
+        BotConfig()
+
+
+def testRequiredDeeplApiKeyRaisesWhenMissing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """DeepL API key env var is required."""
+    monkeypatch.delenv("PIBOT_TRANSLATIONS_DEEPL_API_KEY", raising=False)
     with pytest.raises(ValidationError):
         BotConfig()

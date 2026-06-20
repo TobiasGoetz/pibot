@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 
 from pibot.bot import Bot
-from pibot.errors import FeatureDisabled, FeatureNotConfigured, FeatureUnavailable
+from pibot.errors import FeatureDisabled
 from pibot.guild_settings.feature_commands import sendSettingsReset, sendSettingsSet, sendSettingsView
 from pibot.guild_settings.model import FeatureSettings
 
@@ -32,7 +32,7 @@ class FeatureSettingsMixin:
         return False
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        """Require the feature to be enabled and configured, except for settings commands."""
+        """Require the feature to be enabled, except for settings commands."""
         if self._isSettingsSubcommand(interaction):
             return True
 
@@ -47,10 +47,6 @@ class FeatureSettingsMixin:
         featureConfig = await self.bot.guildSettings.getFeature(interaction.guild.id, self.featureConfig)
         if not featureConfig.enabled:
             raise FeatureDisabled(self.featureConfig.name)
-        if not self.featureConfig.isBotReady(self.bot.config):
-            raise FeatureUnavailable(self.featureConfig.name)
-        if not featureConfig.configured:
-            raise FeatureNotConfigured(self.featureConfig.name)
         return True
 
     async def settingsFieldAutocomplete(

@@ -30,7 +30,7 @@ Features with settings today:
 | `summarize` | Limits, model override, `enabled` |
 | `translations` | `enabled` |
 
-Cloudflare and DeepL credentials are configured at bot level via `PIBOT_*` environment variables (see [Environment variables](#environment-variables)), not per guild.
+Cloudflare and DeepL credentials are required at bot level via `PIBOT_*` environment variables (see [Environment variables](#environment-variables)). Per-guild `enabled` flags toggle each feature on a server.
 
 Settings are stored in MongoDB under `features.<featureName>`. Only values that differ from the model defaults are written.
 
@@ -83,9 +83,9 @@ Configure these for `docker run`, `pibot:` Helm values, or a `.env` file (see `.
 | --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PIBOT_DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `PIBOT_MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
-| `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Optional | — | Cloudflare AI Gateway base URL (through `/compat`) | Enables `/summarize` when set together with `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN`. |
-| `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Optional | — | — | Cloudflare AI Gateway token. Enables `/summarize` when set together with `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL`. |
-| `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Optional | — | — | DeepL API key for flag-reaction translations. |
+| `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Required | — | Cloudflare AI Gateway base URL (through `/compat`) | Bot fails to start if unset. |
+| `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Required | — | — | Cloudflare AI Gateway token. Bot fails to start if unset. |
+| `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |
 | `PIBOT_COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync. Invalid values fail at startup. Loaded via ``BotConfig`` in ``pibot/config.py``. |
 | `PIBOT_ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when true. Unset → false. Loaded via ``BotConfig`` in ``pibot/config.py``. |
 | `PIBOT_LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging``. Unknown values fall back to ``INFO``. |

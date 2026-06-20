@@ -25,24 +25,3 @@ class FeatureDisabled(discord.app_commands.AppCommandError):
             f"This feature is disabled on this server. "
             f"An administrator can enable it with `/{featureName} settings set enabled true`."
         )
-
-
-class FeatureNotConfigured(discord.app_commands.AppCommandError):
-    """Raised when a feature is enabled but missing required configuration."""
-
-    def __init__(self, featureName: str) -> None:
-        """Initialize with the feature name."""
-        self.featureName = featureName
-        super().__init__(
-            f"**{featureName}** is not configured for this server. "
-            f"An administrator can review required settings with `/{featureName} settings view`."
-        )
-
-
-class FeatureUnavailable(discord.app_commands.AppCommandError):
-    """Raised when a feature is not configured at the bot level."""
-
-    def __init__(self, featureName: str) -> None:
-        """Initialize with the feature name."""
-        self.featureName = featureName
-        super().__init__(f"**{featureName}** is not available right now. Contact the bot operator.")

@@ -6,10 +6,11 @@ Environment variable convention
 All PiBot env vars use the ``PIBOT_`` prefix.
 
 - **Bootstrap / runtime:** ``PIBOT_{NAME}`` — e.g. ``PIBOT_DISCORD_TOKEN``, ``PIBOT_LOG_LEVEL``
-- **Feature integrations:** ``PIBOT_{FEATURE}_{VENDOR}_{FIELD}`` — e.g.
+- **Feature integrations (required at startup):** ``PIBOT_{FEATURE}_{VENDOR}_{FIELD}`` — e.g.
   ``PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL``, ``PIBOT_TRANSLATIONS_DEEPL_API_KEY``
 
-Guild settings are never read from the environment (MongoDB only).
+Guild settings are never read from the environment (MongoDB only). Per-guild
+``enabled`` flags toggle features on each server independently.
 """
 
 import logging
@@ -41,13 +42,8 @@ class CloudflareSettings(BaseSettings):
         env_prefix_target="alias",
     )
 
-    baseUrl: str | None = Field(default=None, min_length=1, alias="BASE_URL")
-    token: SecretStr | None = Field(default=None, min_length=1, alias="TOKEN")
-
-    @property
-    def configured(self) -> bool:
-        """Whether both base URL and token are set."""
-        return self.baseUrl is not None and self.token is not None
+    baseUrl: str = Field(default=..., min_length=1, alias="BASE_URL")
+    token: SecretStr = Field(default=..., min_length=1, alias="TOKEN")
 
 
 class DeeplSettings(BaseSettings):
@@ -61,12 +57,7 @@ class DeeplSettings(BaseSettings):
         env_prefix_target="alias",
     )
 
-    apiKey: SecretStr | None = Field(default=None, min_length=1, alias="API_KEY")
-
-    @property
-    def configured(self) -> bool:
-        """Whether the API key is set."""
-        return self.apiKey is not None
+    apiKey: SecretStr = Field(default=..., min_length=1, alias="API_KEY")
 
 
 class SummarizeBotConfig(BaseSettings):
@@ -96,8 +87,8 @@ class BotConfig(BaseSettings):
         env_prefix_target="alias",
     )
 
-    discordToken: str = Field(min_length=1, alias="DISCORD_TOKEN")
-    mongodbUri: str = Field(min_length=1, alias="MONGODB_URI")
+    discordToken: str = Field(default=..., min_length=1, alias="DISCORD_TOKEN")
+    mongodbUri: str = Field(default=..., min_length=1, alias="MONGODB_URI")
     logLevel: str = Field(default="INFO", alias="LOG_LEVEL")
     summarize: SummarizeBotConfig = Field(default_factory=SummarizeBotConfig)
     translations: TranslationsBotConfig = Field(default_factory=TranslationsBotConfig)

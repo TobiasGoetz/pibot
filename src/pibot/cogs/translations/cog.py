@@ -75,7 +75,7 @@ class Translations(
             return
 
         config = await self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
-        if not config.enabled or not TranslationsConfig.isBotReady(self.bot.config):
+        if not config.enabled:
             return
 
         if not payload.emoji.is_unicode_emoji():

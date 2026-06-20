@@ -64,7 +64,7 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 ## Environment
 
 - Config via `.env` or Helm (`pibot:` in `charts/pibot/values.yaml`); see `.env.example`. All env vars use the `PIBOT_` prefix.
-- Requires `PIBOT_DISCORD_TOKEN` and `PIBOT_MONGODB_URI`. Per-guild feature options (prefix, limits, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). Bot-level API credentials use `PIBOT_{FEATURE}_*` env vars — see `pibot/config.py`.
+- Requires `PIBOT_DISCORD_TOKEN`, `PIBOT_MONGODB_URI`, and bot-level feature credentials (`PIBOT_SUMMARIZE_CLOUDFLARE_*`, `PIBOT_TRANSLATIONS_DEEPL_API_KEY`). Per-guild feature options (prefix, limits, `enabled`, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). See `pibot/config.py`.
 
 ## Conventions
 
