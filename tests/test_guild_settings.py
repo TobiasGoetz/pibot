@@ -3,7 +3,6 @@
 import copy
 
 import pytest
-from pydantic import SecretStr
 
 from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
 from pibot.cogs.general.config import DEFAULT_PREFIX, GeneralConfig
@@ -141,11 +140,10 @@ async def testResetFeatureSettingRestoresDefault(service: GuildSettingsService) 
 async def testNestedFeatureSettingPreservesSiblings(service: GuildSettingsService) -> None:
     """Feature updates preserve sibling fields."""
     await service.setFeatureField(6, SummarizeConfig, "cooldownSeconds", 120)
-    await service.setFeatureField(6, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
+    await service.setFeatureField(6, SummarizeConfig, "maxMessages", 500)
     config = await service.getFeature(6, SummarizeConfig)
     assert config.cooldownSeconds == 120
-    assert config.cloudflareBaseUrl == "https://example.com"
-    assert config.maxMessages == MAX_MESSAGES
+    assert config.maxMessages == 500
 
 
 async def testGeneralAndFeatureSectionsAreIndependent(service: GuildSettingsService) -> None:
@@ -161,7 +159,6 @@ def testPartialDocumentUsesModelDefaults() -> None:
     config = SummarizeConfig.fromStored({"cooldownSeconds": 120})
     assert config.cooldownSeconds == 120
     assert config.maxMessages == MAX_MESSAGES
-    assert config.configured is False
 
 
 def testFeatureDiscovery() -> None:
@@ -179,53 +176,18 @@ def testSettingRegistration() -> None:
     fields = list(SummarizeConfig.model_fields)
     assert "enabled" in fields
     assert "cooldownSeconds" in fields
-    assert "cloudflareBaseUrl" in fields
+    assert "cloudflareModel" in fields
     assert SummarizeConfig.parseSetting("cooldownSeconds", "3600") == 3600
 
 
 def testSettingDefaults() -> None:
-    """Unset required settings are absent until stored."""
+    """Unset optional settings use model defaults."""
     from pibot.cogs.summarize.config import DEFAULT_MODEL
 
     config = SummarizeConfig.fromStored({})
     assert config.cooldownSeconds == COOLDOWN_SECONDS
     assert config.maxMessages == MAX_MESSAGES
     assert config.cloudflareModel == DEFAULT_MODEL
-    assert config.configured is False
-    assert "cloudflareBaseUrl" not in config.model_fields_set
-
-
-def testSecretStrMasksDisplay() -> None:
-    """SecretStr values are masked for display."""
-    assert str(SecretStr("abcd")) == "**********"
-
-
-def testFromStoredCoercesSecretStr() -> None:
-    """Stored secret strings are coerced back to SecretStr."""
-    config = SummarizeConfig.fromStored({"cloudflareToken": "my-token"})
-    assert isinstance(config.cloudflareToken, SecretStr)
-    assert config.cloudflareToken.get_secret_value() == "my-token"
-
-
-async def testSecretStrPersistsRealValue(service: GuildSettingsService) -> None:
-    """MongoDB stores the real secret value, not the masked display form."""
-    await service.setFeatureField(12, SummarizeConfig, "cloudflareToken", SecretStr("real-token"))
-    raw = await service.store.collection.find_one({"_id": 12})
-    assert raw is not None
-    assert raw["features"]["summarize"]["cloudflareToken"] == "real-token"
-
-
-async def testSecretStrRoundTripThenUpdateSibling(service: GuildSettingsService) -> None:
-    """Updating another field after saving a secret reloads and persists correctly."""
-    await service.setFeatureField(13, SummarizeConfig, "cloudflareToken", SecretStr("real-token"))
-    await service.setFeatureField(13, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
-    config = await service.getFeature(13, SummarizeConfig)
-    assert config.cloudflareBaseUrl == "https://example.com"
-    assert config.cloudflareToken.get_secret_value() == "real-token"
-    raw = await service.store.collection.find_one({"_id": 13})
-    assert raw is not None
-    assert raw["features"]["summarize"]["cloudflareToken"] == "real-token"
-    assert raw["features"]["summarize"]["cloudflareBaseUrl"] == "https://example.com"
 
 
 async def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsService) -> None:
@@ -237,21 +199,6 @@ async def testSetOptionalToDefaultRemovesStoredField(service: GuildSettingsServi
     raw = await service.store.collection.find_one({"_id": 11})
     assert raw is not None
     assert raw["features"]["summarize"] == {"cooldownSeconds": 120}
-
-
-async def testRequiredSettingResetRemovesStoredField(service: GuildSettingsService) -> None:
-    """Resetting a required setting removes it from MongoDB."""
-    await service.setFeatureField(10, SummarizeConfig, "cloudflareBaseUrl", "https://example.com")
-    await service.setFeatureField(10, SummarizeConfig, "cloudflareToken", SecretStr("token"))
-    assert (await service.getFeature(10, SummarizeConfig)).configured is True
-
-    await service.unsetFeatureField(10, SummarizeConfig, "cloudflareBaseUrl")
-    config = await service.getFeature(10, SummarizeConfig)
-    assert config.configured is False
-    assert "cloudflareBaseUrl" not in config.model_fields_set
-    raw = await service.store.collection.find_one({"_id": 10})
-    assert raw is not None
-    assert "cloudflareBaseUrl" not in raw["features"]["summarize"]
 
 
 async def testGeneralConfigTypedAccess(service: GuildSettingsService) -> None:

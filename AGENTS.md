@@ -13,7 +13,7 @@ Instructions and context for AI agents working on this project.
 
 - Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `guild_settings/`, `errors.py`.
 - **Cogs**: Add new features as packages under `cogs/<feature>/` (`config.py`, `cog.py`, `__init__.py`); they are loaded in `bot.py`.
-- **Runtime settings**: Environment-driven options and helpers are in `pibot/settings.py`; `Bot` reads them in `__init__`.
+- **Runtime config**: Environment-driven bot options are in `pibot/config.py` (`PIBOT_*` env vars); `Bot` receives `BotConfig()` from the entry point.
 - **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`). Each feature defines a `FeatureSettings` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings.getFeature()`. Only non-default fields are persisted (`sparseDump()`).
 
 ## Build & publish
@@ -33,7 +33,7 @@ Release artifacts:
 3. **Helm chart → GHCR (OCI)**
    - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
    - On release, `helm push` publishes to `oci://ghcr.io/<owner-lowercase>/helm-charts` (see `.github/workflows/helm-publish.yml`).
-   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (set env from Secret or values). Use `helm registry login ghcr.io` when the registry requires authentication.
+   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (configure `pibot:` in `charts/pibot/values.yaml`; rendered as `PIBOT_*` env vars). Use `helm registry login ghcr.io` when the registry requires authentication.
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
 
@@ -63,8 +63,8 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 
 ## Environment
 
-- Config via `.env`; see `.env.example` for variables.
-- Requires a Discord bot token and MongoDB. Per-guild feature options (prefix, API keys, limits, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`).
+- Config via `.env` or Helm (`pibot:` in `charts/pibot/values.yaml`); see `.env.example`. All env vars use the `PIBOT_` prefix.
+- Requires `PIBOT_DISCORD_TOKEN` and `PIBOT_MONGODB_URI`. Per-guild feature options (prefix, limits, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). Bot-level API credentials use `PIBOT_{FEATURE}_*` env vars — see `pibot/config.py`.
 
 ## Conventions
 

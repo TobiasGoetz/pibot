@@ -1,7 +1,8 @@
 """Summarize feature settings."""
 
-from pydantic import Field, SecretStr
+from pydantic import Field
 
+from pibot.config import BotConfig
 from pibot.guild_settings.model import FeatureSettings
 
 COOLDOWN_SECONDS = 60 * 60
@@ -28,17 +29,12 @@ class SummarizeConfig(FeatureSettings):
         default=MAX_MESSAGES,
         description="Maximum messages per summary",
     )
-    cloudflareBaseUrl: str = Field(
-        ...,
-        min_length=1,
-        description=("Cloudflare AI Gateway base URL (through `/compat`; the client appends `/chat/completions`)"),
-    )
-    cloudflareToken: SecretStr = Field(
-        ...,
-        min_length=1,
-        description="Cloudflare AI Gateway token for this server",
-    )
     cloudflareModel: str = Field(
         default=DEFAULT_MODEL,
         description="Cloudflare AI model for this server",
     )
+
+    @classmethod
+    def isBotReady(cls, botConfig: BotConfig) -> bool:
+        """Whether bot-level Cloudflare credentials are present."""
+        return botConfig.summarize.cloudflare.configured

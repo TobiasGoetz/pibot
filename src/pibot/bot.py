@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import os
 import pathlib
 from importlib.metadata import PackageNotFoundError, version
 
@@ -10,18 +9,12 @@ import discord
 import discord.ext.commands
 from pymongo import AsyncMongoClient
 
+from pibot.config import COMMAND_SYNC_BEHAVIOR, BotConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
-from pibot.settings import COMMAND_SYNC_BEHAVIOR, command_sync_behavior, is_dev_tools
 
 logger = logging.getLogger("pibot")
-
-
-def _log_level() -> int:
-    """``LOG_LEVEL`` (default ``INFO``). Accepts standard ``logging`` level names."""
-    raw = os.getenv("LOG_LEVEL", "INFO").strip().upper()
-    return getattr(logging, raw, logging.INFO)
 
 
 def getVersion() -> str:
@@ -40,17 +33,18 @@ class Bot(discord.ext.commands.Bot):
         """Return the bot version from package metadata."""
         return getVersion()
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, config: BotConfig, *args, **kwargs) -> None:
         """Initialize the bot."""
-        mongoClient = AsyncMongoClient(os.getenv("MONGODB_URI"))
+        self.config = config
+        mongoClient = AsyncMongoClient(config.mongodbUri)
         self.guildSettings = GuildSettingsService(SettingsStore(mongoClient))
-        self.commandSyncBehavior = command_sync_behavior()
-        self.isDevTools = is_dev_tools()
+        self.commandSyncBehavior = config.commandSyncBehavior
+        self.isDevTools = config.enableDevTools
         super().__init__(*args, **kwargs)
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
-        discord.utils.setup_logging(level=_log_level())
+        discord.utils.setup_logging(level=self.config.logLevelValue)
         logger.info("Starting PiBot version %s", self.version)
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()

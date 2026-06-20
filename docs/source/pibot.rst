@@ -30,10 +30,10 @@ pibot.errors module
    :show-inheritance:
    :undoc-members:
 
-pibot.settings module
----------------------
+pibot.config module
+-------------------
 
-.. automodule:: pibot.settings
+.. automodule:: pibot.config
    :members:
    :show-inheritance:
    :undoc-members:

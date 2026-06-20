@@ -10,7 +10,6 @@ from pibot.bot import Bot
 from pibot.cogs.translations.config import TranslationsConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 from pibot.translation_service.deepl_translator import DeepLTranslator
-from pibot.translation_service.translator import Translator
 
 logger = logging.getLogger("cog.translations")
 
@@ -64,19 +63,6 @@ class Translations(
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        self._translatorCache: dict[tuple[int, str], Translator] = {}
-
-    async def _getTranslator(self, guildId: int) -> Translator:
-        """Return a cached DeepL translator for the guild."""
-        config = await self.bot.guildSettings.getFeature(guildId, TranslationsConfig)
-        apiKey = config.deeplApiKey.get_secret_value()
-        cacheKey = (guildId, apiKey)
-        cached = self._translatorCache.get(cacheKey)
-        if cached is not None:
-            return cached
-        translator = DeepLTranslator(api_key=apiKey)
-        self._translatorCache[cacheKey] = translator
-        return translator
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
@@ -89,7 +75,7 @@ class Translations(
             return
 
         config = await self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
-        if not config.available:
+        if not config.enabled or not TranslationsConfig.isBotReady(self.bot.config):
             return
 
         if not payload.emoji.is_unicode_emoji():
@@ -136,7 +122,9 @@ class Translations(
         :param target_lang: The target language to translate to.
         :param target_lang_emoji: The emoji of the target language.
         """
-        translator = await self._getTranslator(guild_id)
+        translator = DeepLTranslator(
+            api_key=self.bot.config.translations.deepl.apiKey.get_secret_value(),
+        )
 
         channel = self.bot.get_channel(channel_id)
         if not isinstance(channel, (discord.TextChannel, discord.Thread)):

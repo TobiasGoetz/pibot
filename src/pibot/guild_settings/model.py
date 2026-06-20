@@ -1,10 +1,13 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
-from typing import Annotated, Any, ClassVar, TypeVar, cast
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, TypeVar, cast
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, TypeAdapter, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
+
+if TYPE_CHECKING:
+    from pibot.config import BotConfig
 
 LOGGER = logging.getLogger("guild_settings.model")
 
@@ -76,19 +79,12 @@ class SettingsGroup(BaseModel):
         except ValidationError as exc:
             raise ValueError(exc.errors()[0]["msg"]) from exc
 
-    def _persistedValue(self, name: str) -> object:
-        """Return a MongoDB-safe value for one stored field."""
-        value = getattr(self, name)
-        if isinstance(value, SecretStr):
-            return value.get_secret_value()
-        return value
-
     def sparseDump(self) -> dict[str, Any]:
         """Return only stored fields that should be persisted."""
         stored: dict[str, Any] = {}
         for name in self.model_fields_set:
             fieldInfo = type(self).model_fields[name]
-            value = self._persistedValue(name)
+            value = getattr(self, name)
             if not fieldInfo.is_required() and value == fieldDefault(fieldInfo):
                 continue
             stored[name] = value
@@ -111,10 +107,10 @@ class FeatureSettings(SettingsGroup):
         _REGISTRY[cls.name] = cls
         LOGGER.debug("Registered feature: %s", cls.name)
 
-    @property
-    def available(self) -> bool:
-        """Whether the feature is on and ready to run."""
-        return self.enabled and self.configured
+    @classmethod
+    def isBotReady(cls, botConfig: BotConfig) -> bool:
+        """Whether bot-level prerequisites for this feature are satisfied."""
+        return True
 
 
 def getFeatures() -> dict[str, type[FeatureSettings]]:

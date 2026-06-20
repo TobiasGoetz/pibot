@@ -9,7 +9,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from pibot.ai_gateway.cloudflare_gateway import CloudflareAIGateway
-from pibot.ai_gateway.gateway import AIGateway, ChatMessage
+from pibot.ai_gateway.gateway import ChatMessage
 from pibot.bot import Bot
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
@@ -57,26 +57,6 @@ class Summarize(
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
         self.bot = bot
-        self._gatewayCache: dict[tuple[int, str, str, str], AIGateway] = {}
-
-    def _cacheKey(self, guildId: int, config: SummarizeConfig) -> tuple[int, str, str, str]:
-        token = config.cloudflareToken.get_secret_value()
-        return (guildId, config.cloudflareBaseUrl, token, config.cloudflareModel)
-
-    async def _getGateway(self, guildId: int) -> AIGateway:
-        """Return a cached Cloudflare gateway for the guild."""
-        config = await self.bot.guildSettings.getFeature(guildId, SummarizeConfig)
-        cacheKey = self._cacheKey(guildId, config)
-        cached = self._gatewayCache.get(cacheKey)
-        if cached is not None:
-            return cached
-        gateway = CloudflareAIGateway(
-            base_url=config.cloudflareBaseUrl,
-            token=config.cloudflareToken.get_secret_value(),
-            model=config.cloudflareModel,
-        )
-        self._gatewayCache[cacheKey] = gateway
-        return gateway
 
     def _parseDuration(self, duration: str, config: SummarizeConfig) -> int:
         seconds = pytimeparse.parse(duration)
@@ -176,9 +156,13 @@ class Summarize(
         )
         logger.debug("Summary input preview: %r", formatted[:500])
 
-        aiGateway = await self._getGateway(interaction.guild.id)
+        gateway = CloudflareAIGateway(
+            base_url=self.bot.config.summarize.cloudflare.baseUrl,
+            token=self.bot.config.summarize.cloudflare.token.get_secret_value(),
+            model=guildConfig.cloudflareModel,
+        )
 
-        summary = await aiGateway.chat(
+        summary = await gateway.chat(
             [
                 ChatMessage(role="system", content=SUMMARY_SYSTEM_PROMPT),
                 ChatMessage(
@@ -202,9 +186,10 @@ class Summarize(
             await interaction.followup.send("No summary could be generated.")
             return
 
+        chunks = self._chunkText(summary)
         embed = discord.Embed(
             title=f"Summary — #{channel.name}",
-            description=self._chunkText(summary)[0],
+            description=chunks[0],
             color=discord.Color.blurple(),
         )
         embed.set_footer(text=f"Last {duration} · {len(messages)} messages")
@@ -217,5 +202,5 @@ class Summarize(
             len(summary),
         )
 
-        for chunk in self._chunkText(summary)[1:]:
+        for chunk in chunks[1:]:
             await interaction.followup.send(chunk)

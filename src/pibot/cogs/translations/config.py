@@ -1,7 +1,6 @@
 """Translations feature settings."""
 
-from pydantic import Field, SecretStr
-
+from pibot.config import BotConfig
 from pibot.guild_settings.model import FeatureSettings
 
 
@@ -11,8 +10,7 @@ class TranslationsConfig(FeatureSettings):
     name = "translations"
     description = "Flag-reaction translations via DeepL"
 
-    deeplApiKey: SecretStr = Field(
-        ...,
-        min_length=1,
-        description="DeepL API key for this server",
-    )
+    @classmethod
+    def isBotReady(cls, botConfig: BotConfig) -> bool:
+        """Whether a bot-level DeepL API key is present."""
+        return botConfig.translations.deepl.configured
