@@ -8,18 +8,17 @@ from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 
 from pibot.guild_settings.model import getFeatures
 from pibot.guild_settings.service import GuildSettingsService
 
+GUILD_ID = 1
+
 
 # --- GuildSettingsService ---
 
 
 async def testDefaultsWithoutDocument(guildSettingsService: GuildSettingsService) -> None:
     """With no Mongo document, settings use model defaults."""
-    # Arrange
-    guildId = 1
-
     # Act
-    general = await guildSettingsService.getFeature(guildId, GeneralConfig)
-    summarize = await guildSettingsService.getFeature(guildId, SummarizeConfig)
+    general = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
+    summarize = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
     assert general.prefix == DEFAULT_PREFIX
@@ -28,12 +27,9 @@ async def testDefaultsWithoutDocument(guildSettingsService: GuildSettingsService
 
 async def testSetFeatureEnabledPersistsFalse(guildSettingsService: GuildSettingsService) -> None:
     """Disabling a feature persists through the service API."""
-    # Arrange
-    guildId = 2
-
     # Act
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "enabled", False)
-    config = await guildSettingsService.getFeature(guildId, SummarizeConfig)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "enabled", False)
+    config = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
     assert config.enabled is False
@@ -42,12 +38,11 @@ async def testSetFeatureEnabledPersistsFalse(guildSettingsService: GuildSettings
 async def testUnsetFeatureEnabledRestoresDefault(guildSettingsService: GuildSettingsService) -> None:
     """Resetting enabled restores the model default."""
     # Arrange
-    guildId = 2
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "enabled", False)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "enabled", False)
 
     # Act
-    await guildSettingsService.unsetFeatureField(guildId, SummarizeConfig, "enabled")
-    config = await guildSettingsService.getFeature(guildId, SummarizeConfig)
+    await guildSettingsService.unsetFeatureField(GUILD_ID, SummarizeConfig, "enabled")
+    config = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
     assert config.enabled is True
@@ -55,12 +50,9 @@ async def testUnsetFeatureEnabledRestoresDefault(guildSettingsService: GuildSett
 
 async def testSetPrefixPersists(guildSettingsService: GuildSettingsService) -> None:
     """Guild prefix persists through the service API."""
-    # Arrange
-    guildId = 3
-
     # Act
-    await guildSettingsService.setFeatureField(guildId, GeneralConfig, "prefix", "!")
-    config = await guildSettingsService.getFeature(guildId, GeneralConfig)
+    await guildSettingsService.setFeatureField(GUILD_ID, GeneralConfig, "prefix", "!")
+    config = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
 
     # Assert
     assert config.prefix == "!"
@@ -69,12 +61,11 @@ async def testSetPrefixPersists(guildSettingsService: GuildSettingsService) -> N
 async def testUnsetPrefixRestoresDefault(guildSettingsService: GuildSettingsService) -> None:
     """Resetting prefix restores the model default."""
     # Arrange
-    guildId = 3
-    await guildSettingsService.setFeatureField(guildId, GeneralConfig, "prefix", "!")
+    await guildSettingsService.setFeatureField(GUILD_ID, GeneralConfig, "prefix", "!")
 
     # Act
-    await guildSettingsService.unsetFeatureField(guildId, GeneralConfig, "prefix")
-    config = await guildSettingsService.getFeature(guildId, GeneralConfig)
+    await guildSettingsService.unsetFeatureField(GUILD_ID, GeneralConfig, "prefix")
+    config = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
 
     # Assert
     assert config.prefix == DEFAULT_PREFIX
@@ -83,12 +74,11 @@ async def testUnsetPrefixRestoresDefault(guildSettingsService: GuildSettingsServ
 async def testUnsetCooldownRestoresDefault(guildSettingsService: GuildSettingsService) -> None:
     """Resetting a feature setting restores the model default."""
     # Arrange
-    guildId = 4
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "cooldownSeconds", 120)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
 
     # Act
-    await guildSettingsService.unsetFeatureField(guildId, SummarizeConfig, "cooldownSeconds")
-    config = await guildSettingsService.getFeature(guildId, SummarizeConfig)
+    await guildSettingsService.unsetFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds")
+    config = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
     assert config.cooldownSeconds == COOLDOWN_SECONDS
@@ -97,12 +87,11 @@ async def testUnsetCooldownRestoresDefault(guildSettingsService: GuildSettingsSe
 async def testSecondFeatureUpdatePreservesSiblings(guildSettingsService: GuildSettingsService) -> None:
     """Feature updates preserve sibling fields."""
     # Arrange
-    guildId = 6
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "cooldownSeconds", 120)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
 
     # Act
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "maxMessages", 500)
-    config = await guildSettingsService.getFeature(guildId, SummarizeConfig)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "maxMessages", 500)
+    config = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
     assert config.cooldownSeconds == 120
@@ -112,13 +101,12 @@ async def testSecondFeatureUpdatePreservesSiblings(guildSettingsService: GuildSe
 async def testGeneralUpdatePreservesFeatureSection(guildSettingsService: GuildSettingsService) -> None:
     """Updating general settings does not wipe feature sections."""
     # Arrange
-    guildId = 7
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "cooldownSeconds", 120)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
 
     # Act
-    await guildSettingsService.setFeatureField(guildId, GeneralConfig, "prefix", "!")
-    summarize = await guildSettingsService.getFeature(guildId, SummarizeConfig)
-    general = await guildSettingsService.getFeature(guildId, GeneralConfig)
+    await guildSettingsService.setFeatureField(GUILD_ID, GeneralConfig, "prefix", "!")
+    summarize = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
+    general = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
 
     # Assert
     assert summarize.cooldownSeconds == 120
@@ -131,12 +119,11 @@ async def testGeneralUpdatePreservesFeatureSection(guildSettingsService: GuildSe
 async def testStoreSparseDumpOmitsDefaults(guildSettingsService: GuildSettingsService) -> None:
     """MongoDB stores only fields that differ from model defaults."""
     # Arrange
-    guildId = 5
     store = guildSettingsService.store
 
     # Act
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "maxMessages", 500)
-    raw = await store.collection.find_one({"_id": guildId})
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "maxMessages", 500)
+    raw = await store.collection.find_one({"_id": GUILD_ID})
 
     # Assert
     assert raw is not None
@@ -146,13 +133,12 @@ async def testStoreSparseDumpOmitsDefaults(guildSettingsService: GuildSettingsSe
 async def testStoreUnsetRemovesFeatureSection(guildSettingsService: GuildSettingsService) -> None:
     """Resetting a field removes it from stored feature settings."""
     # Arrange
-    guildId = 9
     store = guildSettingsService.store
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "maxMessages", 500)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "maxMessages", 500)
 
     # Act
-    await guildSettingsService.unsetFeatureField(guildId, SummarizeConfig, "maxMessages")
-    raw = await store.collection.find_one({"_id": guildId})
+    await guildSettingsService.unsetFeatureField(GUILD_ID, SummarizeConfig, "maxMessages")
+    raw = await store.collection.find_one({"_id": GUILD_ID})
 
     # Assert
     assert raw is None or "summarize" not in raw.get("features", {})
@@ -161,14 +147,13 @@ async def testStoreUnsetRemovesFeatureSection(guildSettingsService: GuildSetting
 async def testStoreSetDefaultRemovesField(guildSettingsService: GuildSettingsService) -> None:
     """Setting a field back to its default removes it from MongoDB."""
     # Arrange
-    guildId = 11
     store = guildSettingsService.store
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "maxMessages", 500)
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "cooldownSeconds", 120)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "maxMessages", 500)
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
 
     # Act
-    await guildSettingsService.setFeatureField(guildId, SummarizeConfig, "maxMessages", MAX_MESSAGES)
-    raw = await store.collection.find_one({"_id": guildId})
+    await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "maxMessages", MAX_MESSAGES)
+    raw = await store.collection.find_one({"_id": GUILD_ID})
 
     # Assert
     assert raw is not None
