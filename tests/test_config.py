@@ -7,14 +7,10 @@ from pibot.config import BotConfig, COMMAND_SYNC_BEHAVIOR
 
 
 @pytest.fixture(autouse=True)
-def clearBotEnv(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Ensure bot env vars do not leak between tests."""
+def botEnv(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reset PIBOT_* env to a known baseline, ignoring host environment."""
+    # Optional vars: remove so pydantic defaults apply
     for name in (
-        "PIBOT_DISCORD_TOKEN",
-        "PIBOT_MONGODB_URI",
-        "PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL",
-        "PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN",
-        "PIBOT_TRANSLATIONS_DEEPL_API_KEY",
         "PIBOT_COMMAND_SYNC_BEHAVIOR",
         "PIBOT_ENABLE_DEV_TOOLS",
         "PIBOT_LOG_LEVEL",
