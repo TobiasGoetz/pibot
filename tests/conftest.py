@@ -16,12 +16,21 @@ def mongoContainer():
 
 
 @pytest.fixture
-async def guildSettingsService(mongoContainer):
-    """Guild settings service backed by real MongoDB."""
+async def mongoClient(mongoContainer):
+    """Async MongoDB client connected to the testcontainer."""
     client = AsyncMongoClient(mongoContainer.get_connection_url())
-    store = SettingsStore(client)
-    try:
-        yield GuildSettingsService(store)
-    finally:
-        await client["discord"]["settings"].delete_many({})
-        await client.close()
+    yield client
+    await client["discord"]["settings"].delete_many({})
+    await client.close()
+
+
+@pytest.fixture
+async def settingsStore(mongoClient):
+    """Settings store backed by real MongoDB."""
+    yield SettingsStore(mongoClient)
+
+
+@pytest.fixture
+async def guildSettingsService(settingsStore):
+    """Guild settings service backed by real MongoDB."""
+    yield GuildSettingsService(settingsStore)
