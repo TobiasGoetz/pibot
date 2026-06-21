@@ -30,11 +30,12 @@ Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [dependency-groups]
 dev = [
-    "build",
-    "pytest>=9.0.3",
-    "pytest-asyncio>=1.4.0",
-    "ruff",
-    "ty",
+    "build~=1.5",
+    "pytest~=9.0",
+    "pytest-asyncio~=1.4",
+    "ruff~=0.15",
+    "testcontainers[mongodb]~=4.14",
+    "ty~=0.0",
 ]
 docs = ["sphinx~=9.1", "sphinx-rtd-theme~=3.1"]
 
