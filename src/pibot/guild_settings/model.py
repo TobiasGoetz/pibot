@@ -1,6 +1,7 @@
 """Pydantic models and field metadata for guild settings."""
 
 import logging
+from collections.abc import Mapping
 from typing import Annotated, ClassVar, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
@@ -45,7 +46,7 @@ class SettingsGroup(BaseModel):
             raise ValueError(msg) from exc
 
     @classmethod
-    def fromStored(cls: type[TSettings], data: dict[str, object]) -> TSettings:
+    def fromStored(cls: type[TSettings], data: Mapping[str, object]) -> TSettings:
         """Build settings from a partial MongoDB feature section."""
         values: dict[str, object] = {}
         for name, fieldInfo in cls.model_fields.items():
