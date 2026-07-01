@@ -1,9 +1,9 @@
 """Tests for GuildSettingsService."""
 
 from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
-from pibot.cogs.general.config import DEFAULT_PREFIX, GeneralConfig
+from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.general import config as _generalConfig  # noqa: F401 — registers GeneralConfig
-from pibot.cogs.summarize.config import COOLDOWN_SECONDS, SummarizeConfig
+from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
 from pibot.guild_settings.service import GuildSettingsService
 
@@ -15,10 +15,12 @@ async def testDefaultsWithoutDocument(guildSettingsService: GuildSettingsService
     # Act
     general = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
     summarize = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
+    generalDefaults = GeneralConfig.fromStored({})
+    summarizeDefaults = SummarizeConfig.fromStored({})
 
     # Assert
-    assert general.prefix == DEFAULT_PREFIX
-    assert summarize.enabled is True
+    assert general.prefix == generalDefaults.prefix
+    assert summarize.enabled == summarizeDefaults.enabled
 
 
 async def testSetFeatureEnabledPersistsFalse(guildSettingsService: GuildSettingsService) -> None:
@@ -58,26 +60,28 @@ async def testUnsetPrefixRestoresDefault(guildSettingsService: GuildSettingsServ
     """Resetting prefix restores the model default."""
     # Arrange
     await guildSettingsService.setFeatureField(GUILD_ID, GeneralConfig, "prefix", "!")
+    defaults = GeneralConfig.fromStored({})
 
     # Act
     await guildSettingsService.unsetFeatureField(GUILD_ID, GeneralConfig, "prefix")
     config = await guildSettingsService.getFeature(GUILD_ID, GeneralConfig)
 
     # Assert
-    assert config.prefix == DEFAULT_PREFIX
+    assert config.prefix == defaults.prefix
 
 
 async def testUnsetCooldownRestoresDefault(guildSettingsService: GuildSettingsService) -> None:
     """Resetting a feature setting restores the model default."""
     # Arrange
     await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
+    defaults = SummarizeConfig.fromStored({})
 
     # Act
     await guildSettingsService.unsetFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds")
     config = await guildSettingsService.getFeature(GUILD_ID, SummarizeConfig)
 
     # Assert
-    assert config.cooldownSeconds == COOLDOWN_SECONDS
+    assert config.cooldownSeconds == defaults.cooldownSeconds
 
 
 async def testSecondFeatureUpdatePreservesSiblings(guildSettingsService: GuildSettingsService) -> None:

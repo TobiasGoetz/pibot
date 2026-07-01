@@ -4,9 +4,6 @@ from pydantic import Field
 
 from pibot.guild_settings.model import FeatureSettings
 
-DEFAULT_PREFIX = "."
-DEFAULT_COUNTDOWN_MAX_SECONDS = 86400
-
 
 class GeneralConfig(FeatureSettings):
     """General settings and utility commands for a guild."""
@@ -15,7 +12,7 @@ class GeneralConfig(FeatureSettings):
     description = "Core bot settings and utility commands"
 
     prefix: str = Field(
-        default=DEFAULT_PREFIX,
+        default=".",
         description="Text command prefix",
     )
     commandChannelId: int | None = Field(
@@ -23,6 +20,6 @@ class GeneralConfig(FeatureSettings):
         description="Channel ID restricted to text commands (omit restriction when unset)",
     )
     countdownMaxSeconds: int = Field(
-        default=DEFAULT_COUNTDOWN_MAX_SECONDS,
+        default=86400,
         description="Maximum countdown duration in seconds",
     )

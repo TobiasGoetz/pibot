@@ -4,11 +4,6 @@ from pydantic import Field
 
 from pibot.guild_settings.model import FeatureSettings
 
-COOLDOWN_SECONDS = 60 * 60
-MAX_DURATION_SECONDS = 7 * 24 * 60 * 60
-MAX_MESSAGES = 1000
-DEFAULT_MODEL = "openai/gpt-4o-mini"
-
 
 class SummarizeConfig(FeatureSettings):
     """Summarize feature settings."""
@@ -17,18 +12,18 @@ class SummarizeConfig(FeatureSettings):
     description = "AI channel summaries via Cloudflare"
 
     cooldownSeconds: int = Field(
-        default=COOLDOWN_SECONDS,
+        default=60 * 60,
         description="Cooldown between /summarize channel uses (seconds)",
     )
     maxDurationSeconds: int = Field(
-        default=MAX_DURATION_SECONDS,
+        default=7 * 24 * 60 * 60,
         description="Maximum lookback duration for /summarize channel (seconds)",
     )
     maxMessages: int = Field(
-        default=MAX_MESSAGES,
+        default=1000,
         description="Maximum messages per summary",
     )
     cloudflareModel: str = Field(
-        default=DEFAULT_MODEL,
+        default="openai/gpt-4o-mini",
         description="Cloudflare AI model for this server",
     )

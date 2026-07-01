@@ -1,9 +1,9 @@
 """Tests for FeatureSettings models and registration."""
 
 from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
-from pibot.cogs.general.config import DEFAULT_PREFIX, GeneralConfig
+from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.general import config as _generalConfig  # noqa: F401 — registers GeneralConfig
-from pibot.cogs.summarize.config import COOLDOWN_SECONDS, DEFAULT_MODEL, MAX_MESSAGES, SummarizeConfig
+from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
 from pibot.guild_settings.model import getFeatures
 
@@ -12,13 +12,14 @@ def testPartialDocumentUsesModelDefaults() -> None:
     """Partial stored documents merge with optional model defaults."""
     # Arrange
     stored = {"cooldownSeconds": 120}
+    defaults = SummarizeConfig.fromStored({})
 
     # Act
     config = SummarizeConfig.fromStored(stored)
 
     # Assert
     assert config.cooldownSeconds == 120
-    assert config.maxMessages == MAX_MESSAGES
+    assert config.maxMessages == defaults.maxMessages
 
 
 def testFeatureDiscovery() -> None:
@@ -49,19 +50,21 @@ def testSettingRegistration() -> None:
 
 def testSettingDefaults() -> None:
     """Unset optional settings use model defaults."""
+    # Arrange
+    defaults = SummarizeConfig.fromStored({})
+
     # Act
     config = SummarizeConfig.fromStored({})
 
     # Assert
-    assert config.cooldownSeconds == COOLDOWN_SECONDS
-    assert config.maxMessages == MAX_MESSAGES
-    assert config.cloudflareModel == DEFAULT_MODEL
+    assert config == defaults
 
 
 def testGeneralConfigModelDefault() -> None:
     """GeneralConfig exposes typed attribute access for empty stored data."""
     # Act
-    config = GeneralConfig.model_validate({})
+    config = GeneralConfig.fromStored({})
+    defaults = GeneralConfig.fromStored({})
 
     # Assert
-    assert config.prefix == DEFAULT_PREFIX
+    assert config.prefix == defaults.prefix

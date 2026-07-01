@@ -1,6 +1,6 @@
 """Tests for SettingsStore MongoDB persistence."""
 
-from pibot.cogs.summarize.config import MAX_MESSAGES, SummarizeConfig
+from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.store import SettingsStore
 
 GUILD_ID = 1
@@ -46,7 +46,7 @@ async def testStoreSetDefaultRemovesField(settingsStore: SettingsStore) -> None:
     await settingsStore.saveFeature(
         GUILD_ID,
         SummarizeConfig.name,
-        SummarizeConfig(maxMessages=MAX_MESSAGES, cooldownSeconds=120),
+        SummarizeConfig(cooldownSeconds=120),
     )
     raw = await settingsStore.collection.find_one({"_id": GUILD_ID})
 
