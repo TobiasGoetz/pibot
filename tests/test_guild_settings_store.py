@@ -20,7 +20,7 @@ async def testStoreSparseDumpOmitsDefaults(settingsStore: SettingsStore) -> None
     assert raw["features"]["summarize"] == {"maxMessages": 500}
 
 
-async def testStoreUnsetRemovesFeatureSection(settingsStore: SettingsStore) -> None:
+async def testStoreUnsetRemovesFeatureSettings(settingsStore: SettingsStore) -> None:
     """Resetting a field removes it from stored feature settings."""
     # Arrange
     await settingsStore.saveFeature(GUILD_ID, SummarizeConfig.name, SummarizeConfig(maxMessages=500))

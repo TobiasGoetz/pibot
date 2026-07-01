@@ -94,8 +94,8 @@ async def testSecondFeatureUpdatePreservesSiblings(guildSettingsService: GuildSe
     assert config.maxMessages == 500
 
 
-async def testGeneralUpdatePreservesFeatureSection(guildSettingsService: GuildSettingsService) -> None:
-    """Updating general settings does not wipe feature sections."""
+async def testGeneralUpdatePreservesFeatureSettings(guildSettingsService: GuildSettingsService) -> None:
+    """Updating general settings does not wipe other feature settings."""
     # Arrange
     await guildSettingsService.setFeatureField(GUILD_ID, SummarizeConfig, "cooldownSeconds", 120)
 

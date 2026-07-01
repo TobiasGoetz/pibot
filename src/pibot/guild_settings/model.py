@@ -47,7 +47,7 @@ class SettingsGroup(BaseModel):
 
     @classmethod
     def fromStored(cls: type[TSettings], data: Mapping[str, object]) -> TSettings:
-        """Build settings from a partial MongoDB feature section."""
+        """Build settings from partial stored feature settings."""
         values: dict[str, object] = {}
         for name, fieldInfo in cls.model_fields.items():
             if name in data:
