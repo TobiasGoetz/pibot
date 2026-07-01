@@ -72,8 +72,3 @@ class SettingsStore:
             guildSettings = await self.collection.find_one({"_id": guildId})
         if guildSettings and set(guildSettings.keys()) == {"_id"}:
             await self.collection.delete_one({"_id": guildId})
-
-    async def delete(self, guildId: int) -> None:
-        """Remove a guild settings document."""
-        await self.collection.delete_one({"_id": guildId})
-        LOGGER.info("Removed settings for guild %s.", guildId)

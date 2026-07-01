@@ -77,7 +77,6 @@ class Bot(discord.ext.commands.Bot):
     async def on_guild_remove(self, guild: discord.Guild) -> None:
         """When the bot leaves a guild."""
         logger.debug("Left guild %s", guild.name)
-        await self.guildSettings.remove(guild)
 
     async def on_guild_available(self, guild: discord.Guild) -> None:
         """When a guild becomes available."""

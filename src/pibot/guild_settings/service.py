@@ -1,7 +1,5 @@
 """Guild settings — shared per-guild feature storage."""
 
-import discord
-
 from pibot.guild_settings.model import FeatureSettings
 from pibot.guild_settings.store import SettingsStore
 
@@ -26,7 +24,3 @@ class GuildSettingsService:
     async def unsetFeatureField(self, guildId: int, model: type[FeatureSettings], field: str) -> None:
         """Remove a feature setting from storage; defaults apply on next load."""
         await self.store.unsetFeatureField(guildId, model.name, field)
-
-    async def remove(self, guild: discord.Guild) -> None:
-        """Remove guild settings when the bot leaves."""
-        await self.store.delete(guild.id)
