@@ -1,7 +1,6 @@
 """MongoDB persistence for per-guild settings."""
 
 import logging
-from typing import Any
 
 from pymongo import AsyncMongoClient
 
@@ -27,25 +26,20 @@ class SettingsStore:
         """Persist feature fields and remove any stored fields no longer in the payload."""
         payload = config.sparseDump()
         featureKey = f"features.{name}"
-        guildSettings = await self.collection.find_one({"_id": guildId}) or {}
-        featureSettings = guildSettings.get("features", {}).get(name, {})
 
         if not payload:
+            guildSettings = await self.collection.find_one({"_id": guildId}) or {}
             if name in guildSettings.get("features", {}):
                 await self.collection.update_one({"_id": guildId}, {"$unset": {featureKey: ""}})
             await self._cleanupEmptyDocument(guildId)
             LOGGER.info("Saved %s settings for guild %s.", name, guildId)
             return
 
-        update: dict[str, dict[str, Any]] = {}
-        setOps = {f"{featureKey}.{field}": value for field, value in payload.items()}
-        unsetOps = {f"{featureKey}.{field}": "" for field in featureSettings if field not in payload}
-        if setOps:
-            update["$set"] = setOps
-        if unsetOps:
-            update["$unset"] = unsetOps
-        if update:
-            await self.collection.update_one({"_id": guildId}, update, upsert=True)
+        await self.collection.update_one(
+            {"_id": guildId},
+            {"$set": {featureKey: payload}},
+            upsert=True,
+        )
         await self._cleanupEmptyDocument(guildId)
         LOGGER.info("Saved %s settings for guild %s.", name, guildId)
 
