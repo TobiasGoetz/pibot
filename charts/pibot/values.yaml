@@ -2,22 +2,16 @@ image:
   repository: ghcr.io/tobiasgoetz/pibot
   tag: ""
 
-discord:
-  token: ""
-mongodb:
-  uri: ""
-deepl:
-  apiKey: ""
-cloudflare:
-  accountId: ""
-  aiGateway: ""
-  aiGatewayToken: ""
-  aiModel: ""
-
-logging:
-  level: INFO
-
-bot:
-  settings:
-    commandSyncBehavior: global
-    enableDevTools: false
+pibot:
+  discordToken: ""
+  mongodbUri: ""
+  logLevel: INFO
+  commandSyncBehavior: global
+  enableDevTools: false
+  summarize:
+    cloudflare:
+      baseUrl: ""
+      token: ""
+  translations:
+    deepl:
+      apiKey: ""

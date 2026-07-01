@@ -6,9 +6,35 @@ A discord bot providing administration and utility features!
 
 * Easy to run (uses Python)
 * Modular cog-based architecture
-* MongoDB integration for guild settings
+* MongoDB integration for per-guild feature settings (sparse storage — only non-default values)
 * DeepL translation support
+* AI channel summaries (Cloudflare)
 * Development tools for testing
+
+## Guild settings
+
+Each feature cog owns its configuration. Administrators use slash commands under `/<feature> settings`:
+
+| Command | Description |
+| ------- | ----------- |
+| `/<feature> settings view` | List all settings and current values |
+| `/<feature> settings set <setting> <value>` | Change one setting |
+| `/<feature> settings reset <setting>` | Restore one setting to its default |
+
+Features with settings today:
+
+| Feature | Examples |
+| ------- | -------- |
+| `general` | `prefix`, `commandChannelId`, `countdownMaxSeconds` |
+| `admin` | `mutedRoleName`, `maxClearAmount`, `enabled` |
+| `summarize` | Limits, model override, `enabled` |
+| `translations` | `enabled` |
+
+Cloudflare and DeepL credentials are required at bot level via `PIBOT_*` environment variables (see [Environment variables](#environment-variables)). Per-guild `enabled` flags toggle each feature on a server.
+
+Settings are stored in MongoDB under `features.<featureName>`. Only values that differ from the model defaults are written.
+
+To add settings for a new feature: subclass `SettingsGroup` in `cogs/<feature>/config.py`, mix in `FeatureSettingsMixin` on the cog, and set `settingsGroup = YourConfig`.
 
 ## Installation
 
@@ -43,22 +69,26 @@ Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/hel
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
 ```
 
-You can configure the deployment via the chart [values file](charts/pibot/values.yaml) (and overrides); see [charts/pibot/README.md](charts/pibot/README.md).
+You can configure the deployment via `pibot:` in the chart [values file](charts/pibot/values.yaml) (and overrides); see [charts/pibot/README.md](charts/pibot/README.md).
 
 Further release and command details: [AGENTS.md](AGENTS.md).
 
 ## Environment variables
 
-Configure these for `docker run`, Helm values, or a `.env` file (see `.env.example`). Names match what the process reads via the environment.
+Configure these for `docker run`, `pibot:` Helm values, or a `.env` file (see `.env.example`). All variables use the ``PIBOT_`` prefix.
+
+**Naming:** ``PIBOT_{NAME}`` for bootstrap/runtime; ``PIBOT_{FEATURE}_{VENDOR}_{FIELD}`` for feature integrations (e.g. ``PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL``).
 
 | Variable        | Required | Default       | Options                                                       | Description                                                                                                                                 |
 | --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
-| `MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
-| `DEEPL_API_KEY` | Required | —             | —                                                             | [DeepL](https://www.deepl.com/pro-api) API key; required because the translation cog loads at startup.                                      |
-| `COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync: `global` runs a global Discord sync; `local` skips it (use DevTools guild sync). Invalid or unset → `global`. See ``command_sync_behavior()`` and ``COMMAND_SYNC_BEHAVIOR`` in ``pibot/settings.py``. |
-| `ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when true. Unset → false. See ``is_dev_tools()`` in ``pibot/settings.py``. |
-| `LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging`` (and thus the root logger). Use **`DEBUG`** to see ``logger.debug`` output from PiBot and discord. Unknown values fall back to ``INFO``. |
+| `PIBOT_DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
+| `PIBOT_MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
+| `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Required | — | Cloudflare AI Gateway base URL (through `/compat`) | Bot fails to start if unset. |
+| `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Required | — | — | Cloudflare AI Gateway token. Bot fails to start if unset. |
+| `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |
+| `PIBOT_COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync. Invalid values fail at startup. Loaded via ``BotConfig`` in ``pibot/config.py``. |
+| `PIBOT_ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when true. Unset → false. Loaded via ``BotConfig`` in ``pibot/config.py``. |
+| `PIBOT_LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging``. Unknown values fall back to ``INFO``. |
 
 ## Local development
 
@@ -98,7 +128,7 @@ Configure these for `docker run`, Helm values, or a `.env` file (see `.env.examp
 
 ### Behaviour in development
 
-Defaults are **`COMMAND_SYNC_BEHAVIOR=global`** and **`ENABLE_DEV_TOOLS=false`**. For local development without global sync at startup, set **`COMMAND_SYNC_BEHAVIOR=local`**; enable DevTools with **`ENABLE_DEV_TOOLS=true`** and use DevTools `sync` for guild-scoped command testing. See [AGENTS.md](AGENTS.md).
+Defaults are **`PIBOT_COMMAND_SYNC_BEHAVIOR=global`** and **`PIBOT_ENABLE_DEV_TOOLS=false`**. For local development without global sync at startup, set **`PIBOT_COMMAND_SYNC_BEHAVIOR=local`**; enable DevTools with **`PIBOT_ENABLE_DEV_TOOLS=true`** and use DevTools `sync` for guild-scoped command testing. See [AGENTS.md](AGENTS.md).
 
 ### Linting, types, docs, and releases
 

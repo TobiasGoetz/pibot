@@ -4,6 +4,7 @@ import logging
 
 import discord
 from pibot.bot import Bot
+from pibot.errors import FeatureDisabled
 from discord import app_commands
 from discord.ext import commands
 
@@ -111,6 +112,15 @@ class ExceptionHandler(commands.Cog):
             )
             await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
+        elif isinstance(error, FeatureDisabled):
+            LOGGER.info(
+                "User %s tried to use %s while feature %s is disabled.",
+                interaction.user,
+                commandName,
+                error.featureName,
+            )
+            await send_app_command_error_message(interaction, str(error), error)
+
         else:
             LOGGER.error(
                 "Uncaught error caused by %s using %s. [%s]",
@@ -212,7 +222,7 @@ async def send_app_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     try:
@@ -236,7 +246,7 @@ async def send_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     await ctx.send(embed=embed)

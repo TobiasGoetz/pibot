@@ -1,0 +1,21 @@
+"""Admin feature settings."""
+
+from pydantic import Field
+
+from pibot.guild_settings.model import SettingsGroup
+
+
+class AdminConfig(SettingsGroup):
+    """Admin and moderation settings for a guild."""
+
+    name = "admin"
+    description = "Moderation commands (clear, mute, unmute)"
+
+    mutedRoleName: str = Field(
+        default="Muted",
+        description="Name of the role assigned when muting members",
+    )
+    maxClearAmount: int = Field(
+        default=100,
+        description="Maximum messages that can be cleared in one command",
+    )
