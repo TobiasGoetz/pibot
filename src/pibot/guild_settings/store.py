@@ -1,15 +1,13 @@
 """MongoDB persistence for per-guild settings."""
 
 import logging
-from typing import Any, TypeVar
+from typing import Any
 
 from pymongo import AsyncMongoClient
 
 from pibot.guild_settings.model import FeatureSettings
 
 LOGGER = logging.getLogger("guild_settings.store")
-
-T = TypeVar("T", bound=FeatureSettings)
 
 
 class SettingsStore:
@@ -19,7 +17,7 @@ class SettingsStore:
         """Initialize collection handles."""
         self.collection = client["discord"]["settings"]
 
-    async def findFeature(self, guildId: int, name: str, model: type[T]) -> T:
+    async def findFeature[T: FeatureSettings](self, guildId: int, name: str, model: type[T]) -> T:
         """Return feature settings for a guild."""
         raw = await self.collection.find_one({"_id": guildId})
         section = (raw or {}).get("features", {}).get(name, {})
