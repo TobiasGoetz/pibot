@@ -4,7 +4,7 @@ import logging
 
 from pymongo import AsyncMongoClient
 
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import SettingsGroup
 
 LOGGER = logging.getLogger("guild_settings.store")
 
@@ -16,49 +16,49 @@ class SettingsStore:
         """Initialize collection handles."""
         self.collection = client["discord"]["settings"]
 
-    async def findFeature[T: FeatureSettings](self, guildId: int, name: str, model: type[T]) -> T:
-        """Return feature settings for a guild."""
+    async def findSettingsGroup[T: SettingsGroup](self, guildId: int, name: str, model: type[T]) -> T:
+        """Return one settings group for a guild."""
         guildSettings = await self.collection.find_one({"_id": guildId})
-        featureSettings = (guildSettings or {}).get("features", {}).get(name, {})
-        return model.fromStored(featureSettings)
+        groupData = (guildSettings or {}).get("features", {}).get(name, {})
+        return model.fromStored(groupData)
 
-    async def saveFeature(self, guildId: int, name: str, config: FeatureSettings) -> None:
-        """Persist feature fields and remove any stored fields no longer in the payload."""
+    async def saveSettingsGroup(self, guildId: int, name: str, config: SettingsGroup) -> None:
+        """Persist settings group fields and remove any stored fields no longer in the payload."""
         payload = config.sparseDump()
-        featureKey = f"features.{name}"
+        groupKey = f"features.{name}"
 
         if not payload:
             guildSettings = await self.collection.find_one({"_id": guildId}) or {}
             if name in guildSettings.get("features", {}):
-                await self.collection.update_one({"_id": guildId}, {"$unset": {featureKey: ""}})
+                await self.collection.update_one({"_id": guildId}, {"$unset": {groupKey: ""}})
             await self._cleanupEmptyDocument(guildId)
             LOGGER.info("Saved %s settings for guild %s.", name, guildId)
             return
 
         await self.collection.update_one(
             {"_id": guildId},
-            {"$set": {featureKey: payload}},
+            {"$set": {groupKey: payload}},
             upsert=True,
         )
         await self._cleanupEmptyDocument(guildId)
         LOGGER.info("Saved %s settings for guild %s.", name, guildId)
 
-    async def unsetFeatureField(self, guildId: int, name: str, field: str) -> None:
-        """Remove one stored feature field."""
-        featureKey = f"features.{name}"
+    async def unsetField(self, guildId: int, name: str, field: str) -> None:
+        """Remove one stored settings group field."""
+        groupKey = f"features.{name}"
         await self.collection.update_one(
             {"_id": guildId},
-            {"$unset": {f"{featureKey}.{field}": ""}},
+            {"$unset": {f"{groupKey}.{field}": ""}},
         )
-        await self._cleanupFeatureSettings(guildId, name)
+        await self._cleanupSettingsGroup(guildId, name)
         await self._cleanupEmptyDocument(guildId)
         LOGGER.info("Unset %s.%s for guild %s.", name, field, guildId)
 
-    async def _cleanupFeatureSettings(self, guildId: int, name: str) -> None:
-        """Remove empty stored feature settings after field unsets."""
+    async def _cleanupSettingsGroup(self, guildId: int, name: str) -> None:
+        """Remove empty stored settings groups after field unsets."""
         guildSettings = await self.collection.find_one({"_id": guildId})
-        featureSettings = (guildSettings or {}).get("features", {}).get(name)
-        if featureSettings == {}:
+        groupData = (guildSettings or {}).get("features", {}).get(name)
+        if groupData == {}:
             await self.collection.update_one(
                 {"_id": guildId},
                 {"$unset": {f"features.{name}": ""}},

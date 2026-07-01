@@ -24,7 +24,7 @@ class General(
 ):
     """General commands."""
 
-    featureConfig = GeneralConfig
+    settingsGroup = GeneralConfig
 
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
@@ -59,7 +59,7 @@ class General(
         """
         if interaction.guild is None:
             return
-        config = await self.bot.guildSettings.getFeature(interaction.guild.id, GeneralConfig)
+        config = await self.bot.guildSettings.getSettingsGroup(interaction.guild.id, GeneralConfig)
         seconds = pytimeparse.parse(time_str)
 
         if seconds is None:

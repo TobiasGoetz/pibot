@@ -9,9 +9,9 @@ from pydantic.fields import FieldInfo
 
 LOGGER = logging.getLogger("guild_settings.model")
 
-_REGISTRY: dict[str, type[FeatureSettings]] = {}
+_REGISTRY: dict[str, type[SettingsGroup]] = {}
 
-TSettings = TypeVar("TSettings", bound="SettingsGroup")
+TSettingsGroup = TypeVar("TSettingsGroup", bound="SettingsGroup")
 
 
 def fieldDefault(fieldInfo: FieldInfo) -> object:
@@ -23,18 +23,33 @@ def fieldDefault(fieldInfo: FieldInfo) -> object:
 
 
 class SettingsGroup(BaseModel):
-    """Grouped guild settings fields. Subclass for nested groups or top-level config sections."""
+    """Per-feature guild settings model. Subclass once per feature; fields are the settings."""
 
     model_config = ConfigDict(frozen=True)
+
+    name: ClassVar[str]
+    description: ClassVar[str]
+
+    enabled: bool = Field(default=True, description="Whether this feature is active on the server")
 
     @classmethod
     def _fieldTypeAdapter(cls, field: str) -> TypeAdapter[object]:
         """Return a type adapter for one model field."""
+        from pibot.guild_settings.setting_type import partitionFieldMetadata
+
         fieldInfo = cls.model_fields[field]
-        if fieldInfo.metadata:
-            annotated = Annotated[fieldInfo.annotation, *fieldInfo.metadata]
+        _uiTypes, validation = partitionFieldMetadata(fieldInfo)
+        if validation:
+            annotated = Annotated[fieldInfo.annotation, *validation]
             return TypeAdapter(annotated)
         return TypeAdapter(fieldInfo.annotation)
+
+    @classmethod
+    def resolveSettingType(cls, field: str):
+        """Return the UI type for one model field."""
+        from pibot.guild_settings.setting_type import resolveSettingType
+
+        return resolveSettingType(cls, field)
 
     @classmethod
     def _coerceStoredValue(cls, field: str, raw: object) -> object:
@@ -46,7 +61,7 @@ class SettingsGroup(BaseModel):
             raise ValueError(msg) from exc
 
     @classmethod
-    def fromStored(cls: type[TSettings], data: Mapping[str, object]) -> TSettings:
+    def fromStored(cls: type[TSettingsGroup], data: Mapping[str, object]) -> TSettingsGroup:
         """Build settings from partial stored feature settings."""
         values: dict[str, object] = {}
         for name, fieldInfo in cls.model_fields.items():
@@ -78,15 +93,6 @@ class SettingsGroup(BaseModel):
             stored[name] = value
         return stored
 
-
-class FeatureSettings(SettingsGroup):
-    """Per-feature guild settings model. Subclass once per feature; fields are the settings."""
-
-    name: ClassVar[str]
-    description: ClassVar[str]
-
-    enabled: bool = Field(default=True, description="Whether this feature is active on the server")
-
     def __init_subclass__(cls) -> None:
         """Register concrete feature settings subclasses."""
         super().__init_subclass__()
@@ -96,6 +102,6 @@ class FeatureSettings(SettingsGroup):
         LOGGER.debug("Registered feature: %s", cls.name)
 
 
-def getFeatures() -> dict[str, type[FeatureSettings]]:
-    """Return all registered feature settings classes."""
+def getSettingsGroups() -> dict[str, type[SettingsGroup]]:
+    """Return all registered settings group classes."""
     return dict(_REGISTRY)

@@ -34,7 +34,7 @@ Cloudflare and DeepL credentials are required at bot level via `PIBOT_*` environ
 
 Settings are stored in MongoDB under `features.<featureName>`. Only values that differ from the model defaults are written.
 
-To add settings for a new feature: subclass `FeatureSettings` in `cogs/<feature>/config.py`, mix in `FeatureSettingsMixin` on the cog, and set `featureConfig = YourConfig`.
+To add settings for a new feature: subclass `SettingsGroup` in `cogs/<feature>/config.py`, mix in `FeatureSettingsMixin` on the cog, and set `settingsGroup = YourConfig`.
 
 ## Installation
 

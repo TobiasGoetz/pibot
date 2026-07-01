@@ -40,7 +40,7 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
         return app_commands.Cooldown(1, 3600)
     if await interaction.client.is_owner(interaction.user):
         return None
-    config = await interaction.client.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
+    config = await interaction.client.guildSettings.getSettingsGroup(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
 
 
@@ -52,7 +52,7 @@ class Summarize(
 ):
     """Channel summarization commands."""
 
-    featureConfig = SummarizeConfig
+    settingsGroup = SummarizeConfig
 
     def __init__(self, bot: Bot) -> None:
         """Initialize the cog."""
@@ -126,7 +126,7 @@ class Summarize(
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = await self.bot.guildSettings.getFeature(interaction.guild.id, SummarizeConfig)
+        guildConfig = await self.bot.guildSettings.getSettingsGroup(interaction.guild.id, SummarizeConfig)
         seconds = self._parseDuration(duration, guildConfig)
         cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
 

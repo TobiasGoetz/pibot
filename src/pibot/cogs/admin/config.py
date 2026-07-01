@@ -2,10 +2,10 @@
 
 from pydantic import Field
 
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import SettingsGroup
 
 
-class AdminConfig(FeatureSettings):
+class AdminConfig(SettingsGroup):
     """Admin and moderation settings for a guild."""
 
     name = "admin"

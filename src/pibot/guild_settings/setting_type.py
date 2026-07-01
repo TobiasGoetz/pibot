@@ -1,0 +1,290 @@
+"""Setting types for guild settings UI and field introspection."""
+
+# ruff: noqa: D102
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from enum import Enum
+from collections.abc import Callable, Coroutine
+from typing import Any, Literal, Union, cast, get_args, get_origin
+
+import discord
+from discord import ui
+from pydantic.fields import FieldInfo
+
+from pibot.guild_settings.model import SettingsGroup
+from pibot.guild_settings.settings_panel import SettingsPanel
+
+
+def unwrapAnnotation(annotation: object) -> object:
+    """Return the inner type when the annotation is an optional union."""
+    origin = get_origin(annotation)
+    if origin is Union:
+        args = [arg for arg in get_args(annotation) if arg is not type(None)]
+        if len(args) == 1:
+            return args[0]
+    return annotation
+
+
+def partitionFieldMetadata(fieldInfo: FieldInfo) -> tuple[list[type[SettingType]], list[object]]:
+    """Split field metadata into UI setting types and Pydantic validators."""
+    uiTypes = [meta for meta in fieldInfo.metadata if isinstance(meta, type) and issubclass(meta, SettingType)]
+    uiMetadata = set(uiTypes)
+    return uiTypes, [meta for meta in fieldInfo.metadata if meta not in uiMetadata]
+
+
+class SettingType(ABC):
+    """Base class for guild setting UI types."""
+
+    @classmethod
+    @abstractmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this setting type applies to the given annotation."""
+
+    @classmethod
+    def formatDisplay(cls, value: object) -> str:
+        """Format a stored value for panel display."""
+        if value is None:
+            return "default"
+        return str(value)
+
+    @classmethod
+    def formatInput(cls, value: object) -> str:
+        """Format a stored value for a modal text input."""
+        if value is None:
+            return ""
+        return str(value)
+
+    @classmethod
+    def formatStatusLine(cls, config: SettingsGroup, field: str) -> str:
+        """Format current and, when overridden, model-default values for panel display."""
+        from pibot.guild_settings.model import fieldDefault
+
+        value = getattr(config, field)
+        fieldInfo = type(config).model_fields[field]
+        line = f"Current: `{cls.formatDisplay(value)}`"
+        if fieldInfo.is_required():
+            return line
+        defaultValue = fieldDefault(fieldInfo)
+        if value != defaultValue:
+            line += f" · Default: `{cls.formatDisplay(defaultValue)}`"
+        return line
+
+    @classmethod
+    def choices(cls, annotation: object) -> list[str]:
+        """Return selectable values for choice-based fields."""
+        return []
+
+    @classmethod
+    @abstractmethod
+    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+        """Build Discord layout components for one setting field."""
+
+
+class BoolType(SettingType):
+    """Boolean toggle setting."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return annotation is bool
+
+    @classmethod
+    def formatDisplay(cls, value: object) -> str:
+        if value is None:
+            return "default"
+        return "on" if value else "off"
+
+    @classmethod
+    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+        value = getattr(panel.config, field)
+        button = ui.Button(
+            label="Turn off" if value else "Turn on",
+            style=discord.ButtonStyle.success if value else discord.ButtonStyle.danger,
+            custom_id=f"settings:toggle:{field}",
+        )
+
+        async def callback(interaction: discord.Interaction) -> None:
+            await panel.persistSetting(interaction, field, not getattr(panel.config, field))
+
+        bindUiCallback(button, callback)
+        return [ui.Section(header, accessory=button)]
+
+
+def bindUiCallback(
+    item: ui.Button | ui.Select | ui.ChannelSelect,
+    callback: Callable[[discord.Interaction], Coroutine[Any, Any, None]],
+) -> None:
+    """Assign a callback to a Discord UI item (discord.py stubs expect a bound method)."""
+    item.callback = cast(Any, callback)
+
+
+def defaultResetButton(panel: SettingsPanel, field: str) -> ui.Button:
+    """Build a button that resets one optional field to its model default."""
+    button = ui.Button(
+        label="Use default",
+        style=discord.ButtonStyle.secondary,
+        custom_id=f"settings:reset:{field}",
+    )
+
+    async def callback(interaction: discord.Interaction) -> None:
+        await panel.resetSetting(interaction, field)
+
+    bindUiCallback(button, callback)
+    return button
+
+
+class ChoiceType(SettingType):
+    """Shared select control for literal and enum settings."""
+
+    @classmethod
+    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+        fieldInfo = panel.configClass.model_fields[field]
+        value = getattr(panel.config, field)
+        annotation = unwrapAnnotation(fieldInfo.annotation)
+        choices = cls.choices(annotation)
+        select = ui.Select(
+            placeholder=f"Select {field}",
+            options=[
+                discord.SelectOption(label=choice, value=choice, default=choice == str(value)) for choice in choices
+            ],
+            custom_id=f"settings:choice:{field}",
+        )
+
+        async def callback(interaction: discord.Interaction) -> None:
+            rawValue = interaction.data.get("values", [None])[0] if interaction.data else None
+            if rawValue is None:
+                await interaction.response.send_message("No value selected.", ephemeral=True)
+                return
+            parsed = panel.configClass.parseSetting(field, rawValue)
+            await panel.persistSetting(interaction, field, parsed)
+
+        bindUiCallback(select, callback)
+        return [header, ui.ActionRow(select)]
+
+
+class LiteralType(ChoiceType):
+    """Literal union setting."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return get_origin(annotation) is Literal
+
+    @classmethod
+    def choices(cls, annotation: object) -> list[str]:
+        if get_origin(annotation) is Literal:
+            return [str(choice) for choice in get_args(annotation)]
+        return []
+
+
+class EnumType(ChoiceType):
+    """Enum setting."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return isinstance(annotation, type) and issubclass(annotation, Enum)
+
+    @classmethod
+    def choices(cls, annotation: object) -> list[str]:
+        if isinstance(annotation, type) and issubclass(annotation, Enum):
+            return [member.value for member in annotation]
+        return []
+
+
+class ChannelType(SettingType):
+    """Discord channel picker for channel ID settings."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return False
+
+    @classmethod
+    def formatDisplay(cls, value: object) -> str:
+        if value is None:
+            return "default"
+        return f"<#{value}>"
+
+    @classmethod
+    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+        channelSelect = ui.ChannelSelect(
+            placeholder="Select a channel",
+            channel_types=[discord.ChannelType.text, discord.ChannelType.news],
+            custom_id=f"settings:channel:{field}",
+        )
+
+        async def channelCallback(interaction: discord.Interaction) -> None:
+            values = interaction.data.get("values", []) if interaction.data else []
+            if not values:
+                await interaction.response.send_message("No channel selected.", ephemeral=True)
+                return
+            await panel.persistSetting(interaction, field, int(values[0]))
+
+        bindUiCallback(channelSelect, channelCallback)
+        return [header, ui.ActionRow(channelSelect), ui.ActionRow(defaultResetButton(panel, field))]
+
+
+class TextInputType(SettingType):
+    """Shared modal editor for string and integer settings."""
+
+    @classmethod
+    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+        fieldInfo = panel.configClass.model_fields[field]
+        editButton = ui.Button(
+            label="Edit",
+            style=discord.ButtonStyle.primary,
+            custom_id=f"settings:edit:{field}",
+        )
+
+        async def editCallback(interaction: discord.Interaction) -> None:
+            if interaction.message is None:
+                await interaction.response.send_message("Could not open the editor.", ephemeral=True)
+                return
+            await panel.openSettingModal(interaction, field, interaction.message)
+
+        bindUiCallback(editButton, editCallback)
+
+        if fieldInfo.is_required():
+            return [header, ui.ActionRow(editButton)]
+
+        return [header, ui.ActionRow(editButton, defaultResetButton(panel, field))]
+
+
+class StringType(TextInputType):
+    """String setting."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return annotation is str
+
+
+class IntegerType(TextInputType):
+    """Integer setting."""
+
+    @classmethod
+    def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        return annotation is int
+
+
+_INFERENCE_TYPES: tuple[type[SettingType], ...] = (
+    BoolType,
+    LiteralType,
+    EnumType,
+    IntegerType,
+    StringType,
+)
+
+
+def resolveSettingType(configClass: type[SettingsGroup], field: str) -> type[SettingType]:
+    """Resolve the setting type for one model field."""
+    fieldInfo = configClass.model_fields[field]
+    uiTypes, _validation = partitionFieldMetadata(fieldInfo)
+    if uiTypes:
+        return uiTypes[0]
+
+    annotation = unwrapAnnotation(fieldInfo.annotation)
+    for settingType in _INFERENCE_TYPES:
+        if settingType.matches(annotation, fieldInfo):
+            return settingType
+
+    msg = f"Unsupported settings field type for {configClass.__name__}.{field}: {fieldInfo.annotation!r}"
+    raise TypeError(msg)

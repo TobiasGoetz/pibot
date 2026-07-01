@@ -1,11 +1,14 @@
 """General feature settings."""
 
+from typing import Annotated
+
 from pydantic import Field
 
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import SettingsGroup
+from pibot.guild_settings.setting_type import ChannelType
 
 
-class GeneralConfig(FeatureSettings):
+class GeneralConfig(SettingsGroup):
     """General settings and utility commands for a guild."""
 
     name = "general"
@@ -15,7 +18,7 @@ class GeneralConfig(FeatureSettings):
         default=".",
         description="Text command prefix",
     )
-    commandChannelId: int | None = Field(
+    commandChannelId: Annotated[int | None, ChannelType] = Field(
         default=None,
         description="Channel ID restricted to text commands (omit restriction when unset)",
     )

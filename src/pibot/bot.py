@@ -10,7 +10,6 @@ import discord.ext.commands
 from pymongo import AsyncMongoClient
 
 from pibot.config import COMMAND_SYNC_BEHAVIOR, BotConfig
-from pibot.cogs.general.config import GeneralConfig
 from pibot.guild_settings.service import GuildSettingsService
 from pibot.guild_settings.store import SettingsStore
 
@@ -84,13 +83,15 @@ class Bot(discord.ext.commands.Bot):
 
     async def on_message(self, message: discord.Message, /) -> None:
         """When a message is sent."""
+        from pibot.cogs.general.config import GeneralConfig
+
         if message.guild is None:
             return
 
         if message.author.bot:
             return
 
-        general = await self.guildSettings.getFeature(message.guild.id, GeneralConfig)
+        general = await self.guildSettings.getSettingsGroup(message.guild.id, GeneralConfig)
         if not message.content.lower().startswith(general.prefix.lower()):
             return
 

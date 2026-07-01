@@ -21,7 +21,4 @@ class FeatureDisabled(discord.app_commands.AppCommandError):
     def __init__(self, featureName: str) -> None:
         """Initialize with the disabled feature name."""
         self.featureName = featureName
-        super().__init__(
-            f"This feature is disabled on this server. "
-            f"An administrator can enable it with `/{featureName} settings set enabled true`."
-        )
+        super().__init__("This feature is disabled on this server. ")

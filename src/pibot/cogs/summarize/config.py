@@ -2,10 +2,10 @@
 
 from pydantic import Field
 
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import SettingsGroup
 
 
-class SummarizeConfig(FeatureSettings):
+class SummarizeConfig(SettingsGroup):
     """Summarize feature settings."""
 
     name = "summarize"

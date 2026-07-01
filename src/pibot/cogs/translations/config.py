@@ -1,9 +1,9 @@
 """Translations feature settings."""
 
-from pibot.guild_settings.model import FeatureSettings
+from pibot.guild_settings.model import SettingsGroup
 
 
-class TranslationsConfig(FeatureSettings):
+class TranslationsConfig(SettingsGroup):
     """Translations feature settings."""
 
     name = "translations"

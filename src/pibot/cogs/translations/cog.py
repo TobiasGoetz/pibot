@@ -22,7 +22,7 @@ class Translations(
 ):
     """Translation commands."""
 
-    featureConfig = TranslationsConfig
+    settingsGroup = TranslationsConfig
 
     language_dict: dict[str, str] = {
         "🇦🇪": "AR",  # Arabic
@@ -74,7 +74,7 @@ class Translations(
         if payload.guild_id is None:
             return
 
-        config = await self.bot.guildSettings.getFeature(payload.guild_id, TranslationsConfig)
+        config = await self.bot.guildSettings.getSettingsGroup(payload.guild_id, TranslationsConfig)
         if not config.enabled:
             return
 

@@ -14,7 +14,7 @@ Instructions and context for AI agents working on this project.
 - Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `guild_settings/`, `errors.py`.
 - **Cogs**: Add new features as packages under `cogs/<feature>/` (`config.py`, `cog.py`, `__init__.py`); they are loaded in `bot.py`.
 - **Runtime config**: Environment-driven bot options are in `pibot/config.py` (`PIBOT_*` env vars); `Bot` receives `BotConfig()` from the entry point.
-- **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`). Each feature defines a `FeatureSettings` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings.getFeature()`. Only non-default fields are persisted (`sparseDump()`).
+- **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`). Each feature defines a `SettingsGroup` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings.getSettingsGroup()`. Only non-default fields are persisted (`sparseDump()`).
 
 ## Build & publish
 

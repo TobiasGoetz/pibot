@@ -1,11 +1,11 @@
-"""Tests for FeatureSettings models and registration."""
+"""Tests for SettingsGroup models and registration."""
 
 from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.general import config as _generalConfig  # noqa: F401 — registers GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
-from pibot.guild_settings.model import getFeatures
+from pibot.guild_settings.model import getSettingsGroups
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
@@ -25,7 +25,7 @@ def testPartialDocumentUsesModelDefaults() -> None:
 def testFeatureDiscovery() -> None:
     """Feature configs self-register from cogs/*/config.py."""
     # Act
-    features = getFeatures()
+    features = getSettingsGroups()
 
     # Assert
     assert "general" in features
