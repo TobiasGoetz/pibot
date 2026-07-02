@@ -2,7 +2,7 @@
 
 import logging
 from collections.abc import Mapping
-from typing import Annotated, ClassVar, TypeVar
+from typing import Annotated, ClassVar, Self
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
@@ -10,9 +10,6 @@ from pydantic.fields import FieldInfo
 LOGGER = logging.getLogger("guild_settings.model")
 
 _REGISTRY: dict[str, type[SettingsGroup]] = {}
-
-TSettingsGroup = TypeVar("TSettingsGroup", bound="SettingsGroup")
-
 
 def fieldDefault(fieldInfo: FieldInfo) -> object:
     """Return the default value for an optional model field."""
@@ -61,7 +58,7 @@ class SettingsGroup(BaseModel):
             raise ValueError(msg) from exc
 
     @classmethod
-    def fromStored(cls: type[TSettingsGroup], data: Mapping[str, object]) -> TSettingsGroup:
+    def fromStored(cls: type[Self], data: Mapping[str, object]) -> Self:
         """Build settings from partial stored feature settings."""
         values: dict[str, object] = {}
         for name, fieldInfo in cls.model_fields.items():
