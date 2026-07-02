@@ -91,7 +91,7 @@ class Bot(discord.ext.commands.Bot):
         if message.author.bot:
             return
 
-        general = await self.guildSettings.getSettingsGroup(message.guild.id, GeneralConfig)
+        general = await self.guildSettings.load(message.guild.id, GeneralConfig)
         if not message.content.lower().startswith(general.prefix.lower()):
             return
 

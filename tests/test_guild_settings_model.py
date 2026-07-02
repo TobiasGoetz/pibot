@@ -1,21 +1,23 @@
-"""Tests for SettingsGroup models and registration."""
+"""Tests for SettingsGroup models and registry."""
 
-from pibot.cogs.admin import config as _adminConfig  # noqa: F401 — registers AdminConfig
+import pibot.cogs.admin.config as _adminConfig  # noqa: F401 — registers AdminConfig
+import pibot.cogs.general.config as _generalConfig  # noqa: F401 — registers GeneralConfig
+import pibot.cogs.summarize.config as _summarizeConfig  # noqa: F401 — registers SummarizeConfig
+import pibot.cogs.translations.config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
 from pibot.cogs.general.config import GeneralConfig
-from pibot.cogs.general import config as _generalConfig  # noqa: F401 — registers GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
-from pibot.cogs.translations import config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
-from pibot.guild_settings.model import getSettingsGroups
+from pibot.guild_settings.registry import getSettingsGroups
+from pibot.guild_settings.serializer import fromStored, parseSetting
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
     """Partial stored documents merge with optional model defaults."""
     # Arrange
     stored = {"cooldownSeconds": 120}
-    defaults = SummarizeConfig.fromStored({})
+    defaults = fromStored(SummarizeConfig, {})
 
     # Act
-    config = SummarizeConfig.fromStored(stored)
+    config = fromStored(SummarizeConfig, stored)
 
     # Assert
     assert config.cooldownSeconds == 120
@@ -23,7 +25,7 @@ def testPartialDocumentUsesModelDefaults() -> None:
 
 
 def testFeatureDiscovery() -> None:
-    """Feature configs self-register from cogs/*/config.py."""
+    """Feature configs self-register when their cog config module is loaded."""
     # Act
     features = getSettingsGroups()
 
@@ -39,7 +41,7 @@ def testSettingRegistration() -> None:
     """Configurable fields register from the feature model."""
     # Act
     fields = list(SummarizeConfig.model_fields)
-    cooldownSeconds = SummarizeConfig.parseSetting("cooldownSeconds", "3600")
+    cooldownSeconds = parseSetting(SummarizeConfig, "cooldownSeconds", "3600")
 
     # Assert
     assert "enabled" in fields
@@ -51,10 +53,10 @@ def testSettingRegistration() -> None:
 def testSettingDefaults() -> None:
     """Unset optional settings use model defaults."""
     # Arrange
-    defaults = SummarizeConfig.fromStored({})
+    defaults = fromStored(SummarizeConfig, {})
 
     # Act
-    config = SummarizeConfig.fromStored({})
+    config = fromStored(SummarizeConfig, {})
 
     # Assert
     assert config == defaults
@@ -63,8 +65,8 @@ def testSettingDefaults() -> None:
 def testGeneralConfigModelDefault() -> None:
     """GeneralConfig exposes typed attribute access for empty stored data."""
     # Act
-    config = GeneralConfig.fromStored({})
-    defaults = GeneralConfig.fromStored({})
+    config = fromStored(GeneralConfig, {})
+    defaults = fromStored(GeneralConfig, {})
 
     # Assert
     assert config.prefix == defaults.prefix

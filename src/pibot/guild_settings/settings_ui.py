@@ -6,8 +6,10 @@ import discord
 from discord import ui
 
 from pibot.bot import Bot
-from pibot.guild_settings.model import SettingsGroup, fieldDefault, getSettingsGroups
-from pibot.guild_settings.setting_type import bindUiCallback
+from pibot.guild_settings.model import SettingsGroup
+from pibot.guild_settings.registry import getSettingsGroups
+from pibot.guild_settings.serializer import fieldDefault, parseSetting
+from pibot.guild_settings.ui.editors import bindUiCallback, resolveSettingEditor
 
 logger = logging.getLogger("guild_settings.settings_ui")
 
@@ -27,7 +29,7 @@ class SettingValueModal(ui.Modal):
         """Build a single-field modal."""
         fieldInfo = configClass.model_fields[field]
         description = (fieldInfo.description or field)[:100]
-        settingType = configClass.resolveSettingType(field)
+        editor = resolveSettingEditor(configClass, field)
         value = getattr(config, field)
         placeholder = None
         if not fieldInfo.is_required():
@@ -42,7 +44,7 @@ class SettingValueModal(ui.Modal):
 
         textInput = ui.TextInput(
             custom_id=f"settings:modal:{field}",
-            default=settingType.formatInput(value),
+            default=editor.formatInput(value),
             required=False,
             placeholder=placeholder,
             min_length=0,
@@ -71,12 +73,12 @@ class SettingValueModal(ui.Modal):
                     raise ValueError(msg)
                 parsed: object = fieldDefault(fieldInfo)
             else:
-                parsed = self.configClass.parseSetting(self.field, raw)
+                parsed = parseSetting(self.configClass, self.field, raw)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
-        config = await self.bot.guildSettings.setField(
+        config = await self.bot.guildSettings.update(
             self.guildId,
             self.configClass,
             self.field,
@@ -158,13 +160,13 @@ class SettingsPanelView(ui.LayoutView):
         """Return layout items for one setting field."""
         fieldInfo = self.configClass.model_fields[field]
         description = fieldInfo.description or field
-        settingType = self.configClass.resolveSettingType(field)
-        header = ui.TextDisplay(f"**{field}**\n{description}\n{settingType.formatStatusLine(self.config, field)}")
-        return settingType.buildControls(self, field, header)
+        editor = resolveSettingEditor(self.configClass, field)
+        header = ui.TextDisplay(f"**{field}**\n{description}\n{editor.formatStatusLine(self.config, field)}")
+        return editor.buildControls(self, field, header)
 
     async def persistSetting(self, interaction: discord.Interaction, field: str, value: object) -> None:
         """Persist one setting and refresh the panel."""
-        config = await self.bot.guildSettings.setField(self.guildId, self.configClass, field, value)
+        config = await self.bot.guildSettings.update(self.guildId, self.configClass, field, value)
         logger.info(
             "%s set %s.%s for guild %s.",
             interaction.user,
@@ -180,7 +182,7 @@ class SettingsPanelView(ui.LayoutView):
         if fieldInfo.is_required():
             await interaction.response.send_message(f"**{field}** cannot be reset.", ephemeral=True)
             return
-        config = await self.bot.guildSettings.unsetField(self.guildId, self.configClass, field)
+        config = await self.bot.guildSettings.reset(self.guildId, self.configClass, field)
         await self._refreshPanel(interaction, config=config)
 
     async def openSettingModal(
@@ -211,7 +213,7 @@ class SettingsPanelView(ui.LayoutView):
         groupName = groupName or self.configClass.name
         configClass = self.settingsGroups[groupName]
         if config is None or type(config) is not configClass:
-            config = await self.bot.guildSettings.getSettingsGroup(self.guildId, configClass)
+            config = await self.bot.guildSettings.load(self.guildId, configClass)
         view = SettingsPanelView(self.bot, self.guildId, configClass, config)
 
         if interaction.response.is_done():
@@ -241,6 +243,6 @@ async def sendSettingsPanel(
 
     resolvedGroup = groupName or sorted(settingsGroups)[0]
     configClass = settingsGroups[resolvedGroup]
-    config = await bot.guildSettings.getSettingsGroup(interaction.guild.id, configClass)
+    config = await bot.guildSettings.load(interaction.guild.id, configClass)
     view = SettingsPanelView(bot, interaction.guild.id, configClass, config)
     await interaction.response.send_message(view=view, ephemeral=True)

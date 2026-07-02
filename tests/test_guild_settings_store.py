@@ -12,7 +12,7 @@ async def testStoreSparseDumpOmitsDefaults(settingsStore: SettingsStore) -> None
     config = SummarizeConfig(maxMessages=500)
 
     # Act
-    await settingsStore.saveSettingsGroup(GUILD_ID, SummarizeConfig.name, config)
+    await settingsStore.save(GUILD_ID, SummarizeConfig.name, config)
     raw = await settingsStore.collection.find_one({"_id": GUILD_ID})
 
     # Assert
@@ -20,13 +20,13 @@ async def testStoreSparseDumpOmitsDefaults(settingsStore: SettingsStore) -> None
     assert raw["features"]["summarize"] == {"maxMessages": 500}
 
 
-async def testStoreUnsetRemovesSettingsGroup(settingsStore: SettingsStore) -> None:
+async def testStoreResetRemovesSettingsGroup(settingsStore: SettingsStore) -> None:
     """Resetting a field removes it from stored feature settings."""
     # Arrange
-    await settingsStore.saveSettingsGroup(GUILD_ID, SummarizeConfig.name, SummarizeConfig(maxMessages=500))
+    await settingsStore.save(GUILD_ID, SummarizeConfig.name, SummarizeConfig(maxMessages=500))
 
     # Act
-    await settingsStore.unsetField(GUILD_ID, SummarizeConfig.name, "maxMessages")
+    await settingsStore.resetField(GUILD_ID, SummarizeConfig.name, "maxMessages")
     raw = await settingsStore.collection.find_one({"_id": GUILD_ID})
 
     # Assert
@@ -36,14 +36,14 @@ async def testStoreUnsetRemovesSettingsGroup(settingsStore: SettingsStore) -> No
 async def testStoreSetDefaultRemovesField(settingsStore: SettingsStore) -> None:
     """Setting a field back to its default removes it from MongoDB."""
     # Arrange
-    await settingsStore.saveSettingsGroup(
+    await settingsStore.save(
         GUILD_ID,
         SummarizeConfig.name,
         SummarizeConfig(maxMessages=500, cooldownSeconds=120),
     )
 
     # Act
-    await settingsStore.saveSettingsGroup(
+    await settingsStore.save(
         GUILD_ID,
         SummarizeConfig.name,
         SummarizeConfig(cooldownSeconds=120),

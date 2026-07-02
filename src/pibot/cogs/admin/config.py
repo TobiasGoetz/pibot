@@ -3,8 +3,10 @@
 from pydantic import Field
 
 from pibot.guild_settings.model import SettingsGroup
+from pibot.guild_settings.registry import registerSettingsGroup
 
 
+@registerSettingsGroup
 class AdminConfig(SettingsGroup):
     """Admin and moderation settings for a guild."""
 

@@ -7,21 +7,19 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pydantic import Field
 
-import pibot.cogs.admin.config as _adminConfig  # noqa: F401 — registers AdminConfig
-import pibot.cogs.general.config as _generalConfig  # noqa: F401 — registers GeneralConfig
-import pibot.cogs.summarize.config as _summarizeConfig  # noqa: F401 — registers SummarizeConfig
-import pibot.cogs.translations.config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
 from pibot.cogs.admin.config import AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.model import SettingsGroup
-from pibot.guild_settings.setting_type import (
-    BoolType,
-    ChannelType,
-    EnumType,
-    IntegerType,
-    LiteralType,
-    StringType,
+from pibot.guild_settings.serializer import parseSetting
+from pibot.guild_settings.ui.editors import (
+    BoolEditor,
+    ChannelEditor,
+    EnumEditor,
+    IntegerEditor,
+    LiteralEditor,
+    StringEditor,
+    resolveSettingEditor,
     unwrapAnnotation,
 )
 from pibot.guild_settings.settings_ui import SettingsPanelView, sendSettingsPanel
@@ -56,24 +54,24 @@ def makeTestConfig(fieldCount: int, *, name: str = "huge-test") -> type[Settings
     return type("HugeTestConfig", (SettingsGroup,), namespace)
 
 
-def testResolveSettingTypes() -> None:
-    """Setting types map to the expected UI controls."""
-    assert GeneralConfig.resolveSettingType("enabled") is BoolType
-    assert GeneralConfig.resolveSettingType("prefix") is StringType
-    assert GeneralConfig.resolveSettingType("commandChannelId") is ChannelType
-    assert SummarizeConfig.resolveSettingType("cooldownSeconds") is IntegerType
-    assert SampleConfig.resolveSettingType("mode") is EnumType
-    assert SampleConfig.resolveSettingType("level") is LiteralType
+def testResolveSettingEditors() -> None:
+    """Setting editors map to the expected UI controls."""
+    assert resolveSettingEditor(GeneralConfig, "enabled") is BoolEditor
+    assert resolveSettingEditor(GeneralConfig, "prefix") is StringEditor
+    assert resolveSettingEditor(GeneralConfig, "commandChannelId") is ChannelEditor
+    assert resolveSettingEditor(SummarizeConfig, "cooldownSeconds") is IntegerEditor
+    assert resolveSettingEditor(SampleConfig, "mode") is EnumEditor
+    assert resolveSettingEditor(SampleConfig, "level") is LiteralEditor
 
 
 def testSettingFieldsExposeMetadata() -> None:
-    """Config fields expose values, descriptions, and setting types."""
+    """Config fields expose values, descriptions, and setting editors."""
     config = GeneralConfig()
     field = "prefix"
 
     assert getattr(config, field) == "."
     assert GeneralConfig.model_fields[field].description == "Text command prefix"
-    assert GeneralConfig.resolveSettingType(field) is StringType
+    assert resolveSettingEditor(GeneralConfig, field) is StringEditor
 
 
 def testFieldChoicesForEnumAndLiteral() -> None:
@@ -82,22 +80,22 @@ def testFieldChoicesForEnumAndLiteral() -> None:
     levelField = "level"
     modeAnnotation = unwrapAnnotation(SampleConfig.model_fields[modeField].annotation)
     levelAnnotation = unwrapAnnotation(SampleConfig.model_fields[levelField].annotation)
-    modeType = SampleConfig.resolveSettingType(modeField)
-    levelType = SampleConfig.resolveSettingType(levelField)
+    modeEditor = resolveSettingEditor(SampleConfig, modeField)
+    levelEditor = resolveSettingEditor(SampleConfig, levelField)
 
-    assert modeType.choices(modeAnnotation) == ["fast", "safe"]
-    assert levelType.choices(levelAnnotation) == ["low", "high"]
+    assert modeEditor.choices(modeAnnotation) == ["fast", "safe"]
+    assert levelEditor.choices(levelAnnotation) == ["low", "high"]
 
 
-def testChannelTypeMetadataDoesNotBreakParsing() -> None:
+def testChannelEditorMetadataDoesNotBreakParsing() -> None:
     """UI metadata on channel fields does not affect validation."""
-    assert GeneralConfig.parseSetting("commandChannelId", "123456789") == 123456789
+    assert parseSetting(GeneralConfig, "commandChannelId", "123456789") == 123456789
 
 
 def testFormatSettingStatusLineShowsDefault() -> None:
     """Optional settings show the model default beside the current value."""
     config = AdminConfig(maxClearAmount=50)
-    line = AdminConfig.resolveSettingType("maxClearAmount").formatStatusLine(config, "maxClearAmount")
+    line = resolveSettingEditor(AdminConfig, "maxClearAmount").formatStatusLine(config, "maxClearAmount")
 
     assert line == "Current: `50` · Default: `100`"
 
@@ -105,7 +103,7 @@ def testFormatSettingStatusLineShowsDefault() -> None:
 def testFormatSettingStatusLineForUnsetOptional() -> None:
     """Unset optional values at the default omit the default label."""
     config = GeneralConfig()
-    line = GeneralConfig.resolveSettingType("commandChannelId").formatStatusLine(config, "commandChannelId")
+    line = resolveSettingEditor(GeneralConfig, "commandChannelId").formatStatusLine(config, "commandChannelId")
 
     assert line == "Current: `default`"
 
@@ -113,7 +111,7 @@ def testFormatSettingStatusLineForUnsetOptional() -> None:
 def testFormatSettingStatusLineHidesMatchingDefault() -> None:
     """Values equal to the model default only show the current line."""
     config = AdminConfig()
-    line = AdminConfig.resolveSettingType("maxClearAmount").formatStatusLine(config, "maxClearAmount")
+    line = resolveSettingEditor(AdminConfig, "maxClearAmount").formatStatusLine(config, "maxClearAmount")
 
     assert line == "Current: `100`"
 
@@ -197,7 +195,7 @@ async def testSendSettingsPanelRequiresGuild() -> None:
 async def testSendSettingsPanelOpensView() -> None:
     """The panel sends an interactive layout view."""
     bot = MagicMock()
-    bot.guildSettings.getSettingsGroup = AsyncMock(return_value=GeneralConfig())
+    bot.guildSettings.load = AsyncMock(return_value=GeneralConfig())
     interaction = MagicMock()
     interaction.guild = MagicMock(id=1)
     interaction.response.send_message = AsyncMock()
@@ -213,7 +211,7 @@ async def testSendSettingsPanelOpensView() -> None:
 async def testSendSettingsPanelOpensOnSelectedFeature() -> None:
     """The panel can open focused on a specific feature."""
     bot = MagicMock()
-    bot.guildSettings.getSettingsGroup = AsyncMock(return_value=SummarizeConfig())
+    bot.guildSettings.load = AsyncMock(return_value=SummarizeConfig())
     interaction = MagicMock()
     interaction.guild = MagicMock(id=1)
     interaction.response.send_message = AsyncMock()

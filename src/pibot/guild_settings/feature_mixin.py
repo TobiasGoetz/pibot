@@ -25,7 +25,7 @@ class FeatureSettingsMixin:
                 )
             return False
 
-        config = await self.bot.guildSettings.getSettingsGroup(interaction.guild.id, self.settingsGroup)
+        config = await self.bot.guildSettings.load(interaction.guild.id, self.settingsGroup)
         if not config.enabled:
             raise FeatureDisabled(self.settingsGroup.name)
         return True

@@ -1,12 +1,12 @@
-"""Setting types for guild settings UI and field introspection."""
+"""Discord UI editors for guild settings fields."""
 
 # ruff: noqa: D102
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import Enum
 from collections.abc import Callable, Coroutine
+from enum import Enum
 from typing import Any, Literal, Union, cast, get_args, get_origin
 
 import discord
@@ -14,6 +14,7 @@ from discord import ui
 from pydantic.fields import FieldInfo
 
 from pibot.guild_settings.model import SettingsGroup
+from pibot.guild_settings.serializer import fieldDefault, parseSetting
 from pibot.guild_settings.settings_panel import SettingsPanel
 
 
@@ -27,20 +28,20 @@ def unwrapAnnotation(annotation: object) -> object:
     return annotation
 
 
-def partitionFieldMetadata(fieldInfo: FieldInfo) -> tuple[list[type[SettingType]], list[object]]:
-    """Split field metadata into UI setting types and Pydantic validators."""
-    uiTypes = [meta for meta in fieldInfo.metadata if isinstance(meta, type) and issubclass(meta, SettingType)]
+def partitionFieldMetadata(fieldInfo: FieldInfo) -> tuple[list[type[SettingEditor]], list[object]]:
+    """Split field metadata into UI editors and Pydantic validators."""
+    uiTypes = [meta for meta in fieldInfo.metadata if isinstance(meta, type) and issubclass(meta, SettingEditor)]
     uiMetadata = set(uiTypes)
     return uiTypes, [meta for meta in fieldInfo.metadata if meta not in uiMetadata]
 
 
-class SettingType(ABC):
-    """Base class for guild setting UI types."""
+class SettingEditor(ABC):
+    """Base class for per-field Discord settings controls."""
 
     @classmethod
     @abstractmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
-        """Return whether this setting type applies to the given annotation."""
+        """Return whether this editor applies to the given annotation."""
 
     @classmethod
     def formatDisplay(cls, value: object) -> str:
@@ -59,8 +60,6 @@ class SettingType(ABC):
     @classmethod
     def formatStatusLine(cls, config: SettingsGroup, field: str) -> str:
         """Format current and, when overridden, model-default values for panel display."""
-        from pibot.guild_settings.model import fieldDefault
-
         value = getattr(config, field)
         fieldInfo = type(config).model_fields[field]
         line = f"Current: `{cls.formatDisplay(value)}`"
@@ -82,7 +81,7 @@ class SettingType(ABC):
         """Build Discord layout components for one setting field."""
 
 
-class BoolType(SettingType):
+class BoolEditor(SettingEditor):
     """Boolean toggle setting."""
 
     @classmethod
@@ -134,7 +133,7 @@ def defaultResetButton(panel: SettingsPanel, field: str) -> ui.Button:
     return button
 
 
-class ChoiceType(SettingType):
+class ChoiceEditor(SettingEditor):
     """Shared select control for literal and enum settings."""
 
     @classmethod
@@ -156,14 +155,14 @@ class ChoiceType(SettingType):
             if rawValue is None:
                 await interaction.response.send_message("No value selected.", ephemeral=True)
                 return
-            parsed = panel.configClass.parseSetting(field, rawValue)
+            parsed = parseSetting(panel.configClass, field, rawValue)
             await panel.persistSetting(interaction, field, parsed)
 
         bindUiCallback(select, callback)
         return [header, ui.ActionRow(select)]
 
 
-class LiteralType(ChoiceType):
+class LiteralEditor(ChoiceEditor):
     """Literal union setting."""
 
     @classmethod
@@ -177,7 +176,7 @@ class LiteralType(ChoiceType):
         return []
 
 
-class EnumType(ChoiceType):
+class EnumEditor(ChoiceEditor):
     """Enum setting."""
 
     @classmethod
@@ -191,7 +190,7 @@ class EnumType(ChoiceType):
         return []
 
 
-class ChannelType(SettingType):
+class ChannelEditor(SettingEditor):
     """Discord channel picker for channel ID settings."""
 
     @classmethod
@@ -223,7 +222,7 @@ class ChannelType(SettingType):
         return [header, ui.ActionRow(channelSelect), ui.ActionRow(defaultResetButton(panel, field))]
 
 
-class TextInputType(SettingType):
+class TextInputEditor(SettingEditor):
     """Shared modal editor for string and integer settings."""
 
     @classmethod
@@ -249,7 +248,7 @@ class TextInputType(SettingType):
         return [header, ui.ActionRow(editButton, defaultResetButton(panel, field))]
 
 
-class StringType(TextInputType):
+class StringEditor(TextInputEditor):
     """String setting."""
 
     @classmethod
@@ -257,7 +256,7 @@ class StringType(TextInputType):
         return annotation is str
 
 
-class IntegerType(TextInputType):
+class IntegerEditor(TextInputEditor):
     """Integer setting."""
 
     @classmethod
@@ -265,26 +264,26 @@ class IntegerType(TextInputType):
         return annotation is int
 
 
-_INFERENCE_TYPES: tuple[type[SettingType], ...] = (
-    BoolType,
-    LiteralType,
-    EnumType,
-    IntegerType,
-    StringType,
+_INFERENCE_EDITORS: tuple[type[SettingEditor], ...] = (
+    BoolEditor,
+    LiteralEditor,
+    EnumEditor,
+    IntegerEditor,
+    StringEditor,
 )
 
 
-def resolveSettingType(configClass: type[SettingsGroup], field: str) -> type[SettingType]:
-    """Resolve the setting type for one model field."""
+def resolveSettingEditor(configClass: type[SettingsGroup], field: str) -> type[SettingEditor]:
+    """Resolve the UI editor for one model field."""
     fieldInfo = configClass.model_fields[field]
     uiTypes, _validation = partitionFieldMetadata(fieldInfo)
     if uiTypes:
         return uiTypes[0]
 
     annotation = unwrapAnnotation(fieldInfo.annotation)
-    for settingType in _INFERENCE_TYPES:
-        if settingType.matches(annotation, fieldInfo):
-            return settingType
+    for editor in _INFERENCE_EDITORS:
+        if editor.matches(annotation, fieldInfo):
+            return editor
 
     msg = f"Unsupported settings field type for {configClass.__name__}.{field}: {fieldInfo.annotation!r}"
     raise TypeError(msg)
