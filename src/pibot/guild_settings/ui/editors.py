@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Coroutine
 from enum import Enum
-from typing import Any, Literal, Union, cast, get_args, get_origin
+from typing import Any, ClassVar, Literal, Union, cast, get_args, get_origin
 
 import discord
 from discord import ui
@@ -37,6 +38,14 @@ def partitionFieldMetadata(fieldInfo: FieldInfo) -> tuple[list[type[SettingEdito
 
 class SettingEditor(ABC):
     """Base class for per-field Discord settings controls."""
+
+    _editors: ClassVar[list[type[SettingEditor]]] = []
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Register concrete editor subclasses."""
+        super().__init_subclass__(**kwargs)
+        if not inspect.isabstract(cls):
+            cls._editors.append(cls)
 
     @classmethod
     @abstractmethod
@@ -264,15 +273,6 @@ class IntegerEditor(TextInputEditor):
         return annotation is int
 
 
-_INFERENCE_EDITORS: tuple[type[SettingEditor], ...] = (
-    BoolEditor,
-    LiteralEditor,
-    EnumEditor,
-    IntegerEditor,
-    StringEditor,
-)
-
-
 def resolveSettingEditor(configClass: type[SettingsGroup], field: str) -> type[SettingEditor]:
     """Resolve the UI editor for one model field."""
     fieldInfo = configClass.model_fields[field]
@@ -281,7 +281,7 @@ def resolveSettingEditor(configClass: type[SettingsGroup], field: str) -> type[S
         return uiTypes[0]
 
     annotation = unwrapAnnotation(fieldInfo.annotation)
-    for editor in _INFERENCE_EDITORS:
+    for editor in SettingEditor._editors:
         if editor.matches(annotation, fieldInfo):
             return editor
 
