@@ -5,7 +5,7 @@ from pibot.guild_settings.serializer import fieldDefault
 from pibot.guild_settings.store import SettingsStore
 
 
-class GuildSettingsService:
+class SettingsService:
     """Shared per-guild settings storage."""
 
     def __init__(self, store: SettingsStore) -> None:

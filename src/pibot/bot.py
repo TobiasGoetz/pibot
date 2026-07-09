@@ -10,7 +10,7 @@ import discord.ext.commands
 from pymongo import AsyncMongoClient
 
 from pibot.config import COMMAND_SYNC_BEHAVIOR, BotConfig
-from pibot.guild_settings.service import GuildSettingsService
+from pibot.guild_settings.service import SettingsService
 from pibot.guild_settings.store import SettingsStore
 
 logger = logging.getLogger("pibot")
@@ -36,7 +36,7 @@ class Bot(discord.ext.commands.Bot):
         """Initialize the bot."""
         self.config = config
         mongoClient = AsyncMongoClient(config.mongodbUri)
-        self.guildSettings = GuildSettingsService(SettingsStore(mongoClient))
+        self.guildSettings = SettingsService(SettingsStore(mongoClient))
         self.commandSyncBehavior = config.commandSyncBehavior
         self.isDevTools = config.enableDevTools
         super().__init__(*args, **kwargs)

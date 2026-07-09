@@ -4,7 +4,7 @@ import pytest
 from pymongo import AsyncMongoClient
 from testcontainers.mongodb import MongoDbContainer
 
-from pibot.guild_settings.service import GuildSettingsService
+from pibot.guild_settings.service import SettingsService
 from pibot.guild_settings.store import SettingsStore
 
 
@@ -31,6 +31,6 @@ async def settingsStore(mongoClient):
 
 
 @pytest.fixture
-async def guildSettingsService(settingsStore):
-    """Guild settings service backed by real MongoDB."""
-    yield GuildSettingsService(settingsStore)
+async def settingsService(settingsStore):
+    """Settings service backed by real MongoDB."""
+    yield SettingsService(settingsStore)
