@@ -9,7 +9,7 @@ from pibot.bot import Bot
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fieldDefault, parseSetting
-from pibot.guild_settings.ui.editors import bindUiCallback, resolveSettingEditor
+from pibot.guild_settings.ui.editors import SettingEditor, bindUiCallback, resolveSettingEditor
 
 logger = logging.getLogger("guild_settings.settings_ui")
 
@@ -97,7 +97,7 @@ class SettingValueModal(ui.Modal):
 
 
 class SettingsPanelView(ui.LayoutView):
-    """In-chat settings editor for one feature page (implements :class:`SettingsPanel`)."""
+    """In-chat settings editor for one feature page."""
 
     def __init__(
         self,
@@ -162,7 +162,59 @@ class SettingsPanelView(ui.LayoutView):
         description = fieldInfo.description or field
         editor = resolveSettingEditor(self.configClass, field)
         header = ui.TextDisplay(f"**{field}**\n{description}\n{editor.formatStatusLine(self.config, field)}")
-        return editor.buildControls(self, field, header)
+        controls = editor.buildControls(self.configClass, self.config, field, header)
+        self._bindSettingCallbacks(field, editor, controls)
+        return controls
+
+    def _bindSettingCallbacks(self, field: str, editor: type[SettingEditor], items: list[ui.Item]) -> None:
+        """Attach per-field component callbacks owned by this view."""
+        for item in items:
+            for interactive in self._iterInteractiveItems(item):
+
+                async def callback(
+                    interaction: discord.Interaction, fieldName: str = field, editorCls: type[SettingEditor] = editor
+                ) -> None:
+                    await self._handleEditorInteraction(interaction, fieldName, editorCls)
+
+                bindUiCallback(interactive, callback)
+
+    def _iterInteractiveItems(self, item: ui.Item) -> list[ui.Button | ui.Select | ui.ChannelSelect]:
+        """Return interactive controls inside a layout item."""
+        controls: list[ui.Button | ui.Select | ui.ChannelSelect] = []
+        if isinstance(item, (ui.Button, ui.Select, ui.ChannelSelect)):
+            controls.append(item)
+            return controls
+        if isinstance(item, ui.ActionRow):
+            for child in item.children:
+                controls.extend(self._iterInteractiveItems(child))
+            return controls
+        if isinstance(item, ui.Section) and item.accessory is not None:
+            controls.extend(self._iterInteractiveItems(item.accessory))
+        return controls
+
+    async def _handleEditorInteraction(
+        self, interaction: discord.Interaction, field: str, editor: type[SettingEditor]
+    ) -> None:
+        """Route one component interaction to editor logic and apply the result."""
+        customId = interaction.data.get("custom_id") if interaction.data else None
+        if customId == f"settings:edit:{field}":
+            if interaction.message is None:
+                await interaction.response.send_message("Could not open the editor.", ephemeral=True)
+                return
+            await self.openSettingModal(interaction, field, interaction.message)
+            return
+        if customId == f"settings:reset:{field}":
+            await self.resetSetting(interaction, field)
+            return
+        try:
+            value = editor.parseInteractionValue(interaction, self.configClass, self.config, field)
+        except NotImplementedError:
+            await interaction.response.send_message("Unsupported interaction.", ephemeral=True)
+            return
+        except ValueError as exc:
+            await interaction.response.send_message(str(exc), ephemeral=True)
+            return
+        await self.persistSetting(interaction, field, value)
 
     async def persistSetting(self, interaction: discord.Interaction, field: str, value: object) -> None:
         """Persist one setting and refresh the panel."""

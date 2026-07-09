@@ -16,8 +16,6 @@ from pydantic.fields import FieldInfo
 
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fieldDefault, parseSetting
-from pibot.guild_settings.settings_panel import SettingsPanel
-
 
 def unwrapAnnotation(annotation: object) -> object:
     """Return the inner type when the annotation is an optional union."""
@@ -86,8 +84,18 @@ class SettingEditor(ABC):
 
     @classmethod
     @abstractmethod
-    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+    def buildControls(
+        cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
+    ) -> list[ui.Item]:
         """Build Discord layout components for one setting field."""
+
+    @classmethod
+    def parseInteractionValue(
+        cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
+    ) -> object:
+        """Parse interaction payload into a persisted value."""
+        msg = f"{cls.__name__} does not support value parsing."
+        raise NotImplementedError(msg)
 
 
 class BoolEditor(SettingEditor):
@@ -104,19 +112,22 @@ class BoolEditor(SettingEditor):
         return "on" if value else "off"
 
     @classmethod
-    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
-        value = getattr(panel.config, field)
+    def buildControls(
+        cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
+    ) -> list[ui.Item]:
+        value = getattr(config, field)
         button = ui.Button(
             label="Turn off" if value else "Turn on",
             style=discord.ButtonStyle.success if value else discord.ButtonStyle.danger,
             custom_id=f"settings:toggle:{field}",
         )
-
-        async def callback(interaction: discord.Interaction) -> None:
-            await panel.persistSetting(interaction, field, not getattr(panel.config, field))
-
-        bindUiCallback(button, callback)
         return [ui.Section(header, accessory=button)]
+
+    @classmethod
+    def parseInteractionValue(
+        cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
+    ) -> object:
+        return not getattr(config, field)
 
 
 def bindUiCallback(
@@ -127,7 +138,7 @@ def bindUiCallback(
     item.callback = cast(Any, callback)
 
 
-def defaultResetButton(panel: SettingsPanel, field: str) -> ui.Button:
+def defaultResetButton(field: str) -> ui.Button:
     """Build a button that resets one optional field to its model default."""
     button = ui.Button(
         label="Use default",
@@ -135,10 +146,6 @@ def defaultResetButton(panel: SettingsPanel, field: str) -> ui.Button:
         custom_id=f"settings:reset:{field}",
     )
 
-    async def callback(interaction: discord.Interaction) -> None:
-        await panel.resetSetting(interaction, field)
-
-    bindUiCallback(button, callback)
     return button
 
 
@@ -146,9 +153,11 @@ class ChoiceEditor(SettingEditor):
     """Shared select control for literal and enum settings."""
 
     @classmethod
-    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
-        fieldInfo = panel.configClass.model_fields[field]
-        value = getattr(panel.config, field)
+    def buildControls(
+        cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
+    ) -> list[ui.Item]:
+        fieldInfo = configClass.model_fields[field]
+        value = getattr(config, field)
         annotation = unwrapAnnotation(fieldInfo.annotation)
         choices = cls.choices(annotation)
         select = ui.Select(
@@ -158,17 +167,17 @@ class ChoiceEditor(SettingEditor):
             ],
             custom_id=f"settings:choice:{field}",
         )
-
-        async def callback(interaction: discord.Interaction) -> None:
-            rawValue = interaction.data.get("values", [None])[0] if interaction.data else None
-            if rawValue is None:
-                await interaction.response.send_message("No value selected.", ephemeral=True)
-                return
-            parsed = parseSetting(panel.configClass, field, rawValue)
-            await panel.persistSetting(interaction, field, parsed)
-
-        bindUiCallback(select, callback)
         return [header, ui.ActionRow(select)]
+
+    @classmethod
+    def parseInteractionValue(
+        cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
+    ) -> object:
+        rawValue = interaction.data.get("values", [None])[0] if interaction.data else None
+        if rawValue is None:
+            msg = "No value selected."
+            raise ValueError(msg)
+        return parseSetting(configClass, field, rawValue)
 
 
 class LiteralEditor(ChoiceEditor):
@@ -213,49 +222,45 @@ class ChannelEditor(SettingEditor):
         return f"<#{value}>"
 
     @classmethod
-    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
+    def buildControls(
+        cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
+    ) -> list[ui.Item]:
         channelSelect = ui.ChannelSelect(
             placeholder="Select a channel",
             channel_types=[discord.ChannelType.text, discord.ChannelType.news],
             custom_id=f"settings:channel:{field}",
         )
+        return [header, ui.ActionRow(channelSelect), ui.ActionRow(defaultResetButton(field))]
 
-        async def channelCallback(interaction: discord.Interaction) -> None:
-            values = interaction.data.get("values", []) if interaction.data else []
-            if not values:
-                await interaction.response.send_message("No channel selected.", ephemeral=True)
-                return
-            await panel.persistSetting(interaction, field, int(values[0]))
-
-        bindUiCallback(channelSelect, channelCallback)
-        return [header, ui.ActionRow(channelSelect), ui.ActionRow(defaultResetButton(panel, field))]
+    @classmethod
+    def parseInteractionValue(
+        cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
+    ) -> object:
+        values = interaction.data.get("values", []) if interaction.data else []
+        if not values:
+            msg = "No channel selected."
+            raise ValueError(msg)
+        return int(values[0])
 
 
 class TextInputEditor(SettingEditor):
     """Shared modal editor for string and integer settings."""
 
     @classmethod
-    def buildControls(cls, panel: SettingsPanel, field: str, header: ui.TextDisplay) -> list[ui.Item]:
-        fieldInfo = panel.configClass.model_fields[field]
+    def buildControls(
+        cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
+    ) -> list[ui.Item]:
+        fieldInfo = configClass.model_fields[field]
         editButton = ui.Button(
             label="Edit",
             style=discord.ButtonStyle.primary,
             custom_id=f"settings:edit:{field}",
         )
 
-        async def editCallback(interaction: discord.Interaction) -> None:
-            if interaction.message is None:
-                await interaction.response.send_message("Could not open the editor.", ephemeral=True)
-                return
-            await panel.openSettingModal(interaction, field, interaction.message)
-
-        bindUiCallback(editButton, editCallback)
-
         if fieldInfo.is_required():
             return [header, ui.ActionRow(editButton)]
 
-        return [header, ui.ActionRow(editButton, defaultResetButton(panel, field))]
-
+        return [header, ui.ActionRow(editButton, defaultResetButton(field))]
 
 class StringEditor(TextInputEditor):
     """String setting."""
