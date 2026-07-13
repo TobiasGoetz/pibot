@@ -42,7 +42,7 @@ class SettingValueModal(ui.Modal):
         self.field = field
         self.panelMessage = panelMessage
 
-        textInput = ui.TextInput(
+        self.textInput = ui.TextInput(
             custom_id=f"settings:modal:{field}",
             default=editor.formatInput(value),
             required=False,
@@ -53,18 +53,13 @@ class SettingValueModal(ui.Modal):
             ui.Label(
                 text=field[:45],
                 description=description or None,
-                component=textInput,
+                component=self.textInput,
             )
         )
 
     async def on_submit(self, interaction: discord.Interaction) -> None:
         """Parse, persist, and refresh the settings panel."""
-        label = next(item for item in self.children if isinstance(item, ui.Label))
-        component = label.component
-        if not isinstance(component, ui.TextInput):
-            await interaction.response.send_message("Could not read the submitted value.", ephemeral=True)
-            return
-        raw = component.value.strip()
+        raw = self.textInput.value.strip()
         fieldInfo = self.configClass.model_fields[self.field]
         try:
             if not raw:
