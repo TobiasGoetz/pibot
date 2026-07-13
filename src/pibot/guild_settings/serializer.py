@@ -60,6 +60,17 @@ def parseSetting(model: type[SettingsGroup], field: str, raw: str) -> object:
         raise ValueError(exc.errors()[0]["msg"]) from exc
 
 
+def parseModalSetting(model: type[SettingsGroup], field: str, raw: str) -> object:
+    """Parse modal text input, using the model default when optional and left empty."""
+    fieldInfo = model.model_fields[field]
+    if not raw:
+        if fieldInfo.is_required():
+            msg = f"{field} is required."
+            raise ValueError(msg)
+        return fieldDefault(fieldInfo)
+    return parseSetting(model, field, raw)
+
+
 def toStored(config: SettingsGroup) -> dict[str, object]:
     """Return only fields that should be persisted (non-default optional values included)."""
     stored: dict[str, object] = {}

@@ -1,11 +1,25 @@
 """Tests for SettingsGroup models and registry."""
 
+import pytest
+
+from pydantic import Field
+
 from pibot.cogs.admin.config import AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.cogs.translations.config import TranslationsConfig
+from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
-from pibot.guild_settings.serializer import fromStored, parseSetting
+from pibot.guild_settings.serializer import fromStored, parseModalSetting, parseSetting
+
+
+class RequiredFieldConfig(SettingsGroup):
+    """Synthetic config with one required field."""
+
+    name = "required-field"
+    description = "Test config"
+
+    token: str = Field(description="Required token")
 
 
 def testPartialDocumentUsesModelDefaults() -> None:
@@ -33,6 +47,17 @@ def testFeatureDiscovery() -> None:
     assert features["summarize"] is SummarizeConfig
     assert features["translations"] is TranslationsConfig
     assert features["summarize"].description
+
+
+def testParseModalSettingUsesDefaultForEmptyOptional() -> None:
+    """Empty modal input resets optional settings to the model default."""
+    assert parseModalSetting(GeneralConfig, "prefix", "") == "."
+
+
+def testParseModalSettingRejectsEmptyRequired() -> None:
+    """Empty modal input is rejected for required settings."""
+    with pytest.raises(ValueError, match="token is required"):
+        parseModalSetting(RequiredFieldConfig, "token", "")
 
 
 def testSettingRegistration() -> None:

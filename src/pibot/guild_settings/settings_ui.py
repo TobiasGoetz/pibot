@@ -8,7 +8,7 @@ from discord import ui
 from pibot.bot import Bot
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
-from pibot.guild_settings.serializer import fieldDefault, parseSetting
+from pibot.guild_settings.serializer import fieldDefault, parseModalSetting
 from pibot.guild_settings.ui.editors import SettingEditor, bindUiCallback, resolveSettingEditor
 
 logger = logging.getLogger("guild_settings.settings_ui")
@@ -60,15 +60,8 @@ class SettingValueModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         """Parse, persist, and refresh the settings panel."""
         raw = self.textInput.value.strip()
-        fieldInfo = self.configClass.model_fields[self.field]
         try:
-            if not raw:
-                if fieldInfo.is_required():
-                    msg = f"{self.field} is required."
-                    raise ValueError(msg)
-                parsed: object = fieldDefault(fieldInfo)
-            else:
-                parsed = parseSetting(self.configClass, self.field, raw)
+            parsed = parseModalSetting(self.configClass, self.field, raw)
         except ValueError as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
