@@ -1,9 +1,9 @@
 """Tests for SettingsGroup models and registry."""
 
-import pibot.cogs.admin.config as _adminConfig  # noqa: F401 — registers AdminConfig
-import pibot.cogs.general.config as _generalConfig  # noqa: F401 — registers GeneralConfig
-import pibot.cogs.summarize.config as _summarizeConfig  # noqa: F401 — registers SummarizeConfig
-import pibot.cogs.translations.config as _translationsConfig  # noqa: F401 — registers TranslationsConfig
+import pibot.cogs.admin.config as _adminConfig
+import pibot.cogs.general.config as _generalConfig
+import pibot.cogs.summarize.config as _summarizeConfig
+import pibot.cogs.translations.config as _translationsConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.registry import getSettingsGroups

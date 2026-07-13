@@ -1,7 +1,5 @@
 """Discord UI editors for guild settings fields."""
 
-# ruff: noqa: D102
-
 from __future__ import annotations
 
 import inspect
@@ -16,6 +14,7 @@ from pydantic.fields import FieldInfo
 
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fieldDefault, parseSetting
+
 
 def unwrapAnnotation(annotation: object) -> object:
     """Return the inner type when the annotation is an optional union."""
@@ -261,6 +260,7 @@ class TextInputEditor(SettingEditor):
             return [header, ui.ActionRow(editButton)]
 
         return [header, ui.ActionRow(editButton, defaultResetButton(field))]
+
 
 class StringEditor(TextInputEditor):
     """String setting."""
