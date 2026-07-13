@@ -102,10 +102,12 @@ class BoolEditor(SettingEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies to boolean fields."""
         return annotation is bool
 
     @classmethod
     def formatDisplay(cls, value: object) -> str:
+        """Format a boolean as on/off for panel display."""
         if value is None:
             return "default"
         return "on" if value else "off"
@@ -114,6 +116,7 @@ class BoolEditor(SettingEditor):
     def buildControls(
         cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
     ) -> list[ui.Item]:
+        """Build a toggle button for a boolean setting."""
         value = getattr(config, field)
         button = ui.Button(
             label="Turn off" if value else "Turn on",
@@ -126,6 +129,7 @@ class BoolEditor(SettingEditor):
     def parseInteractionValue(
         cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
     ) -> object:
+        """Toggle the boolean field value."""
         return not getattr(config, field)
 
 
@@ -155,6 +159,7 @@ class ChoiceEditor(SettingEditor):
     def buildControls(
         cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
     ) -> list[ui.Item]:
+        """Build a select menu for a choice-based setting."""
         fieldInfo = configClass.model_fields[field]
         value = getattr(config, field)
         annotation = unwrapAnnotation(fieldInfo.annotation)
@@ -172,6 +177,7 @@ class ChoiceEditor(SettingEditor):
     def parseInteractionValue(
         cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
     ) -> object:
+        """Parse the selected choice into a persisted value."""
         rawValue = interaction.data.get("values", [None])[0] if interaction.data else None
         if rawValue is None:
             msg = "No value selected."
@@ -184,10 +190,12 @@ class LiteralEditor(ChoiceEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies to Literal annotations."""
         return get_origin(annotation) is Literal
 
     @classmethod
     def choices(cls, annotation: object) -> list[str]:
+        """Return literal member values as selectable strings."""
         if get_origin(annotation) is Literal:
             return [str(choice) for choice in get_args(annotation)]
         return []
@@ -198,10 +206,12 @@ class EnumEditor(ChoiceEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies to Enum subclasses."""
         return isinstance(annotation, type) and issubclass(annotation, Enum)
 
     @classmethod
     def choices(cls, annotation: object) -> list[str]:
+        """Return enum member values as selectable strings."""
         if isinstance(annotation, type) and issubclass(annotation, Enum):
             return [member.value for member in annotation]
         return []
@@ -212,10 +222,12 @@ class ChannelEditor(SettingEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies; only via explicit field metadata."""
         return False
 
     @classmethod
     def formatDisplay(cls, value: object) -> str:
+        """Format a channel ID as a Discord channel mention."""
         if value is None:
             return "default"
         return f"<#{value}>"
@@ -224,6 +236,7 @@ class ChannelEditor(SettingEditor):
     def buildControls(
         cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
     ) -> list[ui.Item]:
+        """Build a channel select and optional reset button."""
         channelSelect = ui.ChannelSelect(
             placeholder="Select a channel",
             channel_types=[discord.ChannelType.text, discord.ChannelType.news],
@@ -235,6 +248,7 @@ class ChannelEditor(SettingEditor):
     def parseInteractionValue(
         cls, interaction: discord.Interaction, configClass: type[SettingsGroup], config: SettingsGroup, field: str
     ) -> object:
+        """Parse the selected channel ID into an integer."""
         values = interaction.data.get("values", []) if interaction.data else []
         if not values:
             msg = "No channel selected."
@@ -249,6 +263,7 @@ class TextInputEditor(SettingEditor):
     def buildControls(
         cls, configClass: type[SettingsGroup], config: SettingsGroup, field: str, header: ui.TextDisplay
     ) -> list[ui.Item]:
+        """Build edit and optional reset buttons that open a modal."""
         fieldInfo = configClass.model_fields[field]
         editButton = ui.Button(
             label="Edit",
@@ -267,6 +282,7 @@ class StringEditor(TextInputEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies to string fields."""
         return annotation is str
 
 
@@ -275,6 +291,7 @@ class IntegerEditor(TextInputEditor):
 
     @classmethod
     def matches(cls, annotation: object, fieldInfo: FieldInfo) -> bool:
+        """Return whether this editor applies to integer fields."""
         return annotation is int
 
 

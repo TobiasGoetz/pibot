@@ -1,11 +1,9 @@
 """Tests for SettingsGroup models and registry."""
 
-import pibot.cogs.admin.config as _adminConfig
-import pibot.cogs.general.config as _generalConfig
-import pibot.cogs.summarize.config as _summarizeConfig
-import pibot.cogs.translations.config as _translationsConfig
+from pibot.cogs.admin.config import AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
+from pibot.cogs.translations.config import TranslationsConfig
 from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fromStored, parseSetting
 
@@ -30,10 +28,10 @@ def testFeatureDiscovery() -> None:
     features = getSettingsGroups()
 
     # Assert
-    assert "general" in features
-    assert "admin" in features
-    assert "summarize" in features
-    assert "translations" in features
+    assert features["general"] is GeneralConfig
+    assert features["admin"] is AdminConfig
+    assert features["summarize"] is SummarizeConfig
+    assert features["translations"] is TranslationsConfig
     assert features["summarize"].description
 
 
