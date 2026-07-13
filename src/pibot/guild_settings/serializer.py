@@ -6,6 +6,7 @@ from typing import Annotated
 from pydantic import TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
 
+from pibot.guild_settings.errors import InvalidSettingValue
 from pibot.guild_settings.model import SettingsGroup
 
 
@@ -57,7 +58,7 @@ def parseSetting(model: type[SettingsGroup], field: str, raw: str) -> object:
     try:
         return _fieldTypeAdapter(model, field).validate_python(raw)
     except ValidationError as exc:
-        raise ValueError(exc.errors()[0]["msg"]) from exc
+        raise InvalidSettingValue(exc.errors()[0]["msg"]) from exc
 
 
 def parseModalSetting(model: type[SettingsGroup], field: str, raw: str) -> object:
@@ -66,7 +67,7 @@ def parseModalSetting(model: type[SettingsGroup], field: str, raw: str) -> objec
     if not raw:
         if fieldInfo.is_required():
             msg = f"{field} is required."
-            raise ValueError(msg)
+            raise InvalidSettingValue(msg)
         return fieldDefault(fieldInfo)
     return parseSetting(model, field, raw)
 

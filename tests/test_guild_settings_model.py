@@ -8,6 +8,7 @@ from pibot.cogs.admin.config import AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.cogs.translations.config import TranslationsConfig
+from pibot.guild_settings.errors import InvalidSettingValue
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fromStored, parseModalSetting, parseSetting
@@ -56,7 +57,7 @@ def testParseModalSettingUsesDefaultForEmptyOptional() -> None:
 
 def testParseModalSettingRejectsEmptyRequired() -> None:
     """Empty modal input is rejected for required settings."""
-    with pytest.raises(ValueError, match="token is required"):
+    with pytest.raises(InvalidSettingValue, match="token is required"):
         parseModalSetting(RequiredFieldConfig, "token", "")
 
 

@@ -6,6 +6,7 @@ import discord
 from discord import ui
 
 from pibot.bot import Bot
+from pibot.guild_settings.errors import InvalidSettingValue
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fieldDefault, parseModalSetting
@@ -62,7 +63,7 @@ class SettingValueModal(ui.Modal):
         raw = self.textInput.value.strip()
         try:
             parsed = parseModalSetting(self.configClass, self.field, raw)
-        except ValueError as exc:
+        except InvalidSettingValue as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
 
@@ -199,7 +200,7 @@ class SettingsPanelView(ui.LayoutView):
         except NotImplementedError:
             await interaction.response.send_message("Unsupported interaction.", ephemeral=True)
             return
-        except ValueError as exc:
+        except InvalidSettingValue as exc:
             await interaction.response.send_message(str(exc), ephemeral=True)
             return
         await self.persistSetting(interaction, field, value)

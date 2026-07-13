@@ -12,6 +12,7 @@ import discord
 from discord import ui
 from pydantic.fields import FieldInfo
 
+from pibot.guild_settings.errors import InvalidSettingValue
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fieldDefault, parseSetting
 
@@ -181,7 +182,7 @@ class ChoiceEditor(SettingEditor):
         rawValue = interaction.data.get("values", [None])[0] if interaction.data else None
         if rawValue is None:
             msg = "No value selected."
-            raise ValueError(msg)
+            raise InvalidSettingValue(msg)
         return parseSetting(configClass, field, rawValue)
 
 
@@ -252,7 +253,7 @@ class ChannelEditor(SettingEditor):
         values = interaction.data.get("values", []) if interaction.data else []
         if not values:
             msg = "No channel selected."
-            raise ValueError(msg)
+            raise InvalidSettingValue(msg)
         return int(values[0])
 
 
