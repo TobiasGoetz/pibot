@@ -26,7 +26,7 @@ Features with settings today:
 | Feature | Examples |
 | ------- | -------- |
 | `general` | `prefix`, `commandChannelId`, `countdownMaxSeconds` |
-| `admin` | `mutedRoleName`, `maxClearAmount`, `enabled` |
+| `admin` | `maxClearAmount`, `enabled` |
 | `summarize` | Limits, model override, `enabled` |
 | `translations` | `enabled` |
 

@@ -27,6 +27,23 @@ class Admin(
         """Initialize the cog."""
         self.bot = bot
 
+    _mutedRoleName = "Muted"
+
+    async def _getOrCreateMutedRole(self, guild: discord.Guild) -> discord.Role | None:
+        """Return the Muted role, creating it with channel overrides when missing."""
+        role = discord.utils.get(guild.roles, name=self._mutedRoleName)
+        if role is not None:
+            return role
+
+        logger.info("Muted role not found, creating one.")
+        await guild.create_role(name=self._mutedRoleName)
+        role = discord.utils.get(guild.roles, name=self._mutedRoleName)
+        if role is not None:
+            for channel in guild.channels:
+                await channel.set_permissions(role, speak=False, send_messages=False)
+            logger.info("Muted role created.")
+        return role
+
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
     async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
@@ -72,25 +89,16 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = await self.bot.guildSettings.load(interaction.guild.id, AdminConfig)
         guild = interaction.guild
         await interaction.response.defer()
-        role = discord.utils.get(guild.roles, name=config.mutedRoleName)
-
+        role = await self._getOrCreateMutedRole(guild)
         if role is None:
-            logger.info("Muted role not found, creating one.")
-            await guild.create_role(name=config.mutedRoleName)
-            role = discord.utils.get(guild.roles, name=config.mutedRoleName)
+            await interaction.followup.send(f"Could not find or create the {self._mutedRoleName} role.")
+            return
 
-        if role is not None:
-            for channel in guild.channels:
-                await channel.set_permissions(role, speak=False, send_messages=False)
-            logger.info("Muted role created.")
-            await member.add_roles(role)
+        await member.add_roles(role)
 
-        if role is None:
-            await interaction.followup.send(f"Could not find or create the {config.mutedRoleName} role.")
-        elif reason is None:
+        if reason is None:
             await interaction.followup.send(f"{member.mention} has been muted.")
         else:
             await interaction.followup.send(f"{member.mention} has been muted for {reason}")
@@ -107,10 +115,9 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = await self.bot.guildSettings.load(interaction.guild.id, AdminConfig)
         guild = interaction.guild
         await interaction.response.defer()
-        role = discord.utils.get(guild.roles, name=config.mutedRoleName)
+        role = discord.utils.get(guild.roles, name=self._mutedRoleName)
         if role is not None:
             await member.remove_roles(role)
         await interaction.followup.send(f"{member.mention} has been unmuted.")
