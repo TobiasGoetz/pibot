@@ -200,12 +200,13 @@ async def testSendSettingsPanelOpensView() -> None:
     bot.guildSettings.load = AsyncMock(return_value=GeneralConfig())
     interaction = MagicMock()
     interaction.guild = MagicMock(id=1)
-    interaction.response.send_message = AsyncMock()
+    interaction.response.defer = AsyncMock()
+    interaction.edit_original_response = AsyncMock()
 
     await sendSettingsPanel(bot, interaction, groupName="general")
 
-    interaction.response.send_message.assert_awaited_once()
-    awaitArgs = interaction.response.send_message.await_args
+    interaction.response.defer.assert_awaited_once_with(ephemeral=True)
+    awaitArgs = interaction.edit_original_response.await_args
     assert awaitArgs is not None
     assert isinstance(awaitArgs.kwargs["view"], SettingsPanelView)
 
@@ -216,11 +217,12 @@ async def testSendSettingsPanelOpensOnSelectedFeature() -> None:
     bot.guildSettings.load = AsyncMock(return_value=SummarizeConfig())
     interaction = MagicMock()
     interaction.guild = MagicMock(id=1)
-    interaction.response.send_message = AsyncMock()
+    interaction.response.defer = AsyncMock()
+    interaction.edit_original_response = AsyncMock()
 
     await sendSettingsPanel(bot, interaction, groupName="summarize")
 
-    awaitArgs = interaction.response.send_message.await_args
+    awaitArgs = interaction.edit_original_response.await_args
     assert awaitArgs is not None
     view = awaitArgs.kwargs["view"]
     assert view.configClass is SummarizeConfig

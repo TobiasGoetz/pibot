@@ -302,7 +302,10 @@ async def sendSettingsPanel(
     resolvedGroup = groupName or sorted(settingsGroups)[0]
     if resolvedGroup not in settingsGroups:
         raise GuildSettingsError("Unknown settings group.")
+
+    await interaction.response.defer(ephemeral=True)
+
     configClass = settingsGroups[resolvedGroup]
     config = await bot.guildSettings.load(interaction.guild.id, configClass)
     view = SettingsPanelView(bot, interaction.guild.id, configClass, config)
-    await interaction.response.send_message(view=view, ephemeral=True)
+    await interaction.edit_original_response(view=view)

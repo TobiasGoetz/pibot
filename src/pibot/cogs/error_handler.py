@@ -256,7 +256,12 @@ async def send_app_command_error_message(
     try:
         await interaction.response.defer()
     except discord.errors.InteractionResponded:
-        await interaction.edit_original_response(content=None, embed=embed)
+        try:
+            await interaction.edit_original_response(content=None, embed=embed)
+        except discord.HTTPException:
+            LOGGER.exception("Failed to send app command error message.")
+    except discord.errors.NotFound:
+        LOGGER.debug("Could not respond to expired interaction for %s.", interaction.command)
     else:
         await interaction.followup.send(embed=embed)
 
