@@ -6,7 +6,8 @@ import discord
 from discord import ui
 
 from pibot.bot import Bot
-from pibot.guild_settings.errors import InvalidSettingValue
+from pibot.cogs.error_handler import handleInteractionError, sendInteractionErrorMessage
+from pibot.guild_settings.errors import GuildSettingsError
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fieldDefault, parseModalSetting
@@ -61,11 +62,7 @@ class SettingValueModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction) -> None:
         """Parse, persist, and refresh the settings panel."""
         raw = self.textInput.value.strip()
-        try:
-            parsed = parseModalSetting(self.configClass, self.field, raw)
-        except InvalidSettingValue as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
-            return
+        parsed = parseModalSetting(self.configClass, self.field, raw)
 
         config = await self.bot.guildSettings.update(
             self.guildId,
@@ -83,6 +80,17 @@ class SettingValueModal(ui.Modal):
         view = SettingsPanelView(self.bot, self.guildId, self.configClass, config)
         await interaction.response.defer(ephemeral=True)
         await self.panelMessage.edit(view=view)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        """Show validation failures and log unexpected modal errors."""
+        await handleInteractionError(
+            interaction,
+            error,
+            userErrorType=GuildSettingsError,
+            fallbackMessage="Something went wrong while updating settings.",
+            log=logger,
+            logMessage="Unhandled error in settings modal.",
+        )
 
 
 class SettingsPanelView(ui.LayoutView):
@@ -138,8 +146,7 @@ class SettingsPanelView(ui.LayoutView):
         async def callback(interaction: discord.Interaction) -> None:
             groupName = interaction.data.get("values", [None])[0] if interaction.data else None
             if groupName is None or groupName not in self.settingsGroups:
-                await interaction.response.send_message("Unknown settings group.", ephemeral=True)
-                return
+                raise GuildSettingsError("Unknown settings group.")
             await self._refreshPanel(interaction, groupName=groupName)
 
         bindUiCallback(select, callback)
@@ -188,21 +195,13 @@ class SettingsPanelView(ui.LayoutView):
         customId = interaction.data.get("custom_id") if interaction.data else None
         if customId == f"settings:edit:{field}":
             if interaction.message is None:
-                await interaction.response.send_message("Could not open the editor.", ephemeral=True)
-                return
+                raise GuildSettingsError("Could not open the editor.")
             await self.openSettingModal(interaction, field, interaction.message)
             return
         if customId == f"settings:reset:{field}":
             await self.resetSetting(interaction, field)
             return
-        try:
-            value = editor.parseInteractionValue(interaction, self.configClass, self.config, field)
-        except NotImplementedError:
-            await interaction.response.send_message("Unsupported interaction.", ephemeral=True)
-            return
-        except InvalidSettingValue as exc:
-            await interaction.response.send_message(str(exc), ephemeral=True)
-            return
+        value = editor.parseInteractionValue(interaction, self.configClass, self.config, field)
         await self.persistSetting(interaction, field, value)
 
     async def persistSetting(self, interaction: discord.Interaction, field: str, value: object) -> None:
@@ -221,8 +220,7 @@ class SettingsPanelView(ui.LayoutView):
         """Reset one optional setting to its model default."""
         fieldInfo = self.configClass.model_fields[field]
         if fieldInfo.is_required():
-            await interaction.response.send_message(f"**{field}** cannot be reset.", ephemeral=True)
-            return
+            raise GuildSettingsError(f"**{field}** cannot be reset.")
         config = await self.bot.guildSettings.reset(self.guildId, self.configClass, field)
         await self._refreshPanel(interaction, config=config)
 
@@ -262,6 +260,26 @@ class SettingsPanelView(ui.LayoutView):
         else:
             await interaction.response.edit_message(view=view)
 
+    async def on_error(
+        self,
+        interaction: discord.Interaction,
+        error: Exception,
+        item: ui.Item,
+    ) -> None:
+        """Show validation failures and log unexpected panel errors."""
+        if isinstance(error, NotImplementedError):
+            await sendInteractionErrorMessage(interaction, "Unsupported interaction.")
+            return
+        await handleInteractionError(
+            interaction,
+            error,
+            userErrorType=GuildSettingsError,
+            fallbackMessage="Something went wrong while updating settings.",
+            log=logger,
+            logMessage="Unhandled error in settings panel for item %r.",
+            logArgs=(item,),
+        )
+
 
 async def sendSettingsPanel(
     bot: Bot,
@@ -279,10 +297,11 @@ async def sendSettingsPanel(
 
     settingsGroups = getSettingsGroups()
     if not settingsGroups:
-        msg = "No settings groups are registered."
-        raise RuntimeError(msg)
+        raise RuntimeError("No settings groups are registered.")
 
     resolvedGroup = groupName or sorted(settingsGroups)[0]
+    if resolvedGroup not in settingsGroups:
+        raise GuildSettingsError("Unknown settings group.")
     configClass = settingsGroups[resolvedGroup]
     config = await bot.guildSettings.load(interaction.guild.id, configClass)
     view = SettingsPanelView(bot, interaction.guild.id, configClass, config)

@@ -10,6 +10,8 @@ from pydantic import Field
 from pibot.cogs.admin.config import AdminConfig
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
+from pibot.cogs.error_handler import handleInteractionError
+from pibot.guild_settings.errors import GuildSettingsError
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import parseSetting
 from pibot.guild_settings.ui.editors import (
@@ -222,3 +224,35 @@ async def testSendSettingsPanelOpensOnSelectedFeature() -> None:
     assert awaitArgs is not None
     view = awaitArgs.kwargs["view"]
     assert view.configClass is SummarizeConfig
+
+
+async def testSendSettingsPanelRejectsUnknownGroup() -> None:
+    """An unknown feature name raises GuildSettingsError for the command error handler."""
+    bot = MagicMock()
+    interaction = MagicMock()
+    interaction.guild = MagicMock(id=1)
+    interaction.response.send_message = AsyncMock()
+
+    with pytest.raises(GuildSettingsError, match="Unknown settings group"):
+        await sendSettingsPanel(bot, interaction, groupName="missing")
+
+
+async def testHandleInteractionErrorShowsGuildSettingsMessage() -> None:
+    """Interaction error handling sends expected guild settings failures to the user."""
+    interaction = MagicMock()
+    interaction.response.is_done.return_value = False
+    interaction.response.send_message = AsyncMock()
+
+    await handleInteractionError(
+        interaction,
+        GuildSettingsError("Unknown settings group."),
+        userErrorType=GuildSettingsError,
+        fallbackMessage="Something went wrong while updating settings.",
+        log=MagicMock(),
+        logMessage="Unhandled error opening settings panel.",
+    )
+
+    interaction.response.send_message.assert_awaited_once_with(
+        "Unknown settings group.",
+        ephemeral=True,
+    )

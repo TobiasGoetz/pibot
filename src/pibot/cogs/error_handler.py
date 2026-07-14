@@ -209,6 +209,34 @@ class ExceptionHandler(commands.Cog):
             )
 
 
+async def sendInteractionErrorMessage(interaction: discord.Interaction, message: str) -> None:
+    """Send an ephemeral error for a component or modal interaction."""
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(message, ephemeral=True)
+        else:
+            await interaction.response.send_message(message, ephemeral=True)
+    except discord.HTTPException:
+        LOGGER.exception("Failed to send interaction error message.")
+
+
+async def handleInteractionError(
+    interaction: discord.Interaction,
+    error: Exception,
+    *,
+    userErrorType: type[Exception],
+    fallbackMessage: str,
+    log: logging.Logger,
+    logMessage: str,
+    logArgs: tuple[object, ...] = (),
+) -> None:
+    """Log unexpected interaction failures and send a user-safe message."""
+    message = str(error) if isinstance(error, userErrorType) else fallbackMessage
+    if not isinstance(error, userErrorType):
+        log.exception(logMessage, *logArgs, exc_info=error)
+    await sendInteractionErrorMessage(interaction, message)
+
+
 async def send_app_command_error_message(
     interaction: discord.Interaction,
     description: str,
