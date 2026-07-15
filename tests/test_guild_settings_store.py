@@ -53,3 +53,25 @@ async def testStoreSetDefaultRemovesField(settingsStore: SettingsStore) -> None:
     # Assert
     assert raw is not None
     assert raw["features"]["summarize"] == {"cooldownSeconds": 120}
+
+
+async def testStoreCleanupGuildRemovesEmptyGroups(settingsStore: SettingsStore) -> None:
+    """_cleanupGuild removes empty feature groups but keeps non-empty siblings."""
+    # Arrange
+    await settingsStore.collection.insert_one(
+        {
+            "_id": GUILD_ID,
+            "features": {
+                "summarize": {"maxMessages": 500},
+                "general": {},
+            },
+        }
+    )
+
+    # Act
+    await settingsStore._cleanupGuild(GUILD_ID)
+    raw = await settingsStore.collection.find_one({"_id": GUILD_ID})
+
+    # Assert
+    assert raw is not None
+    assert raw["features"] == {"summarize": {"maxMessages": 500}}

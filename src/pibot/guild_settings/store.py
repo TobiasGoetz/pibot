@@ -29,10 +29,8 @@ class SettingsStore:
         groupKey = f"features.{name}"
 
         if not payload:
-            guildSettings = await self.collection.find_one({"_id": guildId}) or {}
-            if name in guildSettings.get("features", {}):
-                await self.collection.update_one({"_id": guildId}, {"$unset": {groupKey: ""}})
-            await self._cleanupEmptyDocument(guildId)
+            await self.collection.update_one({"_id": guildId}, {"$unset": {groupKey: ""}})
+            await self._cleanupGuild(guildId)
             LOGGER.info("Saved %s settings for guild %s.", name, guildId)
             return
 
@@ -41,7 +39,7 @@ class SettingsStore:
             {"$set": {groupKey: payload}},
             upsert=True,
         )
-        await self._cleanupEmptyDocument(guildId)
+        await self._cleanupGuild(guildId)
         LOGGER.info("Saved %s settings for guild %s.", name, guildId)
 
     async def resetField(self, guildId: int, name: str, field: str) -> None:
@@ -51,25 +49,30 @@ class SettingsStore:
             {"_id": guildId},
             {"$unset": {f"{groupKey}.{field}": ""}},
         )
-        await self._cleanupSettingsGroup(guildId, name)
-        await self._cleanupEmptyDocument(guildId)
+        await self._cleanupGuild(guildId)
         LOGGER.info("Reset %s.%s for guild %s.", name, field, guildId)
 
-    async def _cleanupSettingsGroup(self, guildId: int, name: str) -> None:
-        """Remove empty stored settings groups after field unsets."""
+    async def _cleanupGuild(self, guildId: int) -> None:
+        """Remove empty settings groups and delete the document if nothing remains."""
         guildSettings = await self.collection.find_one({"_id": guildId})
-        groupData = (guildSettings or {}).get("features", {}).get(name)
-        if groupData == {}:
+        if not guildSettings:
+            return
+
+        features = guildSettings.get("features", {})
+        emptyGroups = [name for name, data in features.items() if data == {}]
+        if emptyGroups:
             await self.collection.update_one(
                 {"_id": guildId},
-                {"$unset": {f"features.{name}": ""}},
+                {"$unset": {f"features.{name}": "" for name in emptyGroups}},
             )
 
-    async def _cleanupEmptyDocument(self, guildId: int) -> None:
-        """Remove guild settings documents that no longer store anything."""
         guildSettings = await self.collection.find_one({"_id": guildId})
-        if guildSettings and guildSettings.get("features") == {}:
+        if not guildSettings:
+            return
+
+        if guildSettings.get("features") == {}:
             await self.collection.update_one({"_id": guildId}, {"$unset": {"features": ""}})
             guildSettings = await self.collection.find_one({"_id": guildId})
+
         if guildSettings and set(guildSettings.keys()) == {"_id"}:
             await self.collection.delete_one({"_id": guildId})
