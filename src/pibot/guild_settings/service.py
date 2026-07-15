@@ -26,7 +26,14 @@ class SettingsService:
         """Set one field on a settings group and return the updated config."""
         config = await self.load(guildId, model)
         updated = config.model_copy(update={field: value})
-        await self.store.save(guildId, model.name, updated)
+        storedValue = getattr(updated, field)
+        fieldInfo = model.model_fields[field]
+
+        if fieldInfo.is_required() or storedValue != fieldDefault(fieldInfo):
+            await self.store.setField(guildId, model.name, field, storedValue)
+        else:
+            await self.store.unsetField(guildId, model.name, field)
+
         return updated
 
     async def reset[T: SettingsGroup](
@@ -36,8 +43,5 @@ class SettingsService:
         field: str,
     ) -> T:
         """Remove one stored field and return the config with model defaults applied."""
-        config = await self.load(guildId, model)
         fieldInfo = model.model_fields[field]
-        updated = config.model_copy(update={field: fieldDefault(fieldInfo)})
-        await self.store.resetField(guildId, model.name, field)
-        return updated
+        return await self.update(guildId, model, field, fieldDefault(fieldInfo))
