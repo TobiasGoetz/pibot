@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   pibot.ai_gateway
    pibot.cogs
    pibot.translation_service
 
@@ -21,18 +22,18 @@ pibot.bot module
    :show-inheritance:
    :undoc-members:
 
-pibot.database module
----------------------
-
-.. automodule:: pibot.database
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 pibot.errors module
 -------------------
 
 .. automodule:: pibot.errors
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pibot.config module
+-------------------
+
+.. automodule:: pibot.config
    :members:
    :show-inheritance:
    :undoc-members:

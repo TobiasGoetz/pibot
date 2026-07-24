@@ -106,6 +106,6 @@ class DevTools(commands.Cog):
 
 
 async def setup(bot: Bot) -> None:
-    """Set up the cog when ``ENABLE_DEV_TOOLS`` is enabled."""
+    """Set up the cog when ``PIBOT_ENABLE_DEV_TOOLS`` is enabled."""
     if bot.isDevTools:
         await bot.add_cog(DevTools(bot))

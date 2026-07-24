@@ -4,6 +4,7 @@ import logging
 
 import discord
 from pibot.bot import Bot
+from pibot.errors import FeatureDisabled
 from discord import app_commands
 from discord.ext import commands
 
@@ -111,6 +112,15 @@ class ExceptionHandler(commands.Cog):
             )
             await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
+        elif isinstance(error, FeatureDisabled):
+            LOGGER.info(
+                "User %s tried to use %s while feature %s is disabled.",
+                interaction.user,
+                commandName,
+                error.featureName,
+            )
+            await send_app_command_error_message(interaction, str(error), error)
+
         else:
             LOGGER.error(
                 "Uncaught error caused by %s using %s. [%s]",
@@ -199,6 +209,34 @@ class ExceptionHandler(commands.Cog):
             )
 
 
+async def sendInteractionErrorMessage(interaction: discord.Interaction, message: str) -> None:
+    """Send an ephemeral error for a component or modal interaction."""
+    try:
+        if interaction.response.is_done():
+            await interaction.followup.send(message, ephemeral=True)
+        else:
+            await interaction.response.send_message(message, ephemeral=True)
+    except discord.HTTPException:
+        LOGGER.exception("Failed to send interaction error message.")
+
+
+async def handleInteractionError(
+    interaction: discord.Interaction,
+    error: Exception,
+    *,
+    userErrorType: type[Exception],
+    fallbackMessage: str,
+    log: logging.Logger,
+    logMessage: str,
+    logArgs: tuple[object, ...] = (),
+) -> None:
+    """Log unexpected interaction failures and send a user-safe message."""
+    message = str(error) if isinstance(error, userErrorType) else fallbackMessage
+    if not isinstance(error, userErrorType):
+        log.exception(logMessage, *logArgs, exc_info=error)
+    await sendInteractionErrorMessage(interaction, message)
+
+
 async def send_app_command_error_message(
     interaction: discord.Interaction,
     description: str,
@@ -212,13 +250,18 @@ async def send_app_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     try:
         await interaction.response.defer()
     except discord.errors.InteractionResponded:
-        await interaction.edit_original_response(content=None, embed=embed)
+        try:
+            await interaction.edit_original_response(content=None, embed=embed)
+        except discord.HTTPException:
+            LOGGER.exception("Failed to send app command error message.")
+    except discord.errors.NotFound:
+        LOGGER.debug("Could not respond to expired interaction for %s.", interaction.command)
     else:
         await interaction.followup.send(embed=embed)
 
@@ -236,7 +279,7 @@ async def send_command_error_message(
 
     embed.add_field(name="Description", value=f"{description}")
 
-    if str(error) != "":
+    if str(error) != "" and str(error) != description:
         embed.add_field(name="Error", value=f"```{error}```")
 
     await ctx.send(embed=embed)

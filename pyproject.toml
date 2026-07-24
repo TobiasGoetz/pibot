@@ -10,6 +10,8 @@ dependencies = [
     "deepl~=1.28",
     "discord-py~=2.7",
     "openai~=2.41",
+    "pydantic~=2.13",
+    "pydantic-settings>=2.14.2",
     "pymongo~=4.16",
     "python-dotenv~=1.2",
     "pytimeparse~=1.1",
@@ -27,7 +29,14 @@ Homepage = "https://github.com/TobiasGoetz/pibot"
 Issues = "https://github.com/TobiasGoetz/pibot/issues"
 
 [dependency-groups]
-dev = ["build", "ruff", "ty"]
+dev = [
+    "build~=1.5",
+    "pytest~=9.0",
+    "pytest-asyncio~=1.4",
+    "ruff~=0.15",
+    "testcontainers[mongodb]~=4.14",
+    "ty~=0.0",
+]
 docs = ["sphinx~=9.1", "sphinx-rtd-theme~=3.1"]
 
 [project.scripts]
