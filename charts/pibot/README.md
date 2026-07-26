@@ -15,7 +15,7 @@ Deploys [PiBot](https://github.com/TobiasGoetz/pibot) (Discord bot) on Kubernete
 # (+ Cloudflare AI tokens if the image needs them)
 
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version> \
-  --set secretRef.name=pibot-prd-pibot \
+  --set secretRef.name=pibot-prd \
   --set environment=production
 ```
 
