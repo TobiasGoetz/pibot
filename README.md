@@ -69,13 +69,13 @@ Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/hel
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
 ```
 
-You can configure the deployment via `pibot:` in the chart [values file](charts/pibot/values.yaml) (and overrides); see [charts/pibot/README.md](charts/pibot/README.md).
+Credentials come from an existing Secret (`secretRef.name`); non-secret options are under `pibot:` in the chart [values file](charts/pibot/values.yaml). See [charts/pibot/README.md](charts/pibot/README.md).
 
 Further release and command details: [AGENTS.md](AGENTS.md).
 
 ## Environment variables
 
-Configure these for `docker run`, `pibot:` Helm values, or a `.env` file (see `.env.example`). All variables use the ``PIBOT_`` prefix.
+Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.env` file (see `.env.example`). All variables use the ``PIBOT_`` prefix.
 
 **Naming:** ``PIBOT_{NAME}`` for bootstrap/runtime; ``PIBOT_{FEATURE}_{VENDOR}_{FIELD}`` for feature integrations (e.g. ``PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL``).
 

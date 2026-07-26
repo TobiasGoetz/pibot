@@ -19,4 +19,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           envFrom:
             - secretRef:
-                name: {{ include "pibot.name" . }}
+                name: {{ required "secretRef.name is required (credentials Secret)" .Values.secretRef.name }}
+          env:
+            - name: PIBOT_LOG_LEVEL
+              value: {{ .Values.pibot.logLevel | quote }}
+            - name: PIBOT_COMMAND_SYNC_BEHAVIOR
+              value: {{ .Values.pibot.commandSyncBehavior | quote }}
+            - name: PIBOT_ENABLE_DEV_TOOLS
+              value: {{ .Values.pibot.enableDevTools | quote }}

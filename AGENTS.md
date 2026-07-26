@@ -33,7 +33,7 @@ Release artifacts:
 3. **Helm chart → GHCR (OCI)**
    - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
    - On release, `helm push` publishes to `oci://ghcr.io/<owner-lowercase>/helm-charts` (see `.github/workflows/helm-publish.yml`).
-   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (configure `pibot:` in `charts/pibot/values.yaml`; rendered as `PIBOT_*` env vars). Use `helm registry login ghcr.io` when the registry requires authentication.
+   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (credentials via `secretRef.name`; non-secrets under `pibot:` in `charts/pibot/values.yaml`, rendered as `PIBOT_*` env vars). Use `helm registry login ghcr.io` when the registry requires authentication.
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
 
@@ -63,7 +63,7 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 
 ## Environment
 
-- Config via `.env` or Helm (`pibot:` in `charts/pibot/values.yaml`); see `.env.example`. All env vars use the `PIBOT_` prefix.
+- Config via `.env` or Helm (`secretRef.name` for credentials, `pibot:` in `charts/pibot/values.yaml` for non-secrets); see `.env.example`. All env vars use the `PIBOT_` prefix.
 - Requires `PIBOT_DISCORD_TOKEN`, `PIBOT_MONGODB_URI`, and bot-level feature credentials (`PIBOT_SUMMARIZE_CLOUDFLARE_*`, `PIBOT_TRANSLATIONS_DEEPL_API_KEY`). Per-guild feature options (prefix, limits, `enabled`, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). See `pibot/config.py`.
 
 ## Conventions

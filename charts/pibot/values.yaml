@@ -2,16 +2,16 @@ image:
   repository: ghcr.io/tobiasgoetz/pibot
   tag: ""
 
+# Existing Secret with credentials (ExternalSecret / etc.). Required.
+# Expected keys:
+#   PIBOT_DISCORD_TOKEN, PIBOT_MONGODB_URI,
+#   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL, PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN,
+#   PIBOT_TRANSLATIONS_DEEPL_API_KEY
+secretRef:
+  name: ""
+
+# Non-secret config (plain env on the Deployment).
 pibot:
-  discordToken: ""
-  mongodbUri: ""
   logLevel: INFO
   commandSyncBehavior: global
   enableDevTools: false
-  summarize:
-    cloudflare:
-      baseUrl: ""
-      token: ""
-  translations:
-    deepl:
-      apiKey: ""
