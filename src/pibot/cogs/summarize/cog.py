@@ -126,12 +126,17 @@ class Summarize(
         if interaction.guild is None or not isinstance(interaction.channel, discord.TextChannel):
             raise commands.BadArgument("This command can only be used in text channels.")
 
-        guildConfig = await self.bot.guildSettings.load(interaction.guild.id, SummarizeConfig)
-        seconds = self._parseDuration(duration, guildConfig)
-        cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
-
+        # Acknowledge immediately — Discord expires interactions after ~3s.
         await interaction.response.defer(thinking=True)
 
+        guildConfig = await self.bot.guildSettings.load(interaction.guild.id, SummarizeConfig)
+        try:
+            seconds = self._parseDuration(duration, guildConfig)
+        except commands.BadArgument as error:
+            await interaction.followup.send(str(error))
+            return
+
+        cutoff = datetime.now(UTC) - timedelta(seconds=seconds)
         channel = interaction.channel
         messages = await self._fetchChannelMessages(channel, cutoff, guildConfig.maxMessages)
         if not messages:
