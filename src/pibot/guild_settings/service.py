@@ -1,20 +1,32 @@
 """Guild settings — shared per-guild settings storage."""
 
+import logging
+
+from pibot.guild_settings.cache import SettingsCache
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fieldDefault
 from pibot.guild_settings.store import SettingsStore
 
+LOGGER = logging.getLogger("guild_settings.service")
+
 
 class SettingsService:
-    """Shared per-guild settings storage."""
+    """Shared per-guild settings storage with a Valkey (or other) cache."""
 
-    def __init__(self, store: SettingsStore) -> None:
+    def __init__(self, store: SettingsStore, cache: SettingsCache) -> None:
         """Initialize the service."""
         self.store = store
+        self.cache = cache
 
     async def load[T: SettingsGroup](self, guildId: int, model: type[T]) -> T:
         """Load one settings group for a guild."""
-        return await self.store.load(guildId, model.name, model)
+        cached = await self.cache.get(guildId, model)
+        if cached is not None:
+            LOGGER.debug("Cache hit for %s in guild %s.", model.name, guildId)
+            return cached
+        config = await self.store.load(guildId, model.name, model)
+        await self.cache.set(guildId, config)
+        return config
 
     async def update[T: SettingsGroup](
         self,
@@ -34,6 +46,7 @@ class SettingsService:
         else:
             await self.store.unsetField(guildId, model.name, field)
 
+        await self.cache.set(guildId, updated)
         return updated
 
     async def reset[T: SettingsGroup](

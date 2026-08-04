@@ -1,1 +1,2 @@
-*.tgz
+# Packaged chart outputs in the chart root only (keep charts/*.tgz dependencies).
+/*.tgz

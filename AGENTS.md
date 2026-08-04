@@ -14,7 +14,7 @@ Instructions and context for AI agents working on this project.
 - Package root: `src/pibot/`. Entry point: `__main__.py`; core logic in `bot.py`, `guild_settings/`, `errors.py`.
 - **Cogs**: Add new features as packages under `cogs/<feature>/` (`config.py`, `cog.py`, `__init__.py`); they are loaded in `bot.py`.
 - **Runtime config**: Environment-driven bot options are in `pibot/config.py` (`PIBOT_*` env vars); `Bot` receives `BotConfig()` from the entry point.
-- **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`). Each feature defines a `SettingsGroup` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings.getSettingsGroup()`. Only non-default fields are persisted (`sparseDump()`).
+- **Guild settings**: Per-guild configuration is stored in MongoDB (`discord.settings`) and cached in Valkey (`PIBOT_VALKEY_URI`) for fast reads across replicas. Each feature defines a `SettingsGroup` subclass in `cogs/<feature>/config.py`, uses `FeatureSettingsMixin` for `/<feature> settings view|set|reset`, and reads/writes via `bot.guildSettings`. Only non-default fields are persisted to Mongo.
 
 ## Build & publish
 
@@ -33,7 +33,7 @@ Release artifacts:
 3. **Helm chart → GHCR (OCI)**
    - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
    - On release, `helm push` publishes to `oci://ghcr.io/<owner-lowercase>/helm-charts` (see `.github/workflows/helm-publish.yml`).
-   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (credentials via `secretRef.name`; non-secrets under `pibot:` in `charts/pibot/values.yaml`, rendered as `PIBOT_*` env vars). Use `helm registry login ghcr.io` when the registry requires authentication.
+   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (credentials via `secretRef.name`; non-secrets under `pibot:` in `charts/pibot/values.yaml`, rendered as `PIBOT_*` env vars). In-cluster Valkey is enabled by default (upstream subchart; generates a password Secret and injects authenticated `PIBOT_VALKEY_URI`; set `valkey.enabled=false` for external). Use `helm registry login ghcr.io` when the registry requires authentication.
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
 
@@ -45,6 +45,7 @@ Releases are automated with **Release Please**: conventional commits on `main` p
 |------|---------|
 | Install deps | `uv sync` |
 | Run bot | `uv run pibot` |
+| Local Valkey (Compose) | `docker compose up -d valkey` |
 | Lint (fix auto-fixable) | `uv run ruff check --fix .` |
 | Lint (report only) | `uv run ruff check .` |
 | Format | `uv run ruff format .` |
@@ -64,7 +65,7 @@ Ruff/`ty` config: `[tool.ruff]` and dev dependency group in `pyproject.toml`.
 ## Environment
 
 - Config via `.env` or Helm (`secretRef.name` for credentials, `pibot:` in `charts/pibot/values.yaml` for non-secrets); see `.env.example`. All env vars use the `PIBOT_` prefix.
-- Requires `PIBOT_DISCORD_TOKEN`, `PIBOT_MONGODB_URI`, and bot-level feature credentials (`PIBOT_SUMMARIZE_CLOUDFLARE_*`, `PIBOT_TRANSLATIONS_DEEPL_API_KEY`). Per-guild feature options (prefix, limits, `enabled`, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). See `pibot/config.py`.
+- Requires `PIBOT_DISCORD_TOKEN`, `PIBOT_MONGODB_URI`, `PIBOT_VALKEY_URI`, and bot-level feature credentials (`PIBOT_SUMMARIZE_CLOUDFLARE_*`, `PIBOT_TRANSLATIONS_DEEPL_API_KEY`). Per-guild feature options (prefix, limits, `enabled`, etc.) are configured via `/<feature> settings` slash commands (e.g. `/summarize settings set`, `/general settings view`). See `pibot/config.py`.
 
 ## Conventions
 

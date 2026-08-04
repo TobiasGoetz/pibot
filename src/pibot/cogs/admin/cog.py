@@ -46,7 +46,11 @@ class Admin(
 
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="clear", description="Clear a specified amount of messages.")
-    async def clear(self, interaction: discord.Interaction, amount: int = 1) -> None:
+    async def clear(
+        self,
+        interaction: discord.Interaction,
+        amount: app_commands.Range[int, 1] = 1,
+    ) -> None:
         """
         Clear a specified amount of messages.
 
@@ -55,13 +59,14 @@ class Admin(
         """
         if interaction.guild is None:
             return
-        config = await self.bot.guildSettings.load(interaction.guild.id, AdminConfig)
-        if amount < 1:
-            raise commands.BadArgument("Amount must be at least 1.")
-        if amount > config.maxClearAmount:
-            raise commands.BadArgument(f"Amount cannot exceed {config.maxClearAmount}.")
 
         await interaction.response.defer()
+
+        config = await self.bot.guildSettings.load(interaction.guild.id, AdminConfig)
+        if amount > config.maxClearAmount:
+            await interaction.followup.send(f"Amount cannot exceed {config.maxClearAmount}.")
+            return
+
         if isinstance(interaction.channel, discord.TextChannel):
             await interaction.channel.purge(limit=amount + 1)
         logger.info(

@@ -27,3 +27,14 @@ spec:
               value: {{ .Values.pibot.commandSyncBehavior | quote }}
             - name: PIBOT_ENABLE_DEV_TOOLS
               value: {{ .Values.pibot.enableDevTools | quote }}
+            {{- if .Values.valkey.enabled }}
+            - name: PIBOT_VALKEY_URI
+              {{- if .Values.valkey.auth.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "pibot.valkey.authSecretName" . }}
+                  key: uri
+              {{- else }}
+              value: {{ include "pibot.valkey.uri" . | quote }}
+              {{- end }}
+            {{- end }}

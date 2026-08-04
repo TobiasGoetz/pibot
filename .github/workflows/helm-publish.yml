@@ -28,6 +28,8 @@ jobs:
 
       - name: Package chart
         run: |
+          helm repo add valkey https://valkey.io/valkey-helm/
+          helm dependency build charts/pibot
           helm package charts/pibot \
             --version ${{ steps.version.outputs.version }} \
             --app-version ${{ steps.version.outputs.version }}

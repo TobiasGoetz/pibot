@@ -1,7 +1,10 @@
 """Tests for SettingsService."""
 
+from unittest.mock import AsyncMock, MagicMock
+
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
+from pibot.guild_settings.cache import ValkeySettingsCache
 from pibot.guild_settings.serializer import fromStored
 from pibot.guild_settings.service import SettingsService
 
@@ -126,3 +129,36 @@ async def testGeneralUpdatePreservesSettingsGroup(settingsService: SettingsServi
     # Assert
     assert summarize.cooldownSeconds == 120
     assert general.prefix == "!"
+
+
+async def testLoadCachesStoreResult(valkeyClient) -> None:
+    """A second load for the same guild/feature does not hit the store again."""
+    defaults = fromStored(SummarizeConfig, {})
+    store = MagicMock()
+    store.load = AsyncMock(return_value=defaults)
+    service = SettingsService(store, ValkeySettingsCache(valkeyClient))
+
+    first = await service.load(GUILD_ID, SummarizeConfig)
+    second = await service.load(GUILD_ID, SummarizeConfig)
+
+    assert first == second
+    store.load.assert_awaited_once_with(GUILD_ID, SummarizeConfig.name, SummarizeConfig)
+
+
+async def testUpdateWriteThroughUpdatesCache(settingsService: SettingsService) -> None:
+    """Update writes through so a subsequent load returns the new config."""
+    updated = await settingsService.update(GUILD_ID, SummarizeConfig, "enabled", False)
+    loaded = await settingsService.load(GUILD_ID, SummarizeConfig)
+
+    assert loaded == updated
+    assert loaded.enabled is False
+
+
+async def testResetWriteThroughUpdatesCache(settingsService: SettingsService) -> None:
+    """Reset writes through so a subsequent load returns the restored config."""
+    await settingsService.update(GUILD_ID, SummarizeConfig, "enabled", False)
+    reset = await settingsService.reset(GUILD_ID, SummarizeConfig, "enabled")
+    loaded = await settingsService.load(GUILD_ID, SummarizeConfig)
+
+    assert loaded == reset
+    assert loaded.enabled is True

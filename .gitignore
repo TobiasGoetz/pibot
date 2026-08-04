@@ -140,3 +140,5 @@ _version.py
 # Release tool files
 node_modules
 .release-happened
+# Helm dependency archives (rebuilt by helm dependency build)
+charts/pibot/charts/*.tgz

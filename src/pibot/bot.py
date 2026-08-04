@@ -8,8 +8,10 @@ from importlib.metadata import PackageNotFoundError, version
 import discord
 import discord.ext.commands
 from pymongo import AsyncMongoClient
+from valkey.asyncio import Valkey
 
 from pibot.config import COMMAND_SYNC_BEHAVIOR, BotConfig
+from pibot.guild_settings.cache import ValkeySettingsCache
 from pibot.guild_settings.service import SettingsService
 from pibot.guild_settings.store import SettingsStore
 
@@ -35,11 +37,18 @@ class Bot(discord.ext.commands.Bot):
     def __init__(self, config: BotConfig, *args, **kwargs) -> None:
         """Initialize the bot."""
         self.config = config
-        mongoClient = AsyncMongoClient(config.mongodbUri)
-        self.guildSettings = SettingsService(SettingsStore(mongoClient))
+        self._mongoClient = AsyncMongoClient(config.mongodbUri)
+        self._settingsCache = ValkeySettingsCache(Valkey.from_url(config.valkeyUri))
+        self.guildSettings = SettingsService(SettingsStore(self._mongoClient), self._settingsCache)
         self.commandSyncBehavior = config.commandSyncBehavior
         self.isDevTools = config.enableDevTools
         super().__init__(*args, **kwargs)
+
+    async def close(self) -> None:
+        """Close Discord, Valkey, and MongoDB connections."""
+        await self._settingsCache.close()
+        await self._mongoClient.close()
+        await super().close()
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
