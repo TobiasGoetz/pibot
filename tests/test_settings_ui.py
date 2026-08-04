@@ -14,7 +14,7 @@ from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.errors import GuildSettingsError
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import parseSetting
-from pibot.guild_settings.settings_ui import SettingsPanelView, sendSettingsPanel
+from pibot.guild_settings.settings_ui import SettingValueModal, SettingsPanelView, sendSettingsPanel
 from pibot.guild_settings.ui.editors import (
     BoolEditor,
     ChannelEditor,
@@ -249,6 +249,29 @@ async def testSendSettingsPanelRejectsUnknownGroup() -> None:
 
     with pytest.raises(GuildSettingsError, match="Unknown settings group"):
         await sendSettingsPanel(bot, interaction, groupName="missing")
+
+
+async def testSettingValueModalRefreshesViaOriginalResponse() -> None:
+    """Modal submit refreshes the ephemeral panel through the interaction webhook."""
+    bot = MagicMock()
+    bot.guildSettings.update = AsyncMock(return_value=SummarizeConfig(cooldownSeconds=3601))
+    interaction = MagicMock()
+    interaction.user = "tester"
+    interaction.guild = MagicMock(name="DevServer")
+    interaction.response.defer = AsyncMock()
+    interaction.edit_original_response = AsyncMock()
+
+    modal = SettingValueModal(bot, 1, SummarizeConfig, SummarizeConfig(), "cooldownSeconds")
+    modal.textInput = MagicMock(value="3601")
+
+    await modal.on_submit(interaction)
+
+    interaction.response.defer.assert_awaited_once_with()
+    bot.guildSettings.update.assert_awaited_once_with(1, SummarizeConfig, "cooldownSeconds", 3601)
+    awaitArgs = interaction.edit_original_response.await_args
+    assert awaitArgs is not None
+    assert isinstance(awaitArgs.kwargs["view"], SettingsPanelView)
+    assert awaitArgs.kwargs["view"].config.cooldownSeconds == 3601
 
 
 async def testHandleInteractionErrorShowsGuildSettingsMessage() -> None:

@@ -26,7 +26,6 @@ class SettingValueModal(ui.Modal):
         configClass: type[SettingsGroup],
         config: SettingsGroup,
         field: str,
-        panelMessage: discord.Message,
     ) -> None:
         """Build a single-field modal."""
         fieldInfo = configClass.model_fields[field]
@@ -42,7 +41,6 @@ class SettingValueModal(ui.Modal):
         self.guildId = guildId
         self.configClass = configClass
         self.field = field
-        self.panelMessage = panelMessage
 
         self.textInput = ui.TextInput(
             custom_id=f"settings:modal:{field}",
@@ -64,7 +62,7 @@ class SettingValueModal(ui.Modal):
         raw = self.textInput.value.strip()
         parsed = parseModalSetting(self.configClass, self.field, raw)
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
         config = await self.bot.guildSettings.update(
             self.guildId,
             self.configClass,
@@ -79,7 +77,7 @@ class SettingValueModal(ui.Modal):
             interaction.guild.name if interaction.guild else self.guildId,
         )
         view = SettingsPanelView(self.bot, self.guildId, self.configClass, config)
-        await self.panelMessage.edit(view=view)
+        await interaction.edit_original_response(view=view)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         """Show validation failures and log unexpected modal errors."""
@@ -196,9 +194,7 @@ class SettingsPanelView(ui.LayoutView):
         """Route one component interaction to editor logic and apply the result."""
         customId = interaction.data.get("custom_id") if interaction.data else None
         if customId == f"settings:edit:{field}":
-            if interaction.message is None:
-                raise GuildSettingsError("Could not open the editor.")
-            await self.openSettingModal(interaction, field, interaction.message)
+            await self.openSettingModal(interaction, field)
             return
         if customId == f"settings:reset:{field}":
             await self.resetSetting(interaction, field)
@@ -228,12 +224,7 @@ class SettingsPanelView(ui.LayoutView):
         config = await self.bot.guildSettings.reset(self.guildId, self.configClass, field)
         await self._refreshPanel(interaction, config=config)
 
-    async def openSettingModal(
-        self,
-        interaction: discord.Interaction,
-        field: str,
-        panelMessage: discord.Message,
-    ) -> None:
+    async def openSettingModal(self, interaction: discord.Interaction, field: str) -> None:
         """Open the text modal editor for one field."""
         await interaction.response.send_modal(
             SettingValueModal(
@@ -242,7 +233,6 @@ class SettingsPanelView(ui.LayoutView):
                 self.configClass,
                 self.config,
                 field,
-                panelMessage,
             ),
         )
 
