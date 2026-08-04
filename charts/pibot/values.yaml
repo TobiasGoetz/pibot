@@ -3,17 +3,15 @@ image:
   tag: ""
 
 # Existing Secret with credentials (ExternalSecret / etc.). Required.
-# Expected keys: DISCORD_TOKEN, MONGODB_URI, DEEPL_API_KEY, and any other secret env the image needs.
+# Expected keys:
+#   PIBOT_DISCORD_TOKEN, PIBOT_MONGODB_URI,
+#   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL, PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN,
+#   PIBOT_TRANSLATIONS_DEEPL_API_KEY
 secretRef:
   name: ""
 
 # Non-secret config (plain env on the Deployment).
-environment: production
-
-logging:
-  level: INFO
-
-bot:
-  settings:
-    commandSyncBehavior: global
-    enableDevTools: false
+pibot:
+  logLevel: INFO
+  commandSyncBehavior: global
+  enableDevTools: false

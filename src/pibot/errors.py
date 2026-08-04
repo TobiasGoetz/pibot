@@ -3,13 +3,10 @@
 import discord
 
 
-class UserNotConnectedToVoice(discord.app_commands.AppCommandError):
-    """Raised when a user is not connected to a voice channel."""
+class FeatureDisabled(discord.app_commands.AppCommandError):
+    """Raised when a feature is disabled for the guild."""
 
-
-class BotNotConnectedToVoice(discord.app_commands.AppCommandError):
-    """Raised when the bot is not connected to a voice channel."""
-
-
-class BotNotPlayingAudio(discord.app_commands.AppCommandError):
-    """Raised when the bot is not playing anything."""
+    def __init__(self, featureName: str) -> None:
+        """Initialize with the disabled feature name."""
+        self.featureName = featureName
+        super().__init__("This feature is disabled on this server. ")
