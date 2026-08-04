@@ -3,10 +3,11 @@
 import logging
 
 import discord
-from pibot.bot import Bot
-from pibot.errors import FeatureDisabled
 from discord import app_commands
 from discord.ext import commands
+
+from pibot.bot import Bot
+from pibot.errors import FeatureDisabled
 
 LOGGER: logging.Logger = logging.getLogger("errors")
 
@@ -120,6 +121,19 @@ class ExceptionHandler(commands.Cog):
                 error.featureName,
             )
             await send_app_command_error_message(interaction, str(error), error)
+
+        elif isinstance(error, app_commands.CommandInvokeError) and isinstance(error.original, commands.BadArgument):
+            LOGGER.info(
+                "User %s used %s with invalid arguments. [%s]",
+                interaction.user,
+                commandName,
+                error.original,
+            )
+            await send_app_command_error_message(
+                interaction,
+                f"You cannot use `{commandName}` with those arguments.\n```{error.original}```",
+                error,
+            )
 
         else:
             LOGGER.error(
