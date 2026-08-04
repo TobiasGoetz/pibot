@@ -64,7 +64,7 @@ class Admin(
         await interaction.response.defer()
         if isinstance(interaction.channel, discord.TextChannel):
             await interaction.channel.purge(limit=amount + 1)
-        logging.info(
+        logger.info(
             "User %s cleared %s messages in %s.",
             interaction.user,
             amount,
@@ -102,7 +102,7 @@ class Admin(
             await interaction.followup.send(f"{member.mention} has been muted.")
         else:
             await interaction.followup.send(f"{member.mention} has been muted for {reason}")
-        logging.info("User %s muted %s for %s.", interaction.user, member, reason)
+        logger.info("User %s muted %s for %s.", interaction.user, member, reason)
 
     @app_commands.default_permissions(administrator=True)
     @app_commands.command(name="unmute", description="Unmute a member.")
@@ -121,4 +121,4 @@ class Admin(
         if role is not None:
             await member.remove_roles(role)
         await interaction.followup.send(f"{member.mention} has been unmuted.")
-        logging.info("User %s unmuted %s.", interaction.user, member)
+        logger.info("User %s unmuted %s.", interaction.user, member)

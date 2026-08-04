@@ -292,7 +292,7 @@ async def sendSettingsPanel(
     if not settingsGroups:
         raise RuntimeError("No settings groups are registered.")
 
-    resolvedGroup = groupName or sorted(settingsGroups)[0]
+    resolvedGroup = groupName or min(settingsGroups)
     if resolvedGroup not in settingsGroups:
         raise GuildSettingsError("Unknown settings group.")
 

@@ -1,6 +1,7 @@
 """Translations cog for PiBot."""
 
 import logging
+from typing import ClassVar
 
 import discord
 from discord import app_commands
@@ -24,7 +25,7 @@ class Translations(
 
     settingsGroup = TranslationsConfig
 
-    language_dict: dict[str, str] = {
+    language_dict: ClassVar[dict[str, str]] = {
         "🇦🇪": "AR",  # Arabic
         "🇧🇬": "BG",  # Bulgarian
         "🇨🇿": "CS",  # Czech

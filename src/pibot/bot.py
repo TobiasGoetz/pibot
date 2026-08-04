@@ -66,8 +66,7 @@ class Bot(discord.ext.commands.Bot):
         for extension in extensions:
             await self.load_extension(name=extension, package="pibot")
             logger.info("Loaded %s.", extension.rsplit(".", 1)[-1])
-        else:
-            logger.info("All cogs loaded.")
+        logger.info("All cogs loaded.")
 
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """When the bot joins a guild."""

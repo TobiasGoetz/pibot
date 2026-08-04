@@ -15,10 +15,10 @@ Subpackages
 Submodules
 ----------
 
-pibot.cogs.devTools module
---------------------------
+pibot.cogs.dev\_tools module
+----------------------------
 
-.. automodule:: pibot.cogs.devTools
+.. automodule:: pibot.cogs.dev_tools
    :members:
    :show-inheritance:
    :undoc-members:
