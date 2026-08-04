@@ -64,6 +64,7 @@ class SettingValueModal(ui.Modal):
         raw = self.textInput.value.strip()
         parsed = parseModalSetting(self.configClass, self.field, raw)
 
+        await interaction.response.defer(ephemeral=True)
         config = await self.bot.guildSettings.update(
             self.guildId,
             self.configClass,
@@ -78,7 +79,6 @@ class SettingValueModal(ui.Modal):
             interaction.guild.name if interaction.guild else self.guildId,
         )
         view = SettingsPanelView(self.bot, self.guildId, self.configClass, config)
-        await interaction.response.defer(ephemeral=True)
         await self.panelMessage.edit(view=view)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -208,6 +208,7 @@ class SettingsPanelView(ui.LayoutView):
 
     async def persistSetting(self, interaction: discord.Interaction, field: str, value: object) -> None:
         """Persist one setting and refresh the panel."""
+        await interaction.response.defer()
         config = await self.bot.guildSettings.update(self.guildId, self.configClass, field, value)
         logger.info(
             "%s set %s.%s for guild %s.",
@@ -223,6 +224,7 @@ class SettingsPanelView(ui.LayoutView):
         fieldInfo = self.configClass.model_fields[field]
         if fieldInfo.is_required():
             raise GuildSettingsError(f"**{field}** cannot be reset.")
+        await interaction.response.defer()
         config = await self.bot.guildSettings.reset(self.guildId, self.configClass, field)
         await self._refreshPanel(interaction, config=config)
 
@@ -251,16 +253,15 @@ class SettingsPanelView(ui.LayoutView):
         groupName: str | None = None,
         config: SettingsGroup | None = None,
     ) -> None:
+        if not interaction.response.is_done():
+            await interaction.response.defer()
+
         groupName = groupName or self.configClass.name
         configClass = self.settingsGroups[groupName]
         if config is None or type(config) is not configClass:
             config = await self.bot.guildSettings.load(self.guildId, configClass)
         view = SettingsPanelView(self.bot, self.guildId, configClass, config)
-
-        if interaction.response.is_done():
-            await interaction.edit_original_response(view=view)
-        else:
-            await interaction.response.edit_message(view=view)
+        await interaction.edit_original_response(view=view)
 
     async def on_error(
         self,
