@@ -69,7 +69,7 @@ Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/hel
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
 ```
 
-Credentials come from an existing Secret (`secretRef.name`); non-secret options are under `pibot:` in the chart [values file](charts/pibot/values.yaml). Optional bundled Valkey: `--set valkey.enabled=true`. See [charts/pibot/README.md](charts/pibot/README.md).
+Credentials come from an existing Secret (`secretRef.name`); non-secret options are under `pibot:` in the chart [values file](charts/pibot/values.yaml). Bundled Valkey is enabled by default (`valkey.enabled=false` for external). See [charts/pibot/README.md](charts/pibot/README.md).
 
 Further release and command details: [AGENTS.md](AGENTS.md).
 
@@ -83,7 +83,7 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 | --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PIBOT_DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `PIBOT_MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
-| `PIBOT_VALKEY_URI`    | Required* | —             | Valkey URI (`valkey://…`, `valkeys://…`)                      | Connection string for Valkey (guild settings cache). `redis://` / `rediss://` also work. *Not required in the Helm Secret when `valkey.enabled=true`. |
+| `PIBOT_VALKEY_URI`    | Required* | —             | Valkey URI (`valkey://…`, `valkeys://…`)                      | Connection string for Valkey (guild settings cache). `redis://` / `rediss://` also work. *Not required in the Helm Secret when using the bundled Valkey subchart (default). |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Required | — | Cloudflare AI Gateway base URL (through `/compat`) | Bot fails to start if unset. |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Required | — | — | Cloudflare AI Gateway token. Bot fails to start if unset. |
 | `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |

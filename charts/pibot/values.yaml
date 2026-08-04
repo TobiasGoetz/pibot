@@ -9,7 +9,7 @@ image:
 #   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL
 #   PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN
 #   PIBOT_TRANSLATIONS_DEEPL_API_KEY
-#   PIBOT_VALKEY_URI (omit when valkey.enabled is true; chart injects an authenticated URI)
+#   PIBOT_VALKEY_URI (omit by default; chart injects an authenticated URI. Required when valkey.enabled is false)
 secretRef:
   name: ""
 
@@ -19,12 +19,13 @@ pibot:
   commandSyncBehavior: global
   enableDevTools: false
 
-# Optional in-cluster Valkey (upstream subchart).
-# When enabled, the chart creates a random-password Secret, enables Valkey ACL
-# auth, and injects PIBOT_VALKEY_URI (with credentials) on the Deployment.
+# In-cluster Valkey (upstream subchart). Enabled by default.
+# Creates a random-password Secret, enables Valkey ACL auth, and injects
+# PIBOT_VALKEY_URI (with credentials) on the Deployment.
+# Set enabled: false and provide PIBOT_VALKEY_URI in secretRef for external Valkey.
 # Full options: https://github.com/valkey-io/valkey-helm
 valkey:
-  enabled: false
+  enabled: true
   auth:
     enabled: true
     # Templated by the Valkey subchart; must match pibot.valkey.authSecretName.

@@ -33,7 +33,7 @@ Release artifacts:
 3. **Helm chart → GHCR (OCI)**
    - Chart lives in `charts/pibot/`; version is aligned with the app (combined versioning).
    - On release, `helm push` publishes to `oci://ghcr.io/<owner-lowercase>/helm-charts` (see `.github/workflows/helm-publish.yml`).
-   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (credentials via `secretRef.name`; non-secrets under `pibot:` in `charts/pibot/values.yaml`, rendered as `PIBOT_*` env vars). Optional in-cluster Valkey: `--set valkey.enabled=true` (upstream subchart; generates a password Secret and injects authenticated `PIBOT_VALKEY_URI`). Use `helm registry login ghcr.io` when the registry requires authentication.
+   - Install: `helm install <release-name> oci://ghcr.io/<owner-lowercase>/helm-charts/pibot --version <version>` (credentials via `secretRef.name`; non-secrets under `pibot:` in `charts/pibot/values.yaml`, rendered as `PIBOT_*` env vars). In-cluster Valkey is enabled by default (upstream subchart; generates a password Secret and injects authenticated `PIBOT_VALKEY_URI`; set `valkey.enabled=false` for external). Use `helm registry login ghcr.io` when the registry requires authentication.
 
 Do not conflate Docker and PyPI; Helm chart publish runs on the same release and uses the app version from `pyproject.toml`.
 
