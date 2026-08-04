@@ -53,7 +53,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Cache export is best-effort: GHA blob writes can flake with
+          # "error writing layer blob: not_found" after the image already pushed.
+          cache-to: type=gha,mode=max,ignore-error=true
           tags: |
             "${{ vars.DOCKERHUB_REPOSITORY }}:latest"
             "${{ vars.DOCKERHUB_REPOSITORY }}:${{ steps.version.outputs.version }}"
