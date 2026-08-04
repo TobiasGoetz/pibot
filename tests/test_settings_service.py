@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
-from pibot.guild_settings.cache import RedisSettingsCache
+from pibot.guild_settings.cache import ValkeySettingsCache
 from pibot.guild_settings.serializer import fromStored
 from pibot.guild_settings.service import SettingsService
 
@@ -131,12 +131,12 @@ async def testGeneralUpdatePreservesSettingsGroup(settingsService: SettingsServi
     assert general.prefix == "!"
 
 
-async def testLoadCachesStoreResult(redisClient) -> None:
+async def testLoadCachesStoreResult(valkeyClient) -> None:
     """A second load for the same guild/feature does not hit the store again."""
     defaults = fromStored(SummarizeConfig, {})
     store = MagicMock()
     store.load = AsyncMock(return_value=defaults)
-    service = SettingsService(store, RedisSettingsCache(redisClient))
+    service = SettingsService(store, ValkeySettingsCache(valkeyClient))
 
     first = await service.load(GUILD_ID, SummarizeConfig)
     second = await service.load(GUILD_ID, SummarizeConfig)

@@ -15,7 +15,7 @@ dependencies = [
     "pymongo~=4.16",
     "python-dotenv~=1.2",
     "pytimeparse~=1.1",
-    "redis~=7.0",
+    "valkey~=6.1",
 ]
 
 [build-system]
@@ -35,7 +35,7 @@ dev = [
     "pytest~=9.0",
     "pytest-asyncio~=1.4",
     "ruff~=0.16",
-    "testcontainers[mongodb,redis]~=4.14",
+    "testcontainers[mongodb,valkey]~=4.14",
     "ty~=0.0",
 ]
 docs = ["sphinx~=9.1", "sphinx-rtd-theme~=3.1"]

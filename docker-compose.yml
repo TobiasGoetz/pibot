@@ -1,10 +1,10 @@
 services:
-  redis:
-    image: redis:7
+  valkey:
+    image: valkey/valkey:8
     ports:
       - "6379:6379"
     volumes:
-      - pibot-redis-data:/data
+      - pibot-valkey-data:/data
 
 volumes:
-  pibot-redis-data:
+  pibot-valkey-data:

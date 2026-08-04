@@ -69,7 +69,7 @@ Install the published Helm chart from GHCR OCI ([workflow](.github/workflows/hel
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version>
 ```
 
-Credentials come from an existing Secret (`secretRef.name`); non-secret options are under `pibot:` in the chart [values file](charts/pibot/values.yaml). See [charts/pibot/README.md](charts/pibot/README.md).
+Credentials come from an existing Secret (`secretRef.name`); non-secret options are under `pibot:` in the chart [values file](charts/pibot/values.yaml). Optional bundled Valkey: `--set valkey.enabled=true`. See [charts/pibot/README.md](charts/pibot/README.md).
 
 Further release and command details: [AGENTS.md](AGENTS.md).
 
@@ -83,7 +83,7 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 | --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PIBOT_DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `PIBOT_MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
-| `PIBOT_REDIS_URI`     | Required | —             | Redis URI (`redis://…`, `rediss://…`)                         | Connection string for Redis (guild settings cache).                                                                                         |
+| `PIBOT_VALKEY_URI`    | Required* | —             | Valkey URI (`valkey://…`, `valkeys://…`)                      | Connection string for Valkey (guild settings cache). `redis://` / `rediss://` also work. *Not required in the Helm Secret when `valkey.enabled=true`. |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Required | — | Cloudflare AI Gateway base URL (through `/compat`) | Bot fails to start if unset. |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Required | — | — | Cloudflare AI Gateway token. Bot fails to start if unset. |
 | `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |
@@ -98,9 +98,9 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 * Python 3.14 or higher
 * [uv](https://github.com/astral-sh/uv) package manager
 * MongoDB instance (local or remote)
-* Redis (local Compose service, or remote) — see below
+* Valkey (local Compose service, or remote) — see below
 * Discord bot token from [Discord Developer Portal](https://discord.com/developers/applications)
-* Docker (optional, for the local Redis Compose service)
+* Docker (optional, for the local Valkey Compose service)
 
 ### Setup
 
@@ -124,9 +124,9 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 
    Edit `.env` with your actual values. See [Environment variables](#environment-variables) for the full list.
 
-4. **Start local Redis** (if using `PIBOT_REDIS_URI=redis://localhost:6379/0` from `.env.example`)
+4. **Start local Valkey** (if using `PIBOT_VALKEY_URI=valkey://localhost:6379/0` from `.env.example`)
    ```bash
-   docker compose up -d redis
+   docker compose up -d valkey
    ```
 
 5. **Run the bot**

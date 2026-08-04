@@ -4,9 +4,12 @@ image:
 
 # Existing Secret with credentials (ExternalSecret / etc.). Required.
 # Expected keys:
-#   PIBOT_DISCORD_TOKEN, PIBOT_MONGODB_URI, PIBOT_REDIS_URI,
-#   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL, PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN,
+#   PIBOT_DISCORD_TOKEN
+#   PIBOT_MONGODB_URI
+#   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL
+#   PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN
 #   PIBOT_TRANSLATIONS_DEEPL_API_KEY
+#   PIBOT_VALKEY_URI (omit when valkey.enabled is true)
 secretRef:
   name: ""
 
@@ -15,3 +18,16 @@ pibot:
   logLevel: INFO
   commandSyncBehavior: global
   enableDevTools: false
+
+# Optional in-cluster Valkey (upstream subchart).
+# When enabled, the Deployment gets PIBOT_VALKEY_URI automatically.
+# Full options: https://github.com/valkey-io/valkey-helm
+valkey:
+  enabled: false
+  auth:
+    enabled: false
+  dataStorage:
+    enabled: true
+    requestedSize: 1Gi
+  service:
+    port: 6379

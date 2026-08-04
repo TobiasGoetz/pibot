@@ -2,7 +2,7 @@
 
 from typing import Protocol
 
-from redis.asyncio import Redis
+from valkey.asyncio import Valkey
 
 from pibot.guild_settings.model import SettingsGroup
 
@@ -10,7 +10,7 @@ CACHE_KEY_PREFIX = "pibot:settings"
 
 
 def cacheKey(guildId: int, featureName: str) -> str:
-    """Return the Redis key for one guild feature settings group."""
+    """Return the Valkey key for one guild feature settings group."""
     return f"{CACHE_KEY_PREFIX}:{guildId}:{featureName}"
 
 
@@ -27,11 +27,11 @@ class SettingsCache(Protocol):
         """Release cache resources."""
 
 
-class RedisSettingsCache:
-    """Redis-backed settings cache for multi-replica deployments."""
+class ValkeySettingsCache:
+    """Valkey-backed settings cache for multi-replica deployments."""
 
-    def __init__(self, client: Redis) -> None:
-        """Initialize with an async Redis client."""
+    def __init__(self, client: Valkey) -> None:
+        """Initialize with an async Valkey client."""
         self._client = client
 
     async def get[T: SettingsGroup](self, guildId: int, model: type[T]) -> T | None:
@@ -46,5 +46,5 @@ class RedisSettingsCache:
         await self._client.set(cacheKey(guildId, type(config).name), config.model_dump_json())
 
     async def close(self) -> None:
-        """Close the Redis client."""
+        """Close the Valkey client."""
         await self._client.aclose()
