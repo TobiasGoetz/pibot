@@ -12,5 +12,6 @@ class SettingsGroup(BaseModel):
 
     name: ClassVar[str]
     description: ClassVar[str]
+    disableable: ClassVar[bool] = True
 
     enabled: bool = Field(default=True, description="Whether this feature is active on the server")

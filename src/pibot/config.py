@@ -10,7 +10,8 @@ All PiBot env vars use the ``PIBOT_`` prefix.
   ``PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL``, ``PIBOT_TRANSLATIONS_DEEPL_API_KEY``
 
 Guild settings are never read from the environment (MongoDB only). Per-guild
-``enabled`` flags toggle features on each server independently.
+``enabled`` flags toggle disableable features on each server independently
+(``general`` is always on).
 """
 
 import logging

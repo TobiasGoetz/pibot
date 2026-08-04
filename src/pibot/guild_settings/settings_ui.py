@@ -122,6 +122,8 @@ class SettingsPanelView(ui.LayoutView):
         ]
 
         for field in self.configClass.model_fields:
+            if field == "enabled" and not self.configClass.disableable:
+                continue
             containerItems.extend(self._settingControls(field))
 
         self.add_item(ui.Container(*containerItems, accent_color=discord.Color.blurple()))

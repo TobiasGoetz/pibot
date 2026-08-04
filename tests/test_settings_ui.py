@@ -8,12 +8,13 @@ import pytest
 from pydantic import Field
 
 from pibot.cogs.admin.config import AdminConfig
+from pibot.cogs.error_handler import handleInteractionError
 from pibot.cogs.general.config import GeneralConfig
 from pibot.cogs.summarize.config import SummarizeConfig
-from pibot.cogs.error_handler import handleInteractionError
 from pibot.guild_settings.errors import GuildSettingsError
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import parseSetting
+from pibot.guild_settings.settings_ui import SettingsPanelView, sendSettingsPanel
 from pibot.guild_settings.ui.editors import (
     BoolEditor,
     ChannelEditor,
@@ -24,7 +25,6 @@ from pibot.guild_settings.ui.editors import (
     resolveSettingEditor,
     unwrapAnnotation,
 )
-from pibot.guild_settings.settings_ui import SettingsPanelView, sendSettingsPanel
 
 
 class SampleMode(StrEnum):
@@ -164,6 +164,18 @@ def testSettingsPanelBuildsForGeneralConfig() -> None:
 
     assert view.total_children_count > 0
     assert len(view.children) == 1
+
+
+def testGeneralConfigIsNotDisableable() -> None:
+    """Core general settings omit the enabled toggle from the panel."""
+    assert GeneralConfig.disableable is False
+    assert AdminConfig.disableable is True
+
+    view = SettingsPanelView(MagicMock(), 1, GeneralConfig, GeneralConfig())
+    payload = str(view.to_components())
+
+    assert "enabled" not in payload
+    assert "prefix" in payload
 
 
 def testSettingsPanelIncludesAllFields() -> None:

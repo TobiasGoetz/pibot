@@ -15,6 +15,7 @@ class GeneralConfig(SettingsGroup):
 
     name = "general"
     description = "Core bot settings and utility commands"
+    disableable = False
 
     prefix: str = Field(
         default=".",
