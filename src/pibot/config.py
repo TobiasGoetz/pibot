@@ -90,6 +90,7 @@ class BotConfig(BaseSettings):
 
     discordToken: str = Field(default=..., min_length=1, alias="DISCORD_TOKEN")
     mongodbUri: str = Field(default=..., min_length=1, alias="MONGODB_URI")
+    redisUri: str = Field(default=..., min_length=1, alias="REDIS_URI")
     logLevel: str = Field(default="INFO", alias="LOG_LEVEL")
     summarize: SummarizeBotConfig = Field(default_factory=SummarizeBotConfig)
     translations: TranslationsBotConfig = Field(default_factory=TranslationsBotConfig)

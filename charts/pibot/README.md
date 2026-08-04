@@ -11,7 +11,8 @@ Deploys [PiBot](https://github.com/TobiasGoetz/pibot) (Discord bot) on Kubernete
 
 ```bash
 # Secret must already exist with keys such as:
-#   PIBOT_DISCORD_TOKEN, PIBOT_MONGODB_URI, PIBOT_TRANSLATIONS_DEEPL_API_KEY,
+#   PIBOT_DISCORD_TOKEN, PIBOT_MONGODB_URI, PIBOT_REDIS_URI,
+#   PIBOT_TRANSLATIONS_DEEPL_API_KEY,
 #   PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL, PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN
 
 helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <version> \

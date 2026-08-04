@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from pibot.config import BotConfig, COMMAND_SYNC_BEHAVIOR
+from pibot.config import COMMAND_SYNC_BEHAVIOR, BotConfig
 
 
 @pytest.fixture(autouse=True)
@@ -19,6 +19,7 @@ def botEnv(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setenv("PIBOT_DISCORD_TOKEN", "discord-token")
     monkeypatch.setenv("PIBOT_MONGODB_URI", "mongodb://localhost:27017/")
+    monkeypatch.setenv("PIBOT_REDIS_URI", "redis://localhost:6379/0")
     monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL", "https://example.com")
     monkeypatch.setenv("PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN", "cloudflare-token")
     monkeypatch.setenv("PIBOT_TRANSLATIONS_DEEPL_API_KEY", "deepl-key")
@@ -85,6 +86,23 @@ def testRequiredBootstrapVarsRaiseWhenMissing(monkeypatch: pytest.MonkeyPatch) -
     # Act / Assert
     with pytest.raises(ValidationError):
         BotConfig()
+
+
+def testRequiredRedisUriRaisesWhenMissing(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Redis URI env var is required."""
+    # Arrange
+    monkeypatch.delenv("PIBOT_REDIS_URI", raising=False)
+
+    # Act / Assert
+    with pytest.raises(ValidationError):
+        BotConfig()
+
+
+def testRedisUriLoadsFromEnv() -> None:
+    """Redis URI loads from env."""
+    config = BotConfig()
+
+    assert config.redisUri == "redis://localhost:6379/0"
 
 
 def testRequiredCloudflareBaseUrlRaisesWhenMissing(monkeypatch: pytest.MonkeyPatch) -> None:

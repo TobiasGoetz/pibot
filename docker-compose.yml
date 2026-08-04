@@ -1,0 +1,10 @@
+services:
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - pibot-redis-data:/data
+
+volumes:
+  pibot-redis-data:

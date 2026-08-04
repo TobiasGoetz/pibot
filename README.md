@@ -83,6 +83,7 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 | --------------- | -------- | ------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `PIBOT_DISCORD_TOKEN` | Required | —             | —                                                             | Bot token from the [Discord Developer Portal](https://discord.com/developers/applications).                                                 |
 | `PIBOT_MONGODB_URI`   | Required | —             | Standard MongoDB URI (`mongodb://…`, `mongodb+srv://…`, etc.) | Connection string for your MongoDB instance (local or Atlas).                                                                               |
+| `PIBOT_REDIS_URI`     | Required | —             | Redis URI (`redis://…`, `rediss://…`)                         | Connection string for Redis (guild settings cache).                                                                                         |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_BASE_URL` | Required | — | Cloudflare AI Gateway base URL (through `/compat`) | Bot fails to start if unset. |
 | `PIBOT_SUMMARIZE_CLOUDFLARE_TOKEN` | Required | — | — | Cloudflare AI Gateway token. Bot fails to start if unset. |
 | `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |
@@ -97,7 +98,9 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 * Python 3.14 or higher
 * [uv](https://github.com/astral-sh/uv) package manager
 * MongoDB instance (local or remote)
+* Redis (local Compose service, or remote) — see below
 * Discord bot token from [Discord Developer Portal](https://discord.com/developers/applications)
+* Docker (optional, for the local Redis Compose service)
 
 ### Setup
 
@@ -121,7 +124,12 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 
    Edit `.env` with your actual values. See [Environment variables](#environment-variables) for the full list.
 
-4. **Run the bot**
+4. **Start local Redis** (if using `PIBOT_REDIS_URI=redis://localhost:6379/0` from `.env.example`)
+   ```bash
+   docker compose up -d redis
+   ```
+
+5. **Run the bot**
    ```bash
    uv run pibot
    ```
