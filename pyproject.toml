@@ -9,7 +9,7 @@ requires-python = "~=3.14.0"
 dependencies = [
     "deepl~=1.28",
     "discord-py~=2.7",
-    "openai~=2.41",
+    "openai>=2.41,<4.0",
     "pydantic~=2.13",
     "pydantic-settings>=2.14.2",
     "pymongo~=4.16",
