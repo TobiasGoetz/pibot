@@ -19,7 +19,7 @@ env:
 jobs:
   ruff:
     name: Lint (Ruff)
-    runs-on: rpi-cluster
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Install uv
@@ -35,7 +35,7 @@ jobs:
 
   ty:
     name: Type check (ty)
-    runs-on: rpi-cluster
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Install uv
