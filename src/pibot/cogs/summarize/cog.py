@@ -38,7 +38,8 @@ async def summarizeCooldown(interaction: discord.Interaction) -> app_commands.Co
     assert isinstance(interaction.client, Bot)
     if interaction.guild is None:
         return app_commands.Cooldown(1, 3600)
-    if await interaction.client.is_owner(interaction.user):
+    user = interaction.user
+    if isinstance(user, discord.abc.User) and await interaction.client.is_owner(user):
         return None
     config = await interaction.client.guildSettings.load(interaction.guild.id, SummarizeConfig)
     return app_commands.Cooldown(1, config.cooldownSeconds)
