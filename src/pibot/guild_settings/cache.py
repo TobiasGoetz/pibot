@@ -27,7 +27,7 @@ class SettingsCache(Protocol):
         """Release cache resources."""
 
 
-class ValkeySettingsCache:
+class ValkeySettingsCache(SettingsCache):
     """Valkey-backed settings cache for multi-replica deployments."""
 
     def __init__(self, client: Valkey) -> None:
