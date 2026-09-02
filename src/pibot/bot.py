@@ -17,6 +17,7 @@ from pibot.guild_settings.store import SettingsStore
 
 logger = logging.getLogger(__name__)
 
+
 def configureLogging(appLevel: int) -> None:
     """Configure Discord logging at INFO and apply ``appLevel`` to PiBot loggers only."""
     discord.utils.setup_logging(level=logging.INFO)
