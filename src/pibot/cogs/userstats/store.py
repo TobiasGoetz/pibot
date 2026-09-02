@@ -1,6 +1,7 @@
 """MongoDB persistence for per-member activity stats."""
 
 import logging
+from datetime import UTC, datetime
 
 import discord
 from pymongo import AsyncMongoClient
@@ -47,6 +48,29 @@ class UserstatsStore:
             message.channel.id,
             message.id,
             sentAt,
+        )
+
+    async def recordPresence(self, member: discord.Member, seenAt: datetime | None = None) -> None:
+        """Update last seen time for a guild member."""
+        guild = member.guild
+        if guild is None:
+            return
+
+        seenAt = seenAt or datetime.now(UTC)
+        await self.collection.update_one(
+            {"_id": {"guildId": guild.id, "userId": member.id}},
+            {
+                "$set": {"lastSeenAt": seenAt},
+                "$setOnInsert": {"messageCount": 0},
+            },
+            upsert=True,
+        )
+        LOGGER.debug(
+            "Recorded presence: guild=%s user=%s status=%s seenAt=%s",
+            guild.id,
+            member.id,
+            member.status,
+            seenAt,
         )
 
     async def getStats(self, guildId: int, userId: int) -> UserStatsRecord | None:

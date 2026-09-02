@@ -3,6 +3,8 @@
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import discord
+
 from pibot.cogs.userstats.store import UserstatsStore
 
 GUILD_ID = 1
@@ -48,6 +50,28 @@ async def testRecordMessageIncrementsCount(userstatsStore: UserstatsStore) -> No
     assert record is not None
     assert record.messageCount == 2
     assert record.lastMessageAt == later
+
+
+async def testRecordPresenceSetsLastSeenAt(userstatsStore: UserstatsStore) -> None:
+    """Presence updates create or update last seen time."""
+    # Arrange
+    seenAt = datetime(2026, 9, 2, 10, 0, tzinfo=UTC)
+    member = SimpleNamespace(
+        guild=SimpleNamespace(id=GUILD_ID),
+        id=USER_ID,
+        bot=False,
+        status=discord.Status.online,
+    )
+
+    # Act
+    await userstatsStore.recordPresence(member, seenAt)
+    record = await userstatsStore.getStats(GUILD_ID, USER_ID)
+
+    # Assert
+    assert record is not None
+    assert record.messageCount == 0
+    assert record.lastSeenAt == seenAt
+    assert record.lastMessageAt is None
 
 
 async def testGetStatsReturnsNoneWhenMissing(userstatsStore: UserstatsStore) -> None:

@@ -15,6 +15,7 @@ class UserStatsRecord(BaseModel):
     userId: int
     messageCount: int = 0
     lastMessageAt: datetime | None = None
+    lastSeenAt: datetime | None = None
 
     @classmethod
     def fromDocument(cls, doc: Mapping[str, object] | None) -> UserStatsRecord | None:
@@ -30,5 +31,6 @@ class UserStatsRecord(BaseModel):
                 "userId": docId.get("userId"),
                 "messageCount": doc.get("messageCount", 0),
                 "lastMessageAt": doc.get("lastMessageAt"),
+                "lastSeenAt": doc.get("lastSeenAt"),
             }
         )

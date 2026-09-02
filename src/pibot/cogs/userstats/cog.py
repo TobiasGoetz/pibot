@@ -39,6 +39,9 @@ class Userstats(
         if member.joined_at is not None:
             timestamp = int(member.joined_at.timestamp())
             embed.add_field(name="Joined server", value=f"<t:{timestamp}:D>", inline=False)
+        if record.lastSeenAt is not None:
+            timestamp = int(record.lastSeenAt.timestamp())
+            embed.add_field(name="Last seen", value=f"<t:{timestamp}:R>", inline=False)
         if record.lastMessageAt is not None:
             timestamp = int(record.lastMessageAt.timestamp())
             embed.add_field(name="Last message", value=f"<t:{timestamp}:R>", inline=False)
@@ -100,3 +103,21 @@ class Userstats(
         config = await self.bot.guildSettings.load(message.guild.id, UserstatsConfig)
         if config.enabled:
             await self.store.recordMessage(message)
+
+    @commands.Cog.listener()
+    async def on_presence_update(self, before: discord.Member, after: discord.Member) -> None:
+        """
+        Record member presence activity.
+
+        :param before: The member's previous presence.
+        :param after: The member's updated presence.
+        """
+        if after.bot or after.guild is None:
+            return
+
+        if before.status == after.status:
+            return
+
+        config = await self.bot.guildSettings.load(after.guild.id, UserstatsConfig)
+        if config.enabled:
+            await self.store.recordPresence(after)
