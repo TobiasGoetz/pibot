@@ -30,16 +30,18 @@ class Userstats(
     def _buildStatsEmbed(member: discord.Member, record: UserStatsRecord) -> discord.Embed:
         """Build an embed for one member's activity stats."""
         embed = discord.Embed(
-            title=f"Activity stats — {member.display_name}",
+            title="Activity stats",
+            description=member.mention,
             color=discord.Color.blurple(),
         )
-        embed.add_field(name="Messages", value=f"{record.messageCount:,}", inline=True)
+        embed.set_thumbnail(url=member.display_avatar.url)
+        embed.add_field(name="Messages", value=f"{record.messageCount:,}", inline=False)
         if member.joined_at is not None:
             timestamp = int(member.joined_at.timestamp())
-            embed.add_field(name="Joined server", value=f"<t:{timestamp}:D>", inline=True)
+            embed.add_field(name="Joined server", value=f"<t:{timestamp}:D>", inline=False)
         if record.lastMessageAt is not None:
             timestamp = int(record.lastMessageAt.timestamp())
-            embed.add_field(name="Last message", value=f"<t:{timestamp}:R>", inline=True)
+            embed.add_field(name="Last message", value=f"<t:{timestamp}:R>", inline=False)
         return embed
 
     async def _showStats(self, interaction: discord.Interaction, member: discord.Member) -> None:
