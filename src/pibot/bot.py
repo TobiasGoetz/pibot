@@ -37,7 +37,7 @@ class Bot(discord.ext.commands.Bot):
     def __init__(self, config: BotConfig, *args, **kwargs) -> None:
         """Initialize the bot."""
         self.config = config
-        self._mongoClient = AsyncMongoClient(config.mongodbUri)
+        self._mongoClient = AsyncMongoClient(config.mongodbUri, tz_aware=True)
         self._settingsCache = ValkeySettingsCache(Valkey.from_url(config.valkeyUri))
         self.guildSettings = SettingsService(SettingsStore(self._mongoClient), self._settingsCache)
         self.commandSyncBehavior = config.commandSyncBehavior
