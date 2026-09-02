@@ -8,7 +8,7 @@ from pymongo import AsyncMongoClient
 
 from pibot.cogs.userstats.model import UserStatsRecord
 
-LOGGER = logging.getLogger("userstats.store")
+logger = logging.getLogger(__name__)
 
 
 class UserstatsStore:
@@ -24,7 +24,7 @@ class UserstatsStore:
             [("_id.guildId", 1), ("messageCount", -1)],
             name="guild_message_count",
         )
-        LOGGER.debug("Ensured userstats indexes.")
+        logger.debug("Ensured userstats indexes.")
 
     async def recordMessage(self, message: discord.Message) -> None:
         """Increment message stats for the message author."""
@@ -41,7 +41,7 @@ class UserstatsStore:
             },
             upsert=True,
         )
-        LOGGER.debug(
+        logger.debug(
             "Recorded userstats: guild=%s user=%s channel=%s message=%s sentAt=%s",
             guild.id,
             message.author.id,
@@ -65,7 +65,7 @@ class UserstatsStore:
             },
             upsert=True,
         )
-        LOGGER.debug(
+        logger.debug(
             "Recorded presence: guild=%s user=%s status=%s seenAt=%s",
             guild.id,
             member.id,
