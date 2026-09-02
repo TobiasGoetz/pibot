@@ -34,12 +34,12 @@ class Userstats(
             color=discord.Color.blurple(),
         )
         embed.add_field(name="Messages", value=f"{record.messageCount:,}", inline=True)
+        if member.joined_at is not None:
+            timestamp = int(member.joined_at.timestamp())
+            embed.add_field(name="Joined server", value=f"<t:{timestamp}:D>", inline=True)
         if record.lastMessageAt is not None:
             timestamp = int(record.lastMessageAt.timestamp())
             embed.add_field(name="Last message", value=f"<t:{timestamp}:R>", inline=True)
-        if record.firstSeenAt is not None:
-            timestamp = int(record.firstSeenAt.timestamp())
-            embed.add_field(name="Tracking since", value=f"<t:{timestamp}:D>", inline=True)
         return embed
 
     async def _showStats(self, interaction: discord.Interaction, member: discord.Member) -> None:

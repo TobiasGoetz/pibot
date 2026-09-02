@@ -31,7 +31,7 @@ async def testRecordMessageCreatesDocument(userstatsStore: UserstatsStore) -> No
     assert raw is not None
     assert raw["messageCount"] == 1
     assert raw["lastMessageAt"] == SENT_AT
-    assert raw["firstSeenAt"] == SENT_AT
+    assert "firstSeenAt" not in raw
 
 
 async def testRecordMessageIncrementsCount(userstatsStore: UserstatsStore) -> None:
@@ -48,7 +48,6 @@ async def testRecordMessageIncrementsCount(userstatsStore: UserstatsStore) -> No
     assert record is not None
     assert record.messageCount == 2
     assert record.lastMessageAt == later
-    assert record.firstSeenAt == SENT_AT
 
 
 async def testGetStatsReturnsNoneWhenMissing(userstatsStore: UserstatsStore) -> None:

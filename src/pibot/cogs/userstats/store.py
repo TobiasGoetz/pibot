@@ -37,7 +37,6 @@ class UserstatsStore:
             {
                 "$inc": {"messageCount": 1},
                 "$set": {"lastMessageAt": sentAt},
-                "$setOnInsert": {"firstSeenAt": sentAt},
             },
             upsert=True,
         )
