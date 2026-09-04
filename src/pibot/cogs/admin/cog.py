@@ -10,7 +10,7 @@ from pibot.bot import Bot
 from pibot.cogs.admin.config import AdminConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
-logger = logging.getLogger("cog.admin")
+logger = logging.getLogger(__name__)
 
 
 class Admin(

@@ -6,6 +6,7 @@ from testcontainers.community.mongodb import MongoDbContainer
 from testcontainers.community.valkey import ValkeyContainer
 from valkey.asyncio import Valkey
 
+from pibot.cogs.userstats.store import UserstatsStore
 from pibot.guild_settings.cache import ValkeySettingsCache
 from pibot.guild_settings.service import SettingsService
 from pibot.guild_settings.store import SettingsStore
@@ -28,9 +29,10 @@ def valkeyContainer():
 @pytest.fixture
 async def mongoClient(mongoContainer):
   """Async MongoDB client connected to the testcontainer."""
-  client = AsyncMongoClient(mongoContainer.get_connection_url())
+  client = AsyncMongoClient(mongoContainer.get_connection_url(), tz_aware=True)
   yield client
   await client["discord"]["settings"].delete_many({})
+  await client["discord"]["userstats"].delete_many({})
   await client.close()
 
 
@@ -47,6 +49,12 @@ async def valkeyClient(valkeyContainer):
 async def settingsStore(mongoClient):
   """Yield a settings store backed by real MongoDB."""
   yield SettingsStore(mongoClient)
+
+
+@pytest.fixture
+async def userstatsStore(mongoClient):
+  """Yield a userstats store backed by real MongoDB."""
+  yield UserstatsStore(mongoClient)
 
 
 @pytest.fixture

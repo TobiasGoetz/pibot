@@ -22,18 +22,18 @@ pibot.bot module
    :show-inheritance:
    :undoc-members:
 
-pibot.errors module
--------------------
-
-.. automodule:: pibot.errors
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 pibot.config module
 -------------------
 
 .. automodule:: pibot.config
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pibot.errors module
+-------------------
+
+.. automodule:: pibot.errors
    :members:
    :show-inheritance:
    :undoc-members:

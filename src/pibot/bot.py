@@ -15,7 +15,13 @@ from pibot.guild_settings.cache import ValkeySettingsCache
 from pibot.guild_settings.service import SettingsService
 from pibot.guild_settings.store import SettingsStore
 
-logger = logging.getLogger("pibot")
+logger = logging.getLogger(__name__)
+
+
+def configureLogging(appLevel: int) -> None:
+    """Configure Discord logging at INFO and apply ``appLevel`` to PiBot loggers only."""
+    discord.utils.setup_logging(level=logging.INFO)
+    logging.getLogger("pibot").setLevel(appLevel)
 
 
 def getVersion() -> str:
@@ -37,7 +43,7 @@ class Bot(discord.ext.commands.Bot):
     def __init__(self, config: BotConfig, *args, **kwargs) -> None:
         """Initialize the bot."""
         self.config = config
-        self._mongoClient = AsyncMongoClient(config.mongodbUri)
+        self._mongoClient = AsyncMongoClient(config.mongodbUri, tz_aware=True)
         self._settingsCache = ValkeySettingsCache(Valkey.from_url(config.valkeyUri))
         self.guildSettings = SettingsService(SettingsStore(self._mongoClient), self._settingsCache)
         self.commandSyncBehavior = config.commandSyncBehavior
@@ -52,7 +58,7 @@ class Bot(discord.ext.commands.Bot):
 
     async def setup_hook(self) -> None:
         """Set up the hooks for the bot."""
-        discord.utils.setup_logging(level=self.config.logLevelValue)
+        configureLogging(self.config.logLevelValue)
         logger.info("Starting PiBot version %s", self.version)
         logger.info("Logged in as %s", self.user)
         await self.load_cogs()
