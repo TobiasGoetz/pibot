@@ -12,7 +12,7 @@ from pibot.cogs.translations.config import TranslationsConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 from pibot.translation_service.deepl_translator import DeepLTranslator
 
-logger = logging.getLogger("cog.translations")
+logger = logging.getLogger(__name__)
 
 
 class Translations(

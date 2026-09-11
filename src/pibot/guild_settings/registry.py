@@ -4,7 +4,7 @@ import logging
 
 from pibot.guild_settings.model import SettingsGroup
 
-LOGGER = logging.getLogger("guild_settings.registry")
+logger = logging.getLogger(__name__)
 
 _GROUPS: dict[str, type[SettingsGroup]] = {}
 
@@ -17,7 +17,7 @@ def registerSettingsGroup[T: SettingsGroup](group: type[T]) -> type[T]:
         raise ValueError(msg)
     if existing is not group:
         _GROUPS[group.name] = group
-        LOGGER.debug("Registered settings group: %s", group.name)
+        logger.debug("Registered settings group: %s", group.name)
     return group
 
 

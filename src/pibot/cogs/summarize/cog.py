@@ -14,7 +14,7 @@ from pibot.bot import Bot
 from pibot.cogs.summarize.config import SummarizeConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
-logger = logging.getLogger("cog.summarize")
+logger = logging.getLogger(__name__)
 
 CHARS_PER_MESSAGE = 100
 DISCORD_MESSAGE_LIMIT = 2000

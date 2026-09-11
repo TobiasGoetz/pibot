@@ -7,7 +7,7 @@ from pymongo import AsyncMongoClient
 from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fromStored
 
-LOGGER = logging.getLogger("guild_settings.store")
+logger = logging.getLogger(__name__)
 
 
 class SettingsStore:
@@ -31,7 +31,7 @@ class SettingsStore:
             {"$set": {fieldKey: value}},
             upsert=True,
         )
-        LOGGER.info("Set %s.%s for guild %s.", name, field, guildId)
+        logger.info("Set %s.%s for guild %s.", name, field, guildId)
 
     async def unsetField(self, guildId: int, name: str, field: str) -> None:
         """Remove one stored settings group field."""
@@ -40,4 +40,4 @@ class SettingsStore:
             {"_id": guildId},
             {"$unset": {fieldKey: ""}},
         )
-        LOGGER.info("Unset %s.%s for guild %s.", name, field, guildId)
+        logger.info("Unset %s.%s for guild %s.", name, field, guildId)
