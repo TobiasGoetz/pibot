@@ -17,7 +17,7 @@ helm install pibot oci://ghcr.io/tobiasgoetz/helm-charts/pibot --version <versio
   --set secretRef.name=pibot-prd
 ```
 
-Omit `PIBOT_VALKEY_URI` from the Secret. The chart creates `<release>-valkey-users` (random password, stable across upgrades via lookup), enables Valkey ACL auth for the `default` user, and injects `PIBOT_VALKEY_URI` from that Secret. Defaults: auth on, 1Gi data PVC. Override under `valkey:` in [values.yaml](values.yaml); see the upstream chart for full options.
+Omit `PIBOT_VALKEY_URI` from the Secret. The chart creates `<release>-valkey-users` (random password, stable across upgrades via lookup), enables Valkey ACL auth for the `default` user, and injects `PIBOT_VALKEY_URI` from that Secret. Defaults: auth on, no PVC (cache only; MongoDB is the source of truth). Override under `valkey:` in [values.yaml](values.yaml); see the upstream chart for full options.
 
 To use external Valkey: `--set valkey.enabled=false` and provide `PIBOT_VALKEY_URI` in the Secret. To keep the subchart but disable auth: `valkey.auth.enabled=false` (plain `valkey://<release>-valkey:6379/0` is injected instead).
 
