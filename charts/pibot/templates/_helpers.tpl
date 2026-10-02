@@ -16,10 +16,7 @@
 valkey://{{ $host }}:{{ $port }}/0
 {{- end -}}
 
-{{/*
-  Returns JSON {"password","uri"} for in-cluster Valkey auth.
-  Reuses an existing Secret password across upgrades (lookup).
-*/}}
+{{/* JSON {"password","uri"}; reuses existing Secret password via lookup. */}}
 {{- define "pibot.valkey.authCredentials" -}}
 {{- $secretName := include "pibot.valkey.authSecretName" . -}}
 {{- $host := include "pibot.valkey.host" . -}}
