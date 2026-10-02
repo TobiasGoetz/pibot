@@ -11,7 +11,7 @@ from pibot.cogs.error_handler import handleInteractionError
 from pibot.guild_settings.errors import GuildSettingsError
 from pibot.guild_settings.settings_ui import sendSettingsPanel
 
-logger = logging.getLogger("cog.settings")
+logger = logging.getLogger(__name__)
 
 
 class Settings(commands.Cog):

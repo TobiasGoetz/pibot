@@ -13,7 +13,7 @@ from pibot.guild_settings.registry import getSettingsGroups
 from pibot.guild_settings.serializer import fieldDefault, parseModalSetting
 from pibot.guild_settings.ui.editors import SettingEditor, bindUiCallback, resolveSettingEditor
 
-logger = logging.getLogger("guild_settings.settings_ui")
+logger = logging.getLogger(__name__)
 
 
 class SettingValueModal(ui.Modal):

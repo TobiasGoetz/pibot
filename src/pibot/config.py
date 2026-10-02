@@ -102,5 +102,5 @@ class BotConfig(BaseSettings):
 
     @property
     def logLevelValue(self) -> int:
-        """``PIBOT_LOG_LEVEL`` as a ``logging`` module level constant."""
+        """``PIBOT_LOG_LEVEL`` for PiBot loggers (libraries stay at INFO)."""
         return getattr(logging, self.logLevel.upper(), logging.INFO)
