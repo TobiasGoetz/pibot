@@ -9,7 +9,7 @@ from discord.ext import commands
 from pibot.bot import Bot
 from pibot.errors import FeatureDisabled
 
-LOGGER: logging.Logger = logging.getLogger("errors")
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class ExceptionHandler(commands.Cog):
@@ -27,7 +27,7 @@ class ExceptionHandler(commands.Cog):
     ):
         # Avoid dispatching to the app command error handler if the command has its own error handler.
         # if hasattr(interaction.command, 'on_error'):
-        #     LOGGER.info("Command has an on_error method")
+        #     logger.info("Command has an on_error method")
         #     return
 
         # Avoid dispatching to the app command error handler if the cog has its own error handler.
@@ -51,7 +51,7 @@ class ExceptionHandler(commands.Cog):
         """
         commandName = interaction.command.name if interaction.command else "unknown"
         if isinstance(error, app_commands.MissingPermissions):
-            LOGGER.info(
+            logger.info(
                 "User %s tried to use %s without permissions.",
                 interaction.user,
                 commandName,
@@ -59,7 +59,7 @@ class ExceptionHandler(commands.Cog):
             await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
         elif isinstance(error, app_commands.MissingRole):
-            LOGGER.info(
+            logger.info(
                 "User %s tried to use %s without the %s role.",
                 interaction.user,
                 commandName,
@@ -72,7 +72,7 @@ class ExceptionHandler(commands.Cog):
             )
 
         elif isinstance(error, app_commands.CommandNotFound):
-            LOGGER.info("User %s tried to use an invalid command.", interaction.user)
+            logger.info("User %s tried to use an invalid command.", interaction.user)
             await send_app_command_error_message(
                 interaction,
                 f"**{interaction.user.name}** this command does not exist.",
@@ -80,7 +80,7 @@ class ExceptionHandler(commands.Cog):
             )
 
         elif isinstance(error, app_commands.CommandSignatureMismatch):
-            LOGGER.info(
+            logger.info(
                 "User %s tried to use %s with invalid arguments. [%s]",
                 interaction.user,
                 commandName,
@@ -93,7 +93,7 @@ class ExceptionHandler(commands.Cog):
             )
 
         elif isinstance(error, app_commands.CommandOnCooldown):
-            LOGGER.info(
+            logger.info(
                 "User %s tried to use %s on cooldown. [%s]",
                 interaction.user,
                 commandName,
@@ -106,7 +106,7 @@ class ExceptionHandler(commands.Cog):
             )
 
         elif isinstance(error, app_commands.CheckFailure):
-            LOGGER.info(
+            logger.info(
                 "User %s failed check for slash command %s.",
                 interaction.user,
                 commandName,
@@ -114,7 +114,7 @@ class ExceptionHandler(commands.Cog):
             await send_app_command_error_message(interaction, f"You cannot use `{commandName}`.", error)
 
         elif isinstance(error, FeatureDisabled):
-            LOGGER.info(
+            logger.info(
                 "User %s tried to use %s while feature %s is disabled.",
                 interaction.user,
                 commandName,
@@ -123,7 +123,7 @@ class ExceptionHandler(commands.Cog):
             await send_app_command_error_message(interaction, str(error), error)
 
         elif isinstance(error, app_commands.CommandInvokeError) and isinstance(error.original, commands.BadArgument):
-            LOGGER.info(
+            logger.info(
                 "User %s used %s with invalid arguments. [%s]",
                 interaction.user,
                 commandName,
@@ -136,7 +136,7 @@ class ExceptionHandler(commands.Cog):
             )
 
         else:
-            LOGGER.error(
+            logger.error(
                 "Uncaught error caused by %s using %s. [%s]",
                 interaction.user,
                 interaction.data,
@@ -162,7 +162,7 @@ class ExceptionHandler(commands.Cog):
         originalError = getattr(error, "original", error)
 
         if isinstance(originalError, commands.CheckFailure):
-            LOGGER.info(
+            logger.info(
                 "User %s failed check for prefix command %s.",
                 ctx.author,
                 commandName,
@@ -173,7 +173,7 @@ class ExceptionHandler(commands.Cog):
                 originalError,
             )
         elif isinstance(originalError, commands.MissingRequiredArgument):
-            LOGGER.info(
+            logger.info(
                 "User %s used %s with missing arguments. [%s]",
                 ctx.author,
                 commandName,
@@ -185,7 +185,7 @@ class ExceptionHandler(commands.Cog):
                 originalError,
             )
         elif isinstance(originalError, commands.BadArgument):
-            LOGGER.info(
+            logger.info(
                 "User %s used %s with invalid arguments. [%s]",
                 ctx.author,
                 commandName,
@@ -197,7 +197,7 @@ class ExceptionHandler(commands.Cog):
                 originalError,
             )
         elif isinstance(originalError, commands.CommandOnCooldown):
-            LOGGER.info(
+            logger.info(
                 "User %s used %s on cooldown. [%s]",
                 ctx.author,
                 commandName,
@@ -209,7 +209,7 @@ class ExceptionHandler(commands.Cog):
                 originalError,
             )
         else:
-            LOGGER.error(
+            logger.error(
                 "Uncaught prefix command error caused by %s using %s. [%s]",
                 ctx.author,
                 commandName,
@@ -231,7 +231,7 @@ async def sendInteractionErrorMessage(interaction: discord.Interaction, message:
         else:
             await interaction.response.send_message(message, ephemeral=True)
     except discord.HTTPException:
-        LOGGER.exception("Failed to send interaction error message.")
+        logger.exception("Failed to send interaction error message.")
 
 
 async def handleInteractionError(
@@ -273,9 +273,9 @@ async def send_app_command_error_message(
         try:
             await interaction.edit_original_response(content=None, embed=embed)
         except discord.HTTPException:
-            LOGGER.exception("Failed to send app command error message.")
+            logger.exception("Failed to send app command error message.")
     except discord.errors.NotFound:
-        LOGGER.debug("Could not respond to expired interaction for %s.", interaction.command)
+        logger.debug("Could not respond to expired interaction for %s.", interaction.command)
     else:
         await interaction.followup.send(embed=embed)
 
