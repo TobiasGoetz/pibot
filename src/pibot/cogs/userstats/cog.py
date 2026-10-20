@@ -10,6 +10,13 @@ from pibot.cogs.userstats.model import UserStatsRecord
 from pibot.cogs.userstats.store import UserstatsStore
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
+TRACKED_PRESENCE_STATUSES = frozenset({discord.Status.online, discord.Status.offline})
+
+
+def isTrackedPresenceChange(before: discord.Status, after: discord.Status) -> bool:
+    """Return whether a presence change should update last seen."""
+    return before != after and after in TRACKED_PRESENCE_STATUSES
+
 
 class Userstats(
     FeatureSettingsMixin,
@@ -107,7 +114,9 @@ class Userstats(
     @commands.Cog.listener()
     async def on_presence_update(self, before: discord.Member, after: discord.Member) -> None:
         """
-        Record member presence activity.
+        Record last seen when a member goes online or offline.
+
+        Idle and DND changes are ignored to avoid a write on every status flicker.
 
         :param before: The member's previous presence.
         :param after: The member's updated presence.
@@ -115,7 +124,7 @@ class Userstats(
         if after.bot or after.guild is None:
             return
 
-        if before.status == after.status:
+        if not isTrackedPresenceChange(before.status, after.status):
             return
 
         config = await self.bot.guildSettings.load(after.guild.id, UserstatsConfig)
