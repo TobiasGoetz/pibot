@@ -2,8 +2,8 @@ apiVersion: v2
 name: pibot
 description: Multi-purpose Discord Bot (PiBot)
 type: application
-version: 4.0.1
-appVersion: 4.0.1
+version: 4.0.3
+appVersion: 4.0.3
 keywords:
   - discord
   - bot
@@ -15,6 +15,6 @@ maintainers:
     email: contact@tobiasgoetz.com
 dependencies:
   - name: valkey
-    version: 0.11.0
+    version: 0.12.0
     repository: https://valkey.io/valkey-helm/
     condition: valkey.enabled
