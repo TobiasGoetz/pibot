@@ -9,6 +9,7 @@ A discord bot providing administration and utility features!
 * MongoDB integration for per-guild feature settings (sparse storage — only non-default values)
 * DeepL translation support
 * AI channel summaries (Cloudflare)
+* Member activity stats (`/userstats me`, `/userstats user`)
 * Development tools for testing
 
 ## Guild settings
@@ -29,6 +30,7 @@ Features with settings today:
 | `admin` | `maxClearAmount`, `enabled` |
 | `summarize` | Limits, model override, `enabled` |
 | `translations` | `enabled` |
+| `userstats` | `enabled` |
 
 Cloudflare and DeepL credentials are required at bot level via `PIBOT_*` environment variables (see [Environment variables](#environment-variables)). Per-guild `enabled` flags toggle each feature on a server.
 
