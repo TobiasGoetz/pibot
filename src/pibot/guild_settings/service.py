@@ -7,7 +7,7 @@ from pibot.guild_settings.model import SettingsGroup
 from pibot.guild_settings.serializer import fieldDefault
 from pibot.guild_settings.store import SettingsStore
 
-LOGGER = logging.getLogger("guild_settings.service")
+logger = logging.getLogger(__name__)
 
 
 class SettingsService:
@@ -22,7 +22,7 @@ class SettingsService:
         """Load one settings group for a guild."""
         cached = await self.cache.get(guildId, model)
         if cached is not None:
-            LOGGER.debug("Cache hit for %s in guild %s.", model.name, guildId)
+            logger.debug("Cache hit for %s in guild %s.", model.name, guildId)
             return cached
         config = await self.store.load(guildId, model.name, model)
         await self.cache.set(guildId, config)

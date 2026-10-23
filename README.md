@@ -9,6 +9,7 @@ A discord bot providing administration and utility features!
 * MongoDB integration for per-guild feature settings (sparse storage — only non-default values)
 * DeepL translation support
 * AI channel summaries (Cloudflare)
+* Member activity stats (`/userstats me`, `/userstats user`)
 * Development tools for testing
 
 ## Guild settings
@@ -29,6 +30,7 @@ Features with settings today:
 | `admin` | `maxClearAmount`, `enabled` |
 | `summarize` | Limits, model override, `enabled` |
 | `translations` | `enabled` |
+| `userstats` | `enabled` |
 
 Cloudflare and DeepL credentials are required at bot level via `PIBOT_*` environment variables (see [Environment variables](#environment-variables)). Per-guild `enabled` flags toggle each feature on a server.
 
@@ -89,7 +91,7 @@ Configure these for `docker run`, Helm (`secretRef` + `pibot:` values), or a `.e
 | `PIBOT_TRANSLATIONS_DEEPL_API_KEY` | Required | — | — | DeepL API key for flag-reaction translations. Bot fails to start if unset. |
 | `PIBOT_COMMAND_SYNC_BEHAVIOR` | Optional | `global` | `global`, `local` | Startup slash-command sync. Invalid values fail at startup. Loaded via ``BotConfig`` in ``pibot/config.py``. |
 | `PIBOT_ENABLE_DEV_TOOLS` | Optional | `false` | `true`, `false` (also `1` / `0`) | Load the DevTools cog when true. Unset → false. Loaded via ``BotConfig`` in ``pibot/config.py``. |
-| `PIBOT_LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for ``discord.utils.setup_logging``. Unknown values fall back to ``INFO``. |
+| `PIBOT_LOG_LEVEL` | Optional | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` | Logging level for the `pibot` logger hierarchy. Third-party libraries stay at `INFO`. Unknown values fall back to `INFO`. |
 
 ## Local development
 
