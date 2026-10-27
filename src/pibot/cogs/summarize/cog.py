@@ -59,7 +59,7 @@ class Summarize(
         """Initialize the cog."""
         self.bot = bot
 
-    def _parseDuration(self, duration: str, config: SummarizeConfig) -> int:
+    def _parseDuration(self, duration: str, config: SummarizeConfig) -> float:
         seconds = pytimeparse.parse(duration)
         if seconds is None:
             raise commands.BadArgument(f"Could not parse `{duration}` as a duration (e.g. `1h`, `1d`, `10min`).")
