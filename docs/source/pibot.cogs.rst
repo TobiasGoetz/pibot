@@ -9,8 +9,10 @@ Subpackages
 
    pibot.cogs.admin
    pibot.cogs.general
+   pibot.cogs.settings
    pibot.cogs.summarize
    pibot.cogs.translations
+   pibot.cogs.userstats
 
 Submodules
 ----------

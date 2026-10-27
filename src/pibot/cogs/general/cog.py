@@ -13,7 +13,7 @@ from pibot.bot import Bot
 from pibot.cogs.general.config import GeneralConfig
 from pibot.guild_settings.feature_mixin import FeatureSettingsMixin
 
-logger = logging.getLogger("cog.general")
+logger = logging.getLogger(__name__)
 
 
 class General(
