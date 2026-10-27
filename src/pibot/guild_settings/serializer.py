@@ -1,7 +1,7 @@
 """Load, save, and parse guild settings values."""
 
 from collections.abc import Mapping
-from typing import Annotated
+from typing import Annotated, get_type_hints
 
 from pydantic import TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
@@ -22,12 +22,11 @@ def _fieldTypeAdapter(model: type[SettingsGroup], field: str) -> TypeAdapter[obj
     """Return a type adapter for one model field."""
     from pibot.guild_settings.ui.editors import partitionFieldMetadata
 
-    fieldInfo = model.model_fields[field]
-    _uiTypes, validation = partitionFieldMetadata(fieldInfo)
+    annotation = get_type_hints(model)[field]
+    _uiTypes, validation = partitionFieldMetadata(model.model_fields[field])
     if validation:
-        annotated = Annotated[fieldInfo.annotation, *validation]
-        return TypeAdapter(annotated)
-    return TypeAdapter(fieldInfo.annotation)
+        annotation = Annotated[annotation, *validation]
+    return TypeAdapter(annotation)
 
 
 def _coerceStoredValue(model: type[SettingsGroup], field: str, raw: object) -> object:
