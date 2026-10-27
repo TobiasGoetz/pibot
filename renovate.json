@@ -4,7 +4,8 @@
     "config:recommended",
     "helpers:pinGitHubActionDigests",
     ":semanticCommits",
-    ":semanticCommitTypeAll(deps)"
+    ":semanticCommitTypeAll(deps)",
+    ":semanticCommitScopeDisabled"
   ],
   "labels": ["dependencies"],
   "lockFileMaintenance": {
@@ -19,7 +20,8 @@
     {
       "description": "GitHub Actions commits use ci prefix for release-please",
       "matchManagers": ["github-actions"],
-      "semanticCommitType": "ci"
+      "semanticCommitType": "ci",
+      "semanticCommitScope": null
     }
   ]
 }
