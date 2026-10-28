@@ -4,6 +4,10 @@ LABEL maintainer="Tobias Goetz <contact@tobiasgoetz.com>"
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Use the image Python only. Managed installs land under /root/.local/share/uv
+# and are not copied into the runtime stage, which breaks .venv shebangs.
+ENV UV_PYTHON_DOWNLOADS=0
+
 WORKDIR /pibot-build
 
 # Copy only build inputs to avoid invalidating cache on unrelated changes
