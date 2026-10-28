@@ -1,7 +1,7 @@
 """Load, save, and parse guild settings values."""
 
 from collections.abc import Mapping
-from typing import Annotated, get_type_hints
+from typing import Annotated, Any, get_type_hints
 
 from pydantic import TypeAdapter, ValidationError
 from pydantic.fields import FieldInfo
@@ -22,7 +22,7 @@ def _fieldTypeAdapter(model: type[SettingsGroup], field: str) -> TypeAdapter[obj
     """Return a type adapter for one model field."""
     from pibot.guild_settings.ui.editors import partitionFieldMetadata
 
-    annotation = get_type_hints(model)[field]
+    annotation: Any = get_type_hints(model)[field]
     _uiTypes, validation = partitionFieldMetadata(model.model_fields[field])
     if validation:
         annotation = Annotated[annotation, *validation]
